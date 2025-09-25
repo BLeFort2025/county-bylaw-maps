@@ -32,7 +32,7 @@ def status_color(s: str) -> list[int]:
     s = (s or "").strip().upper()
     if s == "YES": return [0, 128, 0, 160]
     if s == "NO":  return [200, 0, 0, 160]
-    if s in ("NOT KNOWN", "UNKNOWN", "N/A", "NA"): return [128, 128, 128, 160]
+    if s == "N/A": return [128, 128, 128, 160]
     return [0, 0, 160, 140]
 
 # ---------- Load data ----------
@@ -59,19 +59,39 @@ selected_label = st.sidebar.selectbox("Bylaw", list(display_labels.values()), in
 selected_col   = label_to_col[selected_label]
 
 choice = st.sidebar.selectbox("Show", ["All", "YES", "NO", "N/A"], index=0)
+search_term = st.sidebar.text_input(f"Search {name_field}", value="", placeholder="Type part of a name…").strip()
 
 # ---------- Dynamic title ----------
 st.title(f"Upper Tier Bylaw Exemptions Map – {selected_label}")
 
 # ---------- Prepare styling ----------
-gdf["__STATUS__"] = gdf[selected_col].fillna("").astype(str)
-norm = gdf["__STATUS__"].str.strip().str.upper().replace({"UNKNOWN": "NOT KNOWN", "NA": "N/A"})
-gdf["__STATUS__"] = norm.replace({"NOT KNOWN": "N/A"})
+gdf["__STATUS__"] = (
+    gdf[selected_col]
+    .fillna("")
+    .astype(str)
+    .str.strip()
+    .str.upper()
+    .replace({"UNKNOWN": "NOT KNOWN", "NA": "N/A", "NOT KNOWN": "N/A"})
+)
 
 if choice != "All":
-    gdf = gdf[gdf["__STATUS__"].str.strip().str.upper().eq(choice)]
+    gdf = gdf[gdf["__STATUS__"].eq(choice)]
+
+if search_term:
+    gdf = gdf[gdf[name_field].astype(str).str.contains(search_term, case=False, na=False)]
 
 gdf["__COLOR__"] = gdf["__STATUS__"].apply(status_color)
+
+# Summary card
+counts = gdf["__STATUS__"].value_counts()
+yes = int(counts.get("YES", 0))
+no  = int(counts.get("NO", 0))
+na  = int(counts.get("N/A", 0))
+
+c1, c2, c3 = st.columns(3)
+c1.metric("YES", f"{yes}")
+c2.metric("NO", f"{no}")
+c3.metric("N/A", f"{na}")
 
 geom_col = gdf.geometry.name
 props_df = gdf[[name_field, "__STATUS__", "__COLOR__", geom_col]].copy()
