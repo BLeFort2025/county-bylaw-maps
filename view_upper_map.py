@@ -6,7 +6,6 @@ import pydeck as pdk
 import pandas as pd
 
 st.set_page_config(page_title="Upper Tier Bylaw Exemptions Map", layout="wide")
-st.title("Upper Tier Bylaw Exemptions Map")
 
 HERE = os.path.dirname(__file__)
 UPPER_PARQUET = os.path.join(HERE, "upper_single_map.parquet")
@@ -36,6 +35,7 @@ def status_color(s: str):
     if s in ("NOT KNOWN","UNKNOWN","N/A","NA"): return [128,128,128,160]
     return [0,0,160,140]
 
+# ---------- Load data ----------
 try:
     gdf = load_parquet(UPPER_PARQUET)
 except FileNotFoundError:
@@ -49,10 +49,15 @@ if not status_cols:
 
 name_field = pick_name_field(gdf)
 
+# ---------- Sidebar ----------
 st.sidebar.header("Filters")
 selected = st.sidebar.selectbox("Bylaw", status_cols, index=0)
 choice = st.sidebar.selectbox("Show", ["All", "YES", "NO", "NOT KNOWN"], index=0)
 
+# ---------- Dynamic title ----------
+st.title(f"Upper Tier Bylaw Exemptions Map – {selected}")
+
+# ---------- Prepare styling ----------
 gdf["__STATUS__"] = gdf[selected].fillna("").astype(str)
 if choice != "All":
     gdf = gdf[gdf["__STATUS__"].str.strip().str.upper().eq(choice)]
@@ -60,9 +65,9 @@ gdf["__COLOR__"] = gdf["__STATUS__"].apply(status_color)
 
 geom_col = gdf.geometry.name
 props_df = gdf[[name_field, "__STATUS__", "__COLOR__", geom_col]].copy()
-
 geojson = json.loads(props_df.to_json())
 
+# ---------- Map ----------
 layer = pdk.Layer(
     "GeoJsonLayer",
     data=geojson,
@@ -74,10 +79,12 @@ layer = pdk.Layer(
     lineWidthMinPixels=1,
 )
 view_state = pdk.ViewState(latitude=44.4, longitude=-79.5, zoom=6)
+
 st.pydeck_chart(
     pdk.Deck(
         layers=[layer],
         initial_view_state=view_state,
+        map_style="light",  # softer background
         tooltip={"text": f"{{{name_field}}}\nStatus: {{__STATUS__}}"},
     )
 )
