@@ -19,21 +19,21 @@ def load_parquet(path):
         pass
     return gdf
 
-def find_status_columns(df: pd.DataFrame):
+def find_status_columns(df: pd.DataFrame) -> list[str]:
     return sorted([c for c in df.columns if c.strip().endswith(" Status")])
 
-def pick_name_field(df: pd.DataFrame):
-    for c in ["MUNICIPALITY","Municipality","NAME","OFFICIAL_M","_UPPER_NAME"]:
+def pick_name_field(df: pd.DataFrame) -> str:
+    for c in ["MUNICIPALITY", "Municipality", "NAME", "OFFICIAL_M", "_UPPER_NAME"]:
         if c in df.columns:
             return c
     return df.columns[0]
 
-def status_color(s: str):
+def status_color(s: str) -> list[int]:
     s = (s or "").strip().upper()
-    if s == "YES": return [0,128,0,160]
-    if s == "NO":  return [200,0,0,160]
-    if s in ("NOT KNOWN","UNKNOWN","N/A","NA"): return [128,128,128,160]
-    return [0,0,160,140]
+    if s == "YES": return [0, 128, 0, 160]
+    if s == "NO":  return [200, 0, 0, 160]
+    if s in ("NOT KNOWN", "UNKNOWN", "N/A", "NA"): return [128, 128, 128, 160]
+    return [0, 0, 160, 140]
 
 # ---------- Load data ----------
 try:
@@ -51,16 +51,26 @@ name_field = pick_name_field(gdf)
 
 # ---------- Sidebar ----------
 st.sidebar.header("Filters")
-selected = st.sidebar.selectbox("Bylaw", status_cols, index=0)
-choice = st.sidebar.selectbox("Show", ["All", "YES", "NO", "NOT KNOWN"], index=0)
+
+display_labels = {col: col.replace(" Status", "") for col in status_cols}
+label_to_col = {v: k for k, v in display_labels.items()}
+
+selected_label = st.sidebar.selectbox("Bylaw", list(display_labels.values()), index=0)
+selected_col   = label_to_col[selected_label]
+
+choice = st.sidebar.selectbox("Show", ["All", "YES", "NO", "N/A"], index=0)
 
 # ---------- Dynamic title ----------
-st.title(f"Upper Tier Bylaw Exemptions Map – {selected}")
+st.title(f"Upper Tier Bylaw Exemptions Map – {selected_label}")
 
 # ---------- Prepare styling ----------
-gdf["__STATUS__"] = gdf[selected].fillna("").astype(str)
+gdf["__STATUS__"] = gdf[selected_col].fillna("").astype(str)
+norm = gdf["__STATUS__"].str.strip().str.upper().replace({"UNKNOWN": "NOT KNOWN", "NA": "N/A"})
+gdf["__STATUS__"] = norm.replace({"NOT KNOWN": "N/A"})
+
 if choice != "All":
     gdf = gdf[gdf["__STATUS__"].str.strip().str.upper().eq(choice)]
+
 gdf["__COLOR__"] = gdf["__STATUS__"].apply(status_color)
 
 geom_col = gdf.geometry.name
@@ -75,16 +85,16 @@ layer = pdk.Layer(
     stroked=True,
     filled=True,
     get_fill_color="properties.__COLOR__",
-    get_line_color=[60,60,60,255],
+    get_line_color=[60, 60, 60, 255],
     lineWidthMinPixels=1,
 )
-view_state = pdk.ViewState(latitude=44.4, longitude=-79.5, zoom=6)
+view_state = pdk.ViewState(latitude=44.0, longitude=-80.0, zoom=5.8)
 
 st.pydeck_chart(
     pdk.Deck(
         layers=[layer],
         initial_view_state=view_state,
-        map_style="light",  # softer background
+        map_style="light",
         tooltip={"text": f"{{{name_field}}}\nStatus: {{__STATUS__}}"},
     )
 )
@@ -93,6 +103,6 @@ with st.expander("Legend", expanded=False):
     st.markdown(
         "- **YES** = green  \n"
         "- **NO** = red  \n"
-        "- **NOT KNOWN/UNKNOWN/N/A** = gray  \n"
+        "- **N/A** = gray  \n"
         "- **Other/blank** = blue"
     )
