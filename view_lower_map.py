@@ -4,6 +4,8 @@ import streamlit as st
 import geopandas as gpd
 import pydeck as pdk
 import pandas as pd
+from ofa_content import get_content_for_label
+
 
 st.set_page_config(page_title="Lower Tier Bylaw Exemptions Map", layout="wide")
 
@@ -132,6 +134,35 @@ st.pydeck_chart(
         tooltip={"text": f"{{{name_field}}}\nStatus: {{__STATUS__}}"},
     )
 )
+
+# ---------- OFA position + template letter ----------
+content = get_content_for_label(selected_label)
+
+if content is not None:
+    st.subheader(content.title)
+    st.markdown(content.body_md)
+
+    # Template letter download (if available)
+    if content.letter_path:
+        template_path = os.path.join(HERE, content.letter_path)
+
+        if os.path.exists(template_path):
+            with open(template_path, "rb") as f:
+                st.download_button(
+                    label="Download template letter for this bylaw (.docx)",
+                    data=f,
+                    file_name=os.path.basename(template_path),
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+        else:
+            st.info(
+                "A template letter is expected for this bylaw, "
+                "but the .docx file is not present in the repository."
+            )
+    else:
+        # No letter is available for this topic (e.g. Site Alteration)
+        st.info("A template letter for this bylaw type is not currently available.")
+
 
 with st.expander("Legend", expanded=False):
     st.markdown(
