@@ -3,10 +3,15 @@ from typing import Optional, Dict
 
 # Map each visible sidebar label to a conceptual bylaw group.
 BYLAW_GROUP_FOR_LABEL: Dict[str, str] = {
+    # Backyard chickens / welfare
     "Can you Keep Backyard Chickens": "Backyard Chickens",
+    "Welfare Requirements": "Backyard Chickens",
 
+    # Tree cutting / forest conservation (handle both capitalizations just in case)
     "Farm Exemption - Tree Cutting Bylaw": "Forest Conservation",
+    "farm Exemption - Tree Cutting Bylaw": "Forest Conservation",
 
+    # Development charges / stormwater / site alteration
     "Farm Exemption for Development Charges": "Development Charges",
     "Farm Exemption for Stormwater Charges": "Stormwater",
     "Farm Exemption for SA": "Site Alteration",
@@ -15,6 +20,9 @@ BYLAW_GROUP_FOR_LABEL: Dict[str, str] = {
     "Has Livestock Guardian dog Definition": "Livestock Guardian Dogs",
     "Herding Dog Definition Exists": "Livestock Guardian Dogs",
     "LDG - Definition": "Livestock Guardian Dogs",
+    "LDG and HD exempt from license fees": "Livestock Guardian Dogs",
+    "LDG and HD Exempt from barking restrictions": "Livestock Guardian Dogs",
+    "LDG and HD exempt from barking restrictions": "Livestock Guardian Dogs",
 }
 
 
@@ -34,14 +42,14 @@ BYLAW_CONTENT_FOR_GROUP: Dict[str, BylawContent] = {
         body_md="""The loss of Ontario farmland
 
 Only about 5% of Ontario’s land base is suitable for agriculture. This finite resource underpins
-our ability to produce food, fibre and fuel. As urban development and other non‑agricultural
+our ability to produce food, fibre and fuel. As urban development and other non-agricultural
 uses expand, prime farmland is permanently removed from production. Statistics Canada data
 show hundreds of thousands of hectares of farmland were lost in just a decade. Ontario cannot
 sustain this rate of loss and still maintain a strong domestic food supply.
 
 Development charges as a tool to protect farmland
 
-Development charges are meant to fund growth‑related capital costs. With small adjustments,
+Development charges are meant to fund growth-related capital costs. With small adjustments,
 they can also help incentivize the protection of agricultural land. In many agricultural
 municipalities, farm buildings and structures have historically been exempt from development
 charges. When new bylaws or updates are enacted, those exemptions can be dropped
@@ -55,22 +63,22 @@ exemption for farm buildings and structures. Exempting farm structures while mai
 charges on other forms of development raises the relative cost of converting farmland to other
 uses and creates a financial incentive to keep land in production.
 
-Farm structures and growth‑related capital costs
+Farm structures and growth-related capital costs
 
 The purpose of development charges is to pay for increased capital costs required due to
-development‑driven service needs. New farm residences (MPAC classifications RU or FRU)
+development-driven service needs. New farm residences (MPAC classifications RU or FRU)
 are like other residential units and can reasonably attract development charges because they
-contribute to growth‑related infrastructure needs.
+contribute to growth-related infrastructure needs.
 
 However, typical farm buildings (barns, silos, pack sheds, etc.) do not generate the same
-growth‑related capital costs. Charging development fees on these structures forces farmers to
+growth-related capital costs. Charging development fees on these structures forces farmers to
 pay more than their fair share of municipal capital expenditures.
 
-Standardizing an agricultural exemption for farm buildings through a province‑wide approach
+Standardizing an agricultural exemption for farm buildings through a province-wide approach
 would prevent inequitable treatment of farmers in those municipalities that have not explicitly
-provided an exemption. It would directly support the long‑term objective of protecting prime
+provided an exemption. It would directly support the long-term objective of protecting prime
 agricultural areas for ongoing agricultural use and help ensure development charges remain
-focused on development that truly generates growth‑related capital costs.""",
+focused on development that truly generates growth-related capital costs.""",
         letter_path="letters/development_charges_letter.docx",
     ),
 
@@ -91,7 +99,7 @@ municipalities, including:
 
 - Absorption and infiltration of stormwater, helping to recharge aquifers, creeks, streams,
   lakes and wetlands.
-- Slowing peak flows, which reduces in‑stream erosion and flood risk.
+- Slowing peak flows, which reduces in-stream erosion and flood risk.
 - Filtering contaminants before they reach municipal watercourses.
 
 When these benefits are taken into account, it becomes clear that agricultural lands help to
@@ -126,10 +134,10 @@ unjust, additional tax on farm businesses.""",
         body_md="""Excess soil and agricultural land
 
 Many agricultural producers receive excess soil to improve field conditions and productivity.
-When managed properly, the addition of suitable soil can enhance crop production and long‑
+When managed properly, the addition of suitable soil can enhance crop production and long-
 term soil health. OFA’s primary concern is to ensure that agricultural land remains productive
 and free from contaminants that could threaten food safety, environmental quality or the
-long‑term viability of the farm.
+long-term viability of the farm.
 
 Local regulation of site alteration
 
@@ -166,7 +174,7 @@ can result in serious financial losses and animal welfare concerns. In recent ye
 compensation programs have paid significant amounts to farmers for livestock lost to
 predation.
 
-OFA supports the responsible use of Livestock Guardian Dogs (LGDs) as an effective, non‑
+OFA supports the responsible use of Livestock Guardian Dogs (LGDs) as an effective, non-
 lethal tool for protecting livestock from predators. LGDs are particularly important in rural
 and remote areas where predator pressure is high and other control methods may be less
 effective.
@@ -176,11 +184,11 @@ Key principles supported by OFA
 1. Support for livestock protection  
    LGDs play a critical role in deterring coyotes, wolves and other predators. Their presence
    helps prevent livestock injury and loss, and can reduce stress in the herd or flock. OFA
-   supports the continued use of LGDs as part of humane and effective predator‑management
+   supports the continued use of LGDs as part of humane and effective predator-management
    strategies.
 
 2. Responsible ownership and training  
-   OFA encourages best practices in the selection, training and management of LGDs. Well‑
+   OFA encourages best practices in the selection, training and management of LGDs. Well-
    managed guardian dogs are bonded to the livestock they protect, supervised appropriately
    and provided with proper veterinary care, housing and nutrition.
 
@@ -194,7 +202,7 @@ Key principles supported by OFA
    OFA supports farmers’ rights to use LGDs as part of legitimate farm operations under
    Ontario’s Farming and Food Production Protection Act (FFPPA). Municipalities should be
    cautious not to apply urban pet ownership standards (for example, strict barking limits,
-   collar requirements or dog‑licence rules) in ways that prevent LGDs from performing their
+   collar requirements or dog-licence rules) in ways that prevent LGDs from performing their
    working role on farms.
 
 5. Coexistence and rural understanding  
@@ -207,9 +215,9 @@ Key principles supported by OFA
    must receive appropriate shelter, nutrition, health care and humane treatment. OFA opposes
    neglect or abandonment of any working animal.
 
-Overall, OFA recognizes LGDs as a valuable, time‑tested tool that can improve animal welfare,
+Overall, OFA recognizes LGDs as a valuable, time-tested tool that can improve animal welfare,
 reduce livestock losses and contribute to sustainable predator management when supported by
-balanced, farm‑aware municipal bylaws.""",
+balanced, farm-aware municipal bylaws.""",
         letter_path="letters/livestock_guardian_dogs_letter.docx",
     ),
 
@@ -295,7 +303,7 @@ enforced municipal bylaws that prioritize:
    municipalities to craft bylaws in consultation with agricultural and public health experts.
 
 5. Respect for agricultural boundaries  
-   OFA emphasizes the need to maintain a clear distinction between small‑scale backyard
+   OFA emphasizes the need to maintain a clear distinction between small-scale backyard
    flocks and commercial agriculture. Regulations should ensure that backyard chickens do not
    undermine the economic viability, biosecurity or regulatory integrity of Ontario’s poultry
    sector.
