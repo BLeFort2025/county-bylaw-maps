@@ -6,6 +6,7 @@ BYLAW_GROUP_FOR_LABEL: Dict[str, str] = {
     # Backyard chickens / welfare
     "Can you Keep Backyard Chickens": "Backyard Chickens",
     "Welfare Requirements": "Backyard Chickens",
+    "Licence Required": "Backyard Chickens",
 
     # Tree cutting / forest conservation (handle both capitalizations just in case)
     "Farm Exemption - Tree Cutting Bylaw": "Forest Conservation",
@@ -23,6 +24,7 @@ BYLAW_GROUP_FOR_LABEL: Dict[str, str] = {
     "LDG and HD exempt from license fees": "Livestock Guardian Dogs",
     "LDG and HD Exempt from barking restrictions": "Livestock Guardian Dogs",
     "LDG and HD exempt from barking restrictions": "Livestock Guardian Dogs",
+    "LDG and HD Collar and tag requirements": "Livestock Guardian Dogs",
 }
 
 
@@ -254,7 +256,8 @@ Relationship to the Farming and Food Production Protection Act
 The Farming and Food Production Protection Act (FFPPA) allows farmers to appeal municipal
 bylaws that prohibit or restrict normal farm practices to the Normal Farm Practices Protection
 Board. Incorporating clear agricultural exemptions into forest conservation bylaws reduces
-the likelihood of conflict with the FFPPA and lowers administrative burdens for both farmers
+the likelihood of conflict with the FFPP
+PA and lowers administrative burdens for both farmers
 and municipalities.
 
 In short, OFA supports bylaws that protect tree cover while still allowing farmers to conduct
