@@ -17,6 +17,10 @@ BYLAW_GROUP_FOR_LABEL: Dict[str, str] = {
     "Farm Exemption for Stormwater Charges": "Stormwater",
     "Farm Exemption for SA": "Site Alteration",
 
+    # Fence bylaw exemptions
+    "Farm Exemption for Electrified fencing prohibitions": "Fence Bylaws",
+    "Farm Exemption for Security fencing prohibitions": "Fence Bylaws",
+
     # All LGD-related sidebar entries share the same OFA content and letter.
     "Has Livestock Guardian dog Definition": "Livestock Guardian Dogs",
     "Herding Dog Definition Exists": "Livestock Guardian Dogs",
@@ -37,7 +41,7 @@ class BylawContent:
 
 # One BylawContent per conceptual bylaw group.
 # The body_md values below are based on the OFA positions from
-# "OFA Positions and draft bylaw letters.docx".
+# "OFA Positions and draft bylaw letters.docx" and the fence position document.
 BYLAW_CONTENT_FOR_GROUP: Dict[str, BylawContent] = {
     "Development Charges": BylawContent(
         title="OFA position on Development Charge bylaws",
@@ -256,8 +260,7 @@ Relationship to the Farming and Food Production Protection Act
 The Farming and Food Production Protection Act (FFPPA) allows farmers to appeal municipal
 bylaws that prohibit or restrict normal farm practices to the Normal Farm Practices Protection
 Board. Incorporating clear agricultural exemptions into forest conservation bylaws reduces
-the likelihood of conflict with the FFPP
-PA and lowers administrative burdens for both farmers
+the likelihood of conflict with the FFPPA and lowers administrative burdens for both farmers
 and municipalities.
 
 In short, OFA supports bylaws that protect tree cover while still allowing farmers to conduct
@@ -319,6 +322,39 @@ In summary, OFA conditionally supports the keeping of backyard chickens where mu
 bylaws are robust, enforceable and designed to protect animal welfare, public health and the
 broader interests of Ontario’s agricultural industry.""",
         letter_path="letters/backyard_chickens_letter.docx",
+    ),
+
+    "Fence Bylaws": BylawContent(
+        title="OFA position on Fence bylaws",
+        body_md="""In Ontario, fences may be built either along a property’s lot-line boundary or inside
+the property itself. On farms, fences mark boundaries, keep livestock in, keep people and
+wildlife out, and create paddocks or other fenced areas. The presence of a fence does not
+change property ownership; where a change to the lot line is desired, landowners should use
+their municipality’s consent/lot-line adjustment process rather than relying on fence location.
+
+The Line Fences Act (1990) is the default legislation governing lot-line fences. A municipality
+may pass a fence bylaw that replaces most of that Act (except section 20, which deals with
+abandoned or decommissioned railway lands) and sets local standards for fence height,
+materials and design.
+
+Fence bylaws that are not written with agriculture in mind can create problems for farms.
+For example, they may appear to prohibit common forms of security fencing—such as
+electric fencing or barbed wire—that farmers need to protect livestock and support
+biosecurity. They can also create uncertainty about hedgerows and other green infrastructure
+that farmers plant for shelter, windbreaks and habitat.
+
+OFA’s position is that municipal fence bylaws should:
+
+- Provide clear agricultural exemptions for security fencing used to protect livestock and
+  maintain biosecurity; and
+- Allow farmers to plant and maintain hedgerows and windbreaks without those features
+  being treated as natural heritage features that trigger restrictive controls.
+
+A well-crafted fence bylaw reduces administrative burden for both farmers and municipalities.
+It should not be necessary to treat every farm security fence as a unique development
+proposal, and green infrastructure such as hedgerows should be encouraged rather than
+discouraged by local rules.""",
+        letter_path="letters/fence_bylaw_letter.docx",
     ),
 }
 
