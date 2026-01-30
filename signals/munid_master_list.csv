@@ -1,0 +1,448 @@
+﻿munid,municipality_name,tier
+11033,ADDINGTON HIGHLANDS TP,lower_single
+39010,ADELAIDE METCALFE TP,lower_single
+43002,ADJALA TOSORONTIO TP,lower_single
+47041,ADMASTON BROMLEY TP,lower_single
+18005,AJAX TP,lower_single
+59011,ALBERTON TP,lower_single
+2030,ALFRED AND PLANTAGENET TP,lower_single
+46020,ALGONQUIN HIGHLANDS TP,lower_single
+14015,ALNWICK HALDIMAND TP,lower_single
+22008,AMARANTH TP,lower_single
+37025,AMHERSTBURG TP,lower_single
+49019,ARMOUR TP,lower_single
+54036,ARMSTRONG TP,lower_single
+47002,ARNPRIOR TP,lower_single
+41037,ARRAN ELDERSLIE M,lower_single
+40030,ASHFIELD COLBORNE WAWANOSH TP,lower_single
+15002,ASPHODEL NORWOOD TP,lower_single
+51011,ASSIGINACK TP,lower_single
+7040,ATHENS TP,lower_single
+59001,ATIKOKAN TP,lower_single
+7006,AUGUSTA TP,lower_single
+19046,AURORA TP,lower_single
+34011,AYLMER TP,lower_single
+52028,BALDWIN TP,lower_single
+12061,BANCROFT TP,lower_single
+43042,BARRIE C,lower_single
+34003,BAYHAM M,lower_single
+9024,BECKWITH TP,lower_single
+12005,BELLEVILLE C,lower_single
+51021,BILLINGS TP,lower_single
+56014,BLACK RIVER MATHESON TP,lower_single
+32045,BLANDFORD BLENHEIM TP,lower_single
+57038,BLIND RIVER T,lower_single
+40010,BLUEWATER M,lower_single
+48026,BONFIELD TP,lower_single
+47015,BONNECHERE VALLEY TP,lower_single
+44018,BRACEBRIDGE TP,lower_single
+43013,BRADFORD WEST GWILLIMBURY TP,lower_single
+21010,BRAMPTON C,lower_single
+29002,BRANT,lower_single
+29006,BRANTFORD C,lower_single
+54032,BRETHOUR TP,lower_single
+14005,BRIGHTON M,lower_single
+18039,BROCK TP,lower_single
+41030,BROCKTON M,lower_single
+7015,BROCKVILLE C,lower_single
+38011,BROOKE ALVINSTON M,lower_single
+57021,BRUCE MINES T,lower_single
+47018,BRUDENELL LYNDOCH AND RAGLAN TP,lower_single
+49022,BURK TMS FALLS TP,lower_single
+24002,BURLINGTON C,lower_single
+51028,BURPEE AND MILLS TP,lower_single
+21024,CALEDON TP,lower_single
+49066,CALLANDER M,lower_single
+48022,CALVIN M,lower_single
+30006,CAMBRIDGE C,lower_single
+9028,CARLETON PLACE TP,lower_single
+49036,CARLING TP,lower_single
+12067,CARLOW MAYO TP,lower_single
+54029,CASEY TP,lower_single
+2044,CASSELMAN M,lower_single
+15012,CAVAN MONAGHAN TP,lower_single
+23010,CENTER WELLINGTON TP,lower_single
+34015,CENTRAL ELGIN M,lower_single
+10025,CENTRAL FRONTENAC TP,lower_single
+40025,CENTRAL HURON M,lower_single
+51009,CENTRAL MANITOULIN M,lower_single
+12023,CENTRE HASTINGS M,lower_single
+54054,CHAMBERLAIN TP,lower_single
+2005,CHAMPLAIN TP,lower_single
+52092,CHAPLEAU TP,lower_single
+59024,CHAPPLE TP,lower_single
+54047,CHARLTON AND DACK M,lower_single
+36003,CHATHAM KENT M,lower_single
+42031,CHATSWORTH TP,lower_single
+48031,CHISHOLM TP,lower_single
+2036,CLARENCE ROCKLAND C,lower_single
+18017,CLARINGTON M,lower_single
+43030,CLEARVIEW TP,lower_single
+54008,COBALT TP,lower_single
+14021,COBOURG TP,lower_single
+56037,COCHRANE TP,lower_single
+51034,COCKBURN ISLAND TP,lower_single
+54001,COLEMAN TP,lower_single
+43031,COLLINGWOOD TP,lower_single
+58019,CONMEE TP,lower_single
+1012,CORNWALL C,lower_single
+14010,CRAMAHE TP,lower_single
+38005,DAWN EUPHEMIA TP,lower_single
+59040,DAWSON TP,lower_single
+47096,DEEP RIVER TP,lower_single
+12002,DESERONTO TP,lower_single
+58034,DORION TP,lower_single
+15021,DOURO DUMMER TP,lower_single
+9007,DRUMMOND NORTH ELMSLEY TP,lower_single
+60025,DRYDEN C,lower_single
+57079,DUBREUILVILLE TP,lower_single
+34028,DUTTON DUNWICH M,lower_single
+46024,DYSART ET AL M,lower_single
+60042,EAR FALLS TP,lower_single
+48034,EAST FERRIS M,lower_single
+22001,EAST GARAFRAXA TP,lower_single
+19054,EAST GWILLIMBURY TP,lower_single
+2001,EAST HAWKESBURY TP,lower_single
+32038,EAST ZORRA TAVISTOCK TP,lower_single
+7003,EDWARDSBURGH CARDINAL TP,lower_single
+7011,ELIZABETHTOWN KITLEY TP,lower_single
+57041,ELLIOT LAKE C,lower_single
+59019,EMO TP,lower_single
+54052,ENGLEHART TP,lower_single
+38016,ENNISKILLEN TP,lower_single
+23015,ERIN TP,lower_single
+52026,ESPANOLA TP,lower_single
+43021,ESSA TP,lower_single
+37020,ESSEX TP,lower_single
+54049,EVANTUREL TP,lower_single
+12058,FARADAY TP,lower_single
+56052,FAUQUIER STRICKLAND TP,lower_single
+26003,FORT ERIE TP,lower_single
+59012,FORT FRANCES TP,lower_single
+52001,FRENCH RIVER M,lower_single
+7017,FRONT OF YONGE TP,lower_single
+10002,FRONTENAC ISLANDS TP,lower_single
+7024,GANANOQUE TP,lower_single
+54066,GAUTHIER TP,lower_single
+44065,GEORGIAN BAY TP,lower_single
+42055,GEORGIAN BLUFFS TP,lower_single
+19070,GEORGINA TP,lower_single
+58012,GILLIES TP,lower_single
+40028,GODERICH T,lower_single
+51024,GORDON BARRIE ISLAND M,lower_single
+51026,GORE BAY TP,lower_single
+22005,GRAND VALLEY TP,lower_single
+44002,GRAVENHURST TP,lower_single
+47007,GREATER MADAWASKA TP,lower_single
+11010,GREATER NAPANEE TP,lower_single
+53005,GREATER SUDBURY C,lower_single
+58058,GREENSTONE M,lower_single
+42013,GREY HIGHLANDS M,lower_single
+26065,GRIMSBY TP,lower_single
+23008,GUELPH C,lower_single
+23005,GUELPH ERAMOSA TP,lower_single
+28005,HALDIMAND,lower_single
+24015,HALTON HILLS TP,lower_single
+25005,HAMILTON TP,lower_single
+14019,HAMILTON TP,lower_single
+42029,HANOVER TP,lower_single
+54026,HARLEY TP,lower_single
+54014,HARRIS TP,lower_single
+12073,HASTINGS HIGHLANDS M,lower_single
+15030,HAVELOCK BELMONT METHUEN TP,lower_single
+2008,HAWKESBURY TP,lower_single
+47098,HEAD CLARA AND MARIA TP,lower_single
+56076,HEARST TP,lower_single
+46002,HIGHLANDS EAST M,lower_single
+54034,HILLIARD TP,lower_single
+57006,HILTON BEACH TP,lower_single
+57004,HILTON TP,lower_single
+57096,HORNEPAYNE TP,lower_single
+47046,HORTON TP,lower_single
+40046,HOWICK TP,lower_single
+54021,HUDSON TP,lower_single
+44042,HUNTSVILLE TP,lower_single
+40015,HURON EAST M,lower_single
+41010,HURON KINLOSS TP,lower_single
+57023,HURON SHORES M,lower_single
+60001,IGNACE TP,lower_single
+32018,INGERSOLL TP,lower_single
+43017,INNISFIL TP,lower_single
+56031,IROQUOIS FALLS TP,lower_single
+54042,JAMES TP,lower_single
+57001,JOCELYN TP,lower_single
+57016,JOHNSON TP,lower_single
+49051,JOLY TP,lower_single
+56066,KAPUSKASING TP,lower_single
+16002,KAWARTHA LAKES C,lower_single
+49018,KEARNEY TP,lower_single
+60011,KENORA C,lower_single
+54024,KERNS TP,lower_single
+47030,KILLALOE HAGARTY AND RICHARDS TP,lower_single
+52003,KILLARNEY M,lower_single
+41020,KINCARDINE M,lower_single
+19049,KING TP,lower_single
+10005,KINGSTON C,lower_single
+37008,KINGSVILLE TP,lower_single
+54068,KIRKLAND LAKE TP,lower_single
+30012,KITCHENER C,lower_single
+59016,LA VALLEE TP,lower_single
+57011,LAIRD TP,lower_single
+44027,LAKE OF BAYS TP,lower_single
+59045,LAKE OF THE WOODS TP,lower_single
+37049,LAKESHORE M,lower_single
+38037,LAMBTON SHORES M,lower_single
+9033,LANARK HIGHLANDS TP,lower_single
+54062,LARDER LAKE TP,lower_single
+37034,LASALLE TP,lower_single
+54006,LATCHFORD TP,lower_single
+47091,LAURENTIAN HILLS TP,lower_single
+47063,LAURENTIAN VALLEY TP,lower_single
+37003,LEAMINGTON M,lower_single
+7019,LEEDS AND THE THOUSAND ISLANDS TP,lower_single
+12051,LIMERICK TP,lower_single
+26057,LINCOLN TP,lower_single
+39036,LONDON C,lower_single
+11002,LOYALIST TP,lower_single
+39057,LUCAN BIDDULPH TP,lower_single
+57051,MACDONALD MEREDITH AND ABERDEEN ADDL TP,lower_single
+49054,MACHAR TP,lower_single
+60021,MACHIN M,lower_single
+47023,MADAWASKA VALLEY TP,lower_single
+12036,MADOC TP,lower_single
+49041,MAGNETAWAN M,lower_single
+34007,MALAHIDE TP,lower_single
+58066,MANITOUWADGE TP,lower_single
+23023,MAPLETON TP,lower_single
+58059,MARATHON TP,lower_single
+19036,MARKHAM C,lower_single
+52007,MARKSTAY WARREN M,lower_single
+12039,MARMORA AND LAKE M,lower_single
+54056,MATACHEWAN TP,lower_single
+48021,MATTAWA TP,lower_single
+48019,MATTAWAN M,lower_single
+56077,MATTICE VAL C T TP,lower_single
+49031,MCDOUGALL TP,lower_single
+54058,MCGARRY TP,lower_single
+49028,MCKELLAR TP,lower_single
+49012,MCMURRICH MONTEITH TP,lower_single
+47003,MCNAB BRAESIDE TP,lower_single
+42047,MEAFORD M,lower_single
+22019,MELANCTHON TP,lower_single
+7050,MERRICKVILLE WOLFORD TP,lower_single
+39020,MIDDLESEX CENTRE M,lower_single
+43074,MIDLAND TP,lower_single
+24009,MILTON TP,lower_single
+46011,MINDEN HILLS TP,lower_single
+23040,MINTO TP,lower_single
+21005,MISSISSAUGA C,lower_single
+9030,MISSISSIPPI MILLS M,lower_single
+22012,MONO TP,lower_single
+9001,MONTAGUE TP,lower_single
+56056,MOONBEAM TP,lower_single
+56065,MOOSONEE TP,lower_single
+59031,MORLEY TP,lower_single
+40048,MORRIS TURNBERRY M,lower_single
+22016,MULMUR TP,lower_single
+44053,MUSKOKA LAKES TP,lower_single
+52031,NAIRN AND HYMAN TP,lower_single
+58001,NEEBING M,lower_single
+43025,NEW TECUMSETH TP,lower_single
+39002,NEWBURY TP,lower_single
+19048,NEWMARKET TP,lower_single
+26043,NIAGARA FALLS C,lower_single
+26047,NIAGARA ON THE LAKE TP,lower_single
+58044,NIPIGON TP,lower_single
+49071,NIPISSING TP,lower_single
+28030,NORFOLK,lower_single
+47068,NORTH ALGONA WILBERFORCE TP,lower_single
+48044,NORTH BAY C,lower_single
+30001,NORTH DUMFRIES TP,lower_single
+1026,NORTH DUNDAS TP,lower_single
+10041,NORTH FRONTENAC TP,lower_single
+1047,NORTH GLENGARRY TP,lower_single
+7055,NORTH GRENVILLE M,lower_single
+40050,NORTH HURON TP,lower_single
+15035,NORTH KAWARTHA TP,lower_single
+39041,NORTH MIDDLESEX M,lower_single
+31035,NORTH PERTH M,lower_single
+1037,NORTH STORMONT TP,lower_single
+51015,NORTHEASTERN MANITOULIN AND THE ISLANDS TP,lower_single
+41061,NORTHERN BRUCE PENINSULA M,lower_single
+32002,NORWICH TP,lower_single
+58016,O TMCONNOR TP,lower_single
+24001,OAKVILLE TP,lower_single
+38018,OIL SPRINGS TP,lower_single
+58007,OLIVER PAIPOONGE M,lower_single
+56073,OPASATIKA TP,lower_single
+22014,ORANGEVILLE TP,lower_single
+43052,ORILLIA C,lower_single
+43047,ORO MEDONTE TP,lower_single
+18013,OSHAWA C,lower_single
+15005,OTONABEE SOUTH MONAGHAN TP,lower_single
+6005,OTTAWA C,lower_single
+42059,OWEN SOUND C,lower_single
+48017,PAPINEAU CAMERON TP,lower_single
+49032,PARRY SOUND TP,lower_single
+37001,PELEE TP,lower_single
+26028,PELHAM TP,lower_single
+47064,PEMBROKE C,lower_single
+43072,PENETANGUISHENE TP,lower_single
+49014,PERRY TP,lower_single
+31002,PERTH EAST TP,lower_single
+31008,PERTH SOUTH TP,lower_single
+9021,PERTH TP,lower_single
+47077,PETAWAWA TP,lower_single
+15014,PETERBOROUGH C,lower_single
+38019,PETROLIA TP,lower_single
+18001,PICKERING C,lower_single
+60049,PICKLE LAKE TP,lower_single
+57019,PLUMMER ADDITIONAL TP,lower_single
+38033,PLYMPTON WYOMING TP,lower_single
+38031,POINT EDWARD TP,lower_single
+26011,PORT COLBORNE C,lower_single
+14022,PORT HOPE M,lower_single
+49058,POWASSAN M,lower_single
+7008,PRESCOTT TP,lower_single
+13002,PRINCE EDWARD,lower_single
+57066,PRINCE TP,lower_single
+23001,PUSLINCH TP,lower_single
+12010,QUINTE WEST C,lower_single
+59042,RAINY RIVER TP,lower_single
+43050,RAMARA TP,lower_single
+60040,RED LAKE M,lower_single
+58041,RED ROCK TP,lower_single
+47048,RENFREW TP,lower_single
+19038,RICHMOND HILL C,lower_single
+7030,RIDEAU LAKES TP,lower_single
+2048,RUSSELL TP,lower_single
+49024,RYERSON TP,lower_single
+52019,SABLES SPANISH RIVERS TP,lower_single
+38030,SARNIA C,lower_single
+41043,SAUGEEN SHORES TP,lower_single
+57061,SAULT STE MARIE C,lower_single
+58051,SCHREIBER TP,lower_single
+18020,SCUGOG TP,lower_single
+49003,SEGUIN TP,lower_single
+15017,SELWYN TP,lower_single
+43080,SEVERN TP,lower_single
+22021,SHELBURNE TP,lower_single
+58028,SHUNIAH M,lower_single
+60034,SIOUX LOOKOUT M,lower_single
+60008,SIOUX NARROWS NESTOR FALLS TP,lower_single
+9004,SMITHS FALLS TP,lower_single
+56048,SMOOTH ROCK FALLS TP,lower_single
+48001,SOUTH ALGONQUIN TP,lower_single
+41004,SOUTH BRUCE M,lower_single
+41053,SOUTH BRUCE PENINSULA TP,lower_single
+1016,SOUTH DUNDAS M,lower_single
+10013,SOUTH FRONTENAC TP,lower_single
+1002,SOUTH GLENGARRY TP,lower_single
+40003,SOUTH HURON M,lower_single
+49056,SOUTH RIVER TP,lower_single
+1009,SOUTH STORMONT TP,lower_single
+32011,SOUTH WEST OXFORD TP,lower_single
+42005,SOUTHGATE TP,lower_single
+39003,SOUTHWEST MIDDLESEX M,lower_single
+34024,SOUTHWOLD TP,lower_single
+57039,SPANISH TP,lower_single
+43040,SPRINGWATER TP,lower_single
+26053,ST CATHARINES C,lower_single
+52004,ST CHARLES M,lower_single
+38002,ST CLAIR TP,lower_single
+57008,ST JOSEPH TP,lower_single
+31016,ST MARYS T,lower_single
+34021,ST THOMAS C,lower_single
+12017,STIRLING RAWDON TP,lower_single
+11023,STONE MILLS TP,lower_single
+31011,STRATFORD C,lower_single
+39013,STRATHROY CARADOC M,lower_single
+49046,STRONG TP,lower_single
+49048,SUNDRIDGE TP,lower_single
+57014,TARBUTT AND TARBUTT ADDITIONAL TP,lower_single
+43070,TAY TP,lower_single
+9010,TAY VALLEY TP,lower_single
+37043,TECUMSEH TP,lower_single
+51001,TEHKUMMAH TP,lower_single
+48069,TEMAGAMI M,lower_single
+54010,TEMISKAMING SHORES C,lower_single
+58054,TERRACE BAY TP,lower_single
+39025,THAMES CENTRE M,lower_single
+49005,THE ARCHIPELAGO TP,lower_single
+42041,THE BLUE MOUNTAINS TP,lower_single
+2011,THE NATION,lower_single
+57040,THE NORTH SHORE TP,lower_single
+57028,THESSALON TP,lower_single
+54038,THORNLOE TP,lower_single
+26037,THOROLD C,lower_single
+58004,THUNDER BAY C,lower_single
+32004,TILLSONBURG TP,lower_single
+56027,TIMMINS C,lower_single
+43068,TINY TP,lower_single
+20002,TORONTO C,lower_single
+14028,TRENT HILLS M,lower_single
+15041,TRENT LAKES M,lower_single
+12048,TUDOR AND CASHEL TP,lower_single
+12027,TWEED M,lower_single
+12001,TYENDINAGA TP,lower_single
+18029,UXBRIDGE TP,lower_single
+56070,VAL RITA HARTY TP,lower_single
+19028,VAUGHAN C,lower_single
+26014,WAINFLEET TP,lower_single
+38040,WARWICK TP,lower_single
+43064,WASAGA BEACH TP,lower_single
+30016,WATERLOO C,lower_single
+57076,WAWA M,lower_single
+26032,WELLAND C,lower_single
+30024,WELLESLEY TP,lower_single
+23020,WELLINGTON NORTH TP,lower_single
+34035,WEST ELGIN M,lower_single
+42004,WEST GREY M,lower_single
+26021,WEST LINCOLN TP,lower_single
+48050,WEST NIPISSING M,lower_single
+31017,WEST PERTH M,lower_single
+7033,WESTPORT TP,lower_single
+18009,WHITBY TP,lower_single
+19044,WHITCHURCH STOUFFVILLE TP,lower_single
+57091,WHITE RIVER TP,lower_single
+49039,WHITESTONE M,lower_single
+47050,WHITEWATER REGION TP,lower_single
+30018,WILMOT TP,lower_single
+37039,WINDSOR C,lower_single
+12054,WOLLASTON TP,lower_single
+32042,WOODSTOCK C,lower_single
+30029,WOOLWICH TP,lower_single
+32027,ZORRA TP,lower_single
+41000,BRUCE,upper
+56000,COCHRANE,upper
+18000,DURHAM,upper
+34000,ELGIN,upper
+37000,ESSEX,upper
+10000,FRONTENAC,upper
+42000,GREY,upper
+24000,HALTON,upper
+12000,HASTINGS,upper
+40000,HURON,upper
+60000,KENORA,upper
+38000,LAMBTON,upper
+9000,LANARK,upper
+7000,LEEDS AND GRENVILLE,upper
+44000,MUSKOKA,upper
+26000,NIAGARA,upper
+48000,NIPISSING,upper
+14000,NORTHUMBERLAND,upper
+32000,OXFORD,upper
+49000,PARRY SOUND,upper
+21000,PEEL,upper
+31000,PERTH,upper
+15000,PETERBOROUGH,upper
+2000,PRESCOTT AND RUSSELL,upper
+59000,RAINY RIVER,upper
+47000,RENFREW,upper
+43000,SIMCOE,upper
+52000,SUDBURY,upper
+58000,THUNDER BAY,upper
+54000,TIMISKAMING,upper
+30000,WATERLOO,upper
+23000,WELLINGTON,upper
+19000,YORK,upper

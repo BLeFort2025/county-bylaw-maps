@@ -13,18 +13,10 @@ from ofa_content import get_content_for_label
 st.set_page_config(page_title="Lower Tier Bylaw Exemptions Map", layout="wide")
 
 HERE = os.path.dirname(__file__)
-LOWER_PARQUET = os.path.join(HERE, "lower_single_map_beta.parquet")
+LOWER_PARQUET = os.path.join(HERE, "lower_single_map.parquet")
 
 # --- Expiry-based signal tuning ---
 EXPIRY_SOON_DAYS = 540  # ~18 months
-
-# Signal priority (used once multiple signal types exist)
-SIGNAL_PRIORITY = [
-    "Expired",
-    "Expiring soon",
-    "Mentioned in minutes/agendas",
-    "Expiry unknown",
-]
 
 
 def find_status_columns(df: pd.DataFrame) -> list[str]:
@@ -100,32 +92,6 @@ def canon_name(x: str) -> str:
             break
     s = re.sub(r"\b(CO\.?|CNTY)\b$", "", s).strip()
     return re.sub(r"\s+", " ", s).strip()
-
-
-def load_signals_data():
-    """Loads signals.csv, filters for hits in the last 90 days, and returns a dict."""
-    sig_path = os.path.join(os.path.dirname(__file__), "signals", "signals.csv")
-
-    if not os.path.exists(sig_path):
-        return {}
-
-    try:
-        df = pd.read_csv(sig_path)
-
-        # --- RECENCY FILTER (90 DAYS) ---
-        if 'discovered_date' in df.columns:
-            df['discovered_date'] = pd.to_datetime(df['discovered_date'])
-            cutoff = pd.Timestamp.now() - pd.Timedelta(days=90)
-            df = df[df['discovered_date'] > cutoff]
-
-        signals_map = {}
-        for _, row in df.iterrows():
-            cname = canon_name(str(row['munid']))
-            signals_map[cname] = row.to_dict()
-        return signals_map
-    except Exception as e:
-        st.error(f"Failed to load signals: {e}")
-        return {}
 
 
 # Map labels -> where to find bylaw metadata in the Parquet
@@ -271,15 +237,10 @@ def add_expiry_signal_columns(gdf: gpd.GeoDataFrame, selected_label: str) -> gpd
     signal.loc[expects_expiry & ~has_expiry & has_bylaw] = "Expiry unknown"
 
     # Line colour to draw attention to signals (outline only; fill still reflects Status)
-    # Only highlight "Expiring soon" and "Expired". "Expiry unknown" is tracked but not highlighted.
-    def _line_color_for_signal(sig: str) -> list[int]:
-        if sig == "Expiring soon":
-            return [255, 165, 0, 255]  # orange
-        if sig == "Expired":
-            return [0, 0, 0, 255]  # black
-        return [60, 60, 60, 255]  # default gray
-
-    line_color = signal.apply(_line_color_for_signal)
+    line_color = pd.Series([[60, 60, 60, 255]] * len(gdf), index=gdf.index)
+    line_color.loc[signal.eq("Expiring soon")] = [[255, 165, 0, 255]]  # orange
+    line_color.loc[signal.eq("Expired")] = [[0, 0, 0, 255]]  # black
+    line_color.loc[signal.eq("Expiry unknown")] = [[255, 215, 0, 255]]  # gold
 
     gdf["__EXPIRY__"] = expiry_display
     gdf["__SIGNAL__"] = signal
@@ -339,19 +300,6 @@ def load_data(path: str):
 # ---------- Load data ----------
 try:
     base_gdf, status_cols, name_field = load_data(LOWER_PARQUET)
-    
-    # --- SIGNALS INTEGRATION ---
-    signals_data = load_signals_data()
-
-    def check_signal(name_val):
-        return canon_name(name_val) in signals_data
-
-    if name_field in base_gdf.columns:
-        base_gdf["HAS_SIGNAL"] = base_gdf[name_field].apply(check_signal)
-    else:
-        base_gdf["HAS_SIGNAL"] = False
-    # ---------------------------
-
 except FileNotFoundError:
     st.error(f"Parquet not found: {LOWER_PARQUET}. Commit the file to the repo.")
     st.stop()
@@ -369,37 +317,28 @@ label_to_col = {v: k for k, v in display_labels.items()}
 selected_label = st.sidebar.selectbox("Bylaw", list(display_labels.values()), index=0)
 selected_col = label_to_col[selected_label]
 
-# Split filters: Status vs Expiry alerts (signals)
-status_filter = st.sidebar.selectbox("Status", ["All", "YES", "NO", "N/A"], index=0)
-signal_filter = st.sidebar.selectbox(
-    "Expiry alert",
-    ["All", "Expiring soon", "Expired", "Expiry unknown"],
-    index=0,
-)
-
-# --- NEW: Scanner Signal Filter ---
-show_scanner_hits = st.sidebar.checkbox("🚨 Filter to Scanner Signals", value=False)
-# ----------------------------------
-display_mode = st.sidebar.selectbox(
-    "Display mode",
-    ["Highlight matches", "Filter to matches"],
-    index=0,
-)
+choice = st.sidebar.selectbox("Show", ["All", "YES", "NO", "N/A"], index=0)
 
 # Search box
 search_term = st.sidebar.text_input(
     f"Search {name_field}", value="", placeholder="Type part of a name…"
 ).strip()
 
+# Optional: municipality details panel (selection-based; Streamlit can't bind sidebar to hover)
+st.sidebar.divider()
+st.sidebar.subheader("Municipality details")
+muni_options = sorted(base_gdf[name_field].dropna().astype(str).unique().tolist())
+selected_muni = st.sidebar.selectbox("Select a municipality", options=muni_options, index=0)
+
 # ---------- Dynamic title ----------
 st.title(f"Lower Tier Bylaw Exemptions Map – {selected_label}")
 
-# ---------- Prepare data ----------
 # Work on a copy so the cached base_gdf stays clean.
-gdf_all = base_gdf.copy()
+gdf = base_gdf.copy()
 
-gdf_all["__STATUS__"] = (
-    gdf_all[selected_col]
+# ---------- Prepare styling ----------
+gdf["__STATUS__"] = (
+    gdf[selected_col]
     .fillna("")
     .astype(str)
     .str.strip()
@@ -407,196 +346,61 @@ gdf_all["__STATUS__"] = (
     .replace({"UNKNOWN": "NOT KNOWN", "NA": "N/A", "NOT KNOWN": "N/A"})
 )
 
-# Compute fill colours (fill is driven by Status)
-gdf_all["__COLOR__"] = gdf_all["__STATUS__"].apply(status_color)
+# Apply filter for status
+if choice != "All":
+    gdf = gdf[gdf["__STATUS__"].eq(choice)]
 
-# Add expiry + signal columns for the current selection (outlines + tooltip/sidebar metadata)
-gdf_all = add_expiry_signal_columns(gdf_all, selected_label)
-
-# --- 🚨 PATCH: SCANNER SIGNAL OVERRIDE (v2) 🚨 ---
-# Trust the fuzzy matching already done by 'HAS_SIGNAL' earlier in the script
-if "HAS_SIGNAL" in gdf_all.columns:
-    # If the map found a signal (fuzzy match), FORCE the status to Scanner Detection
-    # This overrides "Expiring Soon" or "Expiry Unknown"
-    gdf_all.loc[gdf_all["HAS_SIGNAL"] == True, "__SIGNAL__"] = "Mentioned in minutes/agendas"
-# -----------------------------------------------------
-
-# ---------- Build match mask (what "filters" mean) ----------
-match_mask = pd.Series(True, index=gdf_all.index)
-
-if status_filter != "All":
-    match_mask &= gdf_all["__STATUS__"].eq(status_filter)
-
-if signal_filter != "All":
-    match_mask &= gdf_all["__SIGNAL__"].eq(signal_filter)
-
-# --- NEW: Apply Scanner Filter ---
-if show_scanner_hits:
-    # Filter to rows where our scanner found something (HAS_SIGNAL is True)
-    if "HAS_SIGNAL" in gdf_all.columns:
-        match_mask &= gdf_all["HAS_SIGNAL"].eq(True)
-# ---------------------------------
-
+# Apply search filter
 if search_term:
-    match_mask &= gdf_all[name_field].astype(str).str.contains(search_term, case=False, na=False)
+    gdf = gdf[gdf[name_field].astype(str).str.contains(search_term, case=False, na=False)]
 
-gdf_match = gdf_all[match_mask].copy()
+# Compute colours
+gdf["__COLOR__"] = gdf["__STATUS__"].apply(status_color)
 
-# ---------- Sidebar: Municipality details ----------
-st.sidebar.divider()
-st.sidebar.subheader("Municipality details")
+# Add expiry + signal columns for the current selection
+gdf = add_expiry_signal_columns(gdf, selected_label)
 
-limit_muni_list = st.sidebar.checkbox("Limit list to current results", value=True)
-
-muni_source = gdf_match if (limit_muni_list and not gdf_match.empty) else gdf_all
-muni_options = sorted(muni_source[name_field].dropna().astype(str).unique().tolist())
-
-# If filters result in 0 options, fall back to full list
-if not muni_options:
-    muni_options = sorted(gdf_all[name_field].dropna().astype(str).unique().tolist())
-
-# --- CRITICAL FIX: Ensure Selected Muni is Always in Options ---
-# If a user clicks a map polygon that is currently filtered out (e.g. clicking a 'NO' muni 
-# while filtering for 'YES'), we must forcibly add it to the options list so the widget 
-# doesn't crash or ignore the selection.
-current_selection = st.session_state.get("selected_muni")
-if current_selection and current_selection not in muni_options:
-    muni_options.append(current_selection)
-    muni_options = sorted(muni_options)
-# -------------------------------------------------------------
-
-# Keep Streamlit widget state valid if options change
-if "selected_muni" not in st.session_state:
-    st.session_state["selected_muni"] = muni_options[0] if muni_options else ""
-elif st.session_state["selected_muni"] not in muni_options and muni_options:
-    st.session_state["selected_muni"] = muni_options[0]
-
-selected_muni = st.sidebar.selectbox("Select a municipality", options=muni_options, key="selected_muni")
-
-# ---------- Display mode: filter vs highlight ----------
-if display_mode == "Filter to matches":
-    gdf_view = gdf_match.copy()
-else:
-    # Highlight matches but keep context: dim non-matching municipalities
-    gdf_view = gdf_all.copy()
-
-    dim_alpha = 40  # lower alpha for non-matches (keeps YES/NO/N/A colour but fades it)
-
-    def _dim_rgba(rgba):
-        if isinstance(rgba, (list, tuple)) and len(rgba) == 4:
-            return [int(rgba[0]), int(rgba[1]), int(rgba[2]), dim_alpha]
-        return rgba
-
-    nonmatch_line = [200, 200, 200, 40]
-
-    gdf_view["__COLOR__"] = [
-        (rgba if is_match else _dim_rgba(rgba))
-        for rgba, is_match in zip(gdf_view["__COLOR__"].tolist(), match_mask.tolist())
-    ]
-    gdf_view["__LINE_COLOR__"] = [
-        (lc if is_match else nonmatch_line)
-        for lc, is_match in zip(gdf_view["__LINE_COLOR__"].tolist(), match_mask.tolist())
-    ]
-
-# Variable line width: thicker for matches, thinner for context features
-if display_mode == "Highlight matches":
-    gdf_view["__LINE_WIDTH__"] = [2 if m else 1 for m in match_mask.tolist()]
-else:
-    gdf_view["__LINE_WIDTH__"] = 2
-
-# ---------- Summary cards (counts reflect the matching set) ----------
-counts = gdf_match["__STATUS__"].value_counts()
+# ---------- Summary cards ----------
+counts = gdf["__STATUS__"].value_counts()
 yes = int(counts.get("YES", 0))
 no = int(counts.get("NO", 0))
 na = int(counts.get("N/A", 0))
 
-sig_counts = gdf_match["__SIGNAL__"].value_counts()
+sig_counts = gdf["__SIGNAL__"].value_counts()
 expiring = int(sig_counts.get("Expiring soon", 0))
 expired = int(sig_counts.get("Expired", 0))
-unknown = int(sig_counts.get("Expiry unknown", 0))
 
-c1, c2, c3, c4, c5, c6 = st.columns(6)
+c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("YES", f"{yes}")
 c2.metric("NO", f"{no}")
 c3.metric("N/A", f"{na}")
 c4.metric("Expiring soon", f"{expiring}")
 c5.metric("Expired", f"{expired}")
-c6.metric("Expiry unknown", f"{unknown}")
-
-st.caption(
-    f"Matches: {len(gdf_match)} of {len(gdf_all)} municipalities.  "
-    "Outline legend: 🟧 Expiring soon • ⬛ Expired • 🟨 Expiry unknown • ⬜ No expiry alert  •  Outline priority (if multiple signals): Expired > Expiring soon > Mentioned in minutes/agendas > Expiry unknown"
-)
-
-if gdf_match.empty:
-    st.warning("No municipalities match the current filters.")
 
 # ---------- Map data prep ----------
-# COLOR LOGIC: Priority-based borders
-# Priority: Expired > Expiring Soon > Expiry Unknown > Mentioned (Signal) > Default
-def get_border_color(row):
-    sig = row.get("__SIGNAL__")
-    
-    # 1. Official Bylaw Status Signals
-    if sig == "Expired":
-        return [0, 0, 0, 255]         # Black
-    if sig == "Expiring soon":
-        return [255, 165, 0, 255]     # Orange
-    if sig == "Expiry unknown":
-        return [255, 255, 0, 255]     # Yellow (RESTORED)
-        
-    # 2. Scanner "Minutes/Agendas" Signals
-    if row.get("HAS_SIGNAL") == True:
-        return [255, 69, 0, 255]      # Red-Orange
-        
-    # 3. Default
-    return [100, 100, 100, 100]       # Grey
+geom_col = gdf.geometry.name
 
-# Apply to gdf_view so it reflects in the generated GeoJSON
-gdf_view["__BORDER_COLOR__"] = gdf_view.apply(get_border_color, axis=1)
-
-geom_col = gdf_view.geometry.name
-
-# Add __BORDER_COLOR__ to the properties list
-props_df = gdf_view[
-    [
-        name_field,
-        "__STATUS__",
-        "__COLOR__",
-        "__EXPIRY__",
-        "__SIGNAL__",
-        "__BYLAW_NAME__",
-        "__BYLAW_LINK__",
-        "__BORDER_COLOR__", 
-        "__LINE_WIDTH__",
-        geom_col,
-    ]
+props_df = gdf[
+    [name_field, "__STATUS__", "__COLOR__", "__EXPIRY__", "__SIGNAL__", "__BYLAW_NAME__", "__BYLAW_LINK__", "__LINE_COLOR__", geom_col]
 ].copy()
 
-# Create GeoJSON from the VIEW
 geojson = json.loads(props_df.to_json())
 
 # ---------- Map ----------
 layer = pdk.Layer(
     "GeoJsonLayer",
-    geojson,
+    data=geojson,
     pickable=True,
-    opacity=0.5,
     stroked=True,
     filled=True,
-    extruded=False,
-    wireframe=True,
     get_fill_color="properties.__COLOR__",
-    get_line_color="properties.__BORDER_COLOR__",
-    lineWidthMinPixels=2,          # <--- FIXED: Restores crisp borders
-    auto_highlight=True,
+    get_line_color="properties.__LINE_COLOR__",
+    lineWidthMinPixels=2,
 )
 
 view_state = pdk.ViewState(latitude=44.0, longitude=-80.0, zoom=5.8)
 
-# ---------- Map with Selection (DIAGNOSTIC MODE) ----------
-# We enable selection on the map to update the sidebar
-event = st.pydeck_chart(
+st.pydeck_chart(
     pdk.Deck(
         layers=[layer],
         initial_view_state=view_state,
@@ -611,102 +415,45 @@ event = st.pydeck_chart(
                 "Link: {__BYLAW_LINK__}"
             )
         },
-    ),
-    on_select="rerun",  # Forces the app to reload immediately on click
-    selection_mode="single-object"
+    )
 )
 
-# --- DEBUG & HANDLER LOGIC ---
-if event.selection:
-    indices = None
-    objects = event.selection.get("objects")
-    
-    # 1. Parse the selection format (Dict vs List)
-    if isinstance(objects, dict):
-        indices = list(objects.keys())
-    elif isinstance(objects, list) and objects:
-        indices = objects 
-
-    if indices:
-        try:
-            # 2. Get the index
-            idx = int(list(indices)[0])
-            
-            # 3. Look up the municipality name
-            if idx < len(gdf_view):
-                clicked_muni = gdf_view.iloc[idx][name_field]
-                
-                # 4. Show Debug Info (Temporary)
-                st.sidebar.error(f"🛠️ DEBUG: Clicked Index {idx} -> {clicked_muni}")
-                
-                # 5. Force Sidebar Update
-                if st.session_state.get("selected_muni") != clicked_muni:
-                    st.session_state["selected_muni"] = clicked_muni
-                    st.rerun() 
-                    
-        except Exception as e:
-            st.sidebar.error(f"Click Logic Error: {e}")
-            
-else:
-    # Show passive state if no click
-    st.sidebar.caption("Map ready. Click a municipality to test.")
-
 # ---------- Municipality details panel (sidebar) ----------
-detail_row = gdf_all[gdf_all[name_field].astype(str).eq(str(selected_muni))].head(1)
+# Pull from the unfiltered base_gdf so selection always works
+detail_row = base_gdf[base_gdf[name_field].astype(str).eq(str(selected_muni))].head(1)
 if len(detail_row) == 1:
-    r = detail_row.iloc[0]
+    detail_row = detail_row.iloc[0]
+    meta = META_BY_LABEL.get(selected_label, {})
+    bylaw_name = str(detail_row.get(meta.get("bylaw_name", ""), "") or "").strip()
+    bylaw_link = str(detail_row.get(meta.get("bylaw_link", ""), "") or "").strip()
+    expiry = str(detail_row.get(meta.get("expiry", ""), "") or "").strip()
+    enacted = str(detail_row.get(meta.get("enacted", ""), "") or "").strip()
+
+    # Compute signal for this one municipality
+    exp_dt = pd.to_datetime(expiry, errors="coerce")
+    today = pd.Timestamp(date.today())
+    if pd.notna(exp_dt):
+        days = int((exp_dt - today).days)
+        if days < 0:
+            sig = f"Expired ({abs(days)} days ago)"
+        elif days <= EXPIRY_SOON_DAYS:
+            sig = f"Expiring soon ({days} days)"
+        else:
+            sig = f"Not soon ({days} days)"
+    else:
+        sig = "Expiry unknown" if expiry == "" else "Expiry format issue"
 
     st.sidebar.markdown(f"**Selected bylaw topic:** {selected_label}")
-    st.sidebar.markdown(f"**Status:** {str(r.get('__STATUS__', 'N/A') or 'N/A')}")
-    st.sidebar.markdown(f"**Expiry signal:** {str(r.get('__SIGNAL__', '') or '').strip() or '—'}")
-
-    bylaw_name = str(r.get("__BYLAW_NAME__", "") or "").strip()
-    enacted = str(r.get("__ENACTED__", "") or "").strip()
-    expiry = str(r.get("__EXPIRY__", "") or "").strip()
-    bylaw_link = str(r.get("__BYLAW_LINK__", "") or "").strip()
-
     if bylaw_name:
         st.sidebar.markdown(f"**Bylaw:** {bylaw_name}")
-    if enacted and enacted != "N/A":
+    if enacted:
         st.sidebar.markdown(f"**Enacted:** {enacted}")
-    if expiry and expiry != "N/A":
+    if expiry:
         st.sidebar.markdown(f"**Expiry:** {expiry}")
+    st.sidebar.markdown(f"**Expiry signal:** {sig}")
     if bylaw_link:
-        st.sidebar.markdown(f"**Bylaw Source:** {bylaw_link}")
-
-    # --- NEW: Contextual Signal Display ---
-    cname_selected = canon_name(str(selected_muni))
-    
-    # Check if we have signal data for this municipality
-    if 'signals_data' in locals() and cname_selected in signals_data:
-        sig_entry = signals_data[cname_selected]
-        evidence_url = sig_entry.get('evidence_url', '')
-        snippet = str(sig_entry.get('snippet', '')).strip()
-        
-        # Clean up date format
-        raw_date = str(sig_entry.get('discovered_date', 'Unknown'))
-        found_date = raw_date.split(" ")[0] if " " in raw_date else raw_date
-        
-        # Only show if we have a URL (proof of signal)
-        if evidence_url:
-            st.sidebar.markdown("---")
-            st.sidebar.error("🔍 **Scanner Evidence Found**")
-
-            # The Trigger
-            trigger_word = str(sig_entry.get('trigger_keyword', 'General Keyword')).strip()
-            
-            st.sidebar.info(f"**Trigger:** Found **'{trigger_word}'** on {found_date}.")
-
-            # The Context
-            if snippet and snippet.lower() != "nan":
-                # --- SANITIZE SNIPPET FOR CLEAN DISPLAY ---
-                clean_snippet = snippet.replace('\r', ' ').replace('\n', ' ')  # Remove newlines
-                clean_snippet = ' '.join(clean_snippet.split())  # Collapse multiple spaces
-                clean_snippet = clean_snippet.strip()[:250]  # Trim and limit length
-                # -------------------------------------------
-                st.sidebar.caption(f"**Context:** \"...{clean_snippet}...\"")
-
-            st.sidebar.markdown(f"👉 [**View Source Document**]({evidence_url})")
+        # streamlit can render a clickable markdown link if it's a real URL
+        st.sidebar.markdown(f"**Source:** {bylaw_link}")
 
 # ---------- OFA position + template letter ----------
 content = get_content_for_label(selected_label)
@@ -739,36 +486,13 @@ with st.expander("Legend", expanded=False):
         "- **NO** = red  \n"
         "- **N/A** = gray  \n"
         "- **Other/blank** = blue  \n"
-        "- **Red-Orange outline** = Mentioned in minutes/agendas (Scanner Hit) \n"
         "- **Orange outline** = expiring soon  \n"
         "- **Black outline** = expired  \n"
-        "- **Yellow outline** = expiry unknown (bylaw exists)  \n"
-        "- **Highlight mode** dims non-matches instead of removing them"
+        "- **Gold outline** = expiry unknown (bylaw exists)"
     )
 
-# ---------- Results table + export ----------
-with st.expander("Results (filtered) – table + export", expanded=False):
-    table = gdf_match[
-        [name_field, "__STATUS__", "__EXPIRY__", "__SIGNAL__", "__BYLAW_NAME__", "__BYLAW_LINK__"]
-    ].copy()
-
-    table = table.rename(
-        columns={
-            name_field: "Municipality",
-            "__STATUS__": "Status",
-            "__EXPIRY__": "Expiry",
-            "__SIGNAL__": "Expiry alert",
-            "__BYLAW_NAME__": "Bylaw",
-            "__BYLAW_LINK__": "Bylaw link",
-        }
-    )
-
-    st.dataframe(table, use_container_width=True, hide_index=True)
-
-    csv_bytes = table.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
-    st.download_button(
-        "Download these results as CSV",
-        data=csv_bytes,
-        file_name="bylaw_map_results.csv",
-        mime="text/csv",
-    )
+# ---------- Optional: table for quick search/export ----------
+with st.expander("Filtered municipalities (table)", expanded=False):
+    table = gdf[[name_field, "__STATUS__", "__EXPIRY__", "__SIGNAL__", "__BYLAW_LINK__"]].copy()
+    table = table.rename(columns={name_field: "Municipality", "__BYLAW_LINK__": "Bylaw link"})
+    st.dataframe(table, use_container_width=True)

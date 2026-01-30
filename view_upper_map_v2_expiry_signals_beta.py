@@ -25,6 +25,63 @@ SIGNAL_PRIORITY = [
 ]
 
 
+def canon_name(x: str) -> str:
+    """Lightweight canon used only for joining signals/metadata if needed."""
+    if x is None:
+        return ""
+    s = str(x).replace("\u00A0", " ").strip().upper()
+    s = s.replace("&", " AND ").replace("-", " ")
+    s = re.sub(r"[’'`]", "", s)
+    s = re.sub(r"[^A-Z0-9 /]", " ", s)
+    s = s.replace("/", " ")
+    s = re.sub(r"\s+", " ", s).strip()
+    for p in [
+        "CITY OF ",
+        "TOWN OF ",
+        "TOWNSHIP OF ",
+        "VILLAGE OF ",
+        "MUNICIPALITY OF ",
+        "REGIONAL MUNICIPALITY OF ",
+        "REGION OF ",
+        "COUNTY OF ",
+        "DISTRICT OF ",
+    ]:
+        if s.startswith(p):
+            s = s[len(p) :].strip()
+            break
+    for suf in [
+        " COUNTY",
+        " REGION",
+        " CITY",
+        " TOWN",
+        " TOWNSHIP",
+        " VILLAGE",
+        " MUNICIPALITY",
+        " DISTRICT",
+    ]:
+        if s.endswith(suf):
+            s = s[: -len(suf)].strip()
+            break
+    s = re.sub(r"\b(CO\.?|CNTY)\b$", "", s).strip()
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def load_signals_data():
+    """Loads signals.csv and returns a dict mapping {CanonName -> SignalData}"""
+    sig_path = os.path.join(os.path.dirname(__file__), "signals", "signals.csv")
+    if not os.path.exists(sig_path):
+        return {}
+    try:
+        df = pd.read_csv(sig_path)
+        # df = df[df['review_status'] == 'auto_published'] # Commented out for Beta
+        signals_map = {}
+        for _, row in df.iterrows():
+            cname = canon_name(str(row['munid']))
+            signals_map[cname] = row.to_dict()
+        return signals_map
+    except Exception as e:
+        return {}
+
 @st.cache_data
 def load_parquet(path):
     gdf = gpd.read_parquet(path)
@@ -186,10 +243,14 @@ def add_expiry_signal_columns(gdf: gpd.GeoDataFrame, selected_label: str) -> gpd
     has_bylaw = bylaw_name.ne("") | bylaw_link.ne("")
     signal.loc[expects_expiry & ~has_expiry & has_bylaw] = "Expiry unknown"
 
-    line_color = pd.Series([[60, 60, 60, 255]] * len(gdf), index=gdf.index)
-    line_color.loc[signal.eq("Expiring soon")] = [[255, 165, 0, 255]]
-    line_color.loc[signal.eq("Expired")] = [[0, 0, 0, 255]]
-    line_color.loc[signal.eq("Expiry unknown")] = [[255, 215, 0, 255]]
+    def _line_color_for_signal(sig: str) -> list[int]:
+        if sig == "Expiring soon":
+            return [255, 165, 0, 255]  # orange
+        if sig == "Expired":
+            return [0, 0, 0, 255]  # black
+        return [60, 60, 60, 255]  # default gray
+
+    line_color = signal.apply(_line_color_for_signal)
 
     gdf["__EXPIRY__"] = expiry_display
     gdf["__SIGNAL__"] = signal
@@ -202,6 +263,18 @@ def add_expiry_signal_columns(gdf: gpd.GeoDataFrame, selected_label: str) -> gpd
 # ---------- Load data ----------
 try:
     gdf = load_parquet(UPPER_PARQUET)
+    
+    # --- SIGNALS INTEGRATION ---
+    signals_data = load_signals_data()
+    def check_signal(name_val):
+        return canon_name(name_val) in signals_data
+
+    # Uses pick_name_field result or we have to determine it before this block.
+    # We should determine name_field slightly earlier if possible, usually it's determined after load.
+    # However, to be safe, we can calculate it temporarily or move the logic down.
+    # The user request said: "Find where base_gdf (or gdf) is loaded... Immediately after... add:"
+    # But name_field is calculated lines later. I will defer injection slightly until name_field is known.
+
 except FileNotFoundError:
     st.error(f"Parquet not found: {UPPER_PARQUET}. Commit the file to the repo.")
     st.stop()
@@ -212,6 +285,16 @@ if not status_cols:
     st.stop()
 
 name_field = pick_name_field(gdf)
+
+# --- SIGNALS INTEGRATION ---
+signals_data = load_signals_data()
+def check_signal(name_val):
+    return canon_name(name_val) in signals_data
+
+if name_field in gdf.columns:
+    gdf["HAS_SIGNAL"] = gdf[name_field].apply(check_signal)
+else:
+    gdf["HAS_SIGNAL"] = False
 
 # ---------- Sidebar ----------
 st.sidebar.header("Filters")
@@ -345,36 +428,38 @@ if gdf_match.empty:
     st.warning("No municipalities match the current filters.")
 
 # ---------- Map ----------
+# COLOR LOGIC: Priority-based borders
+def get_border_color(row):
+    sig = row.get("__SIGNAL__")
+    if sig == "Expired":
+        return [0, 0, 0, 255]         # Black
+    if sig == "Expiring soon":
+        return [255, 165, 0, 255]     # Orange
+    if sig == "Expiry unknown":
+        return [255, 255, 0, 255]     # Yellow
+    if row.get("HAS_SIGNAL") == True:
+        return [255, 69, 0, 255]      # Red-Orange
+    return [100, 100, 100, 100]       # Grey
+
+gdf_view["__BORDER_COLOR__"] = gdf_view.apply(get_border_color, axis=1)
+
 geom_col = gdf_view.geometry.name
-
-props_df = gdf_view[
-    [
-        name_field,
-        "__STATUS__",
-        "__COLOR__",
-        "__EXPIRY__",
-        "__SIGNAL__",
-        "__BYLAW_NAME__",
-        "__BYLAW_LINK__",
-        "__LINE_COLOR__",
-        "__LINE_WIDTH__",
-        geom_col,
-    ]
-].copy()
-
+props_df = gdf_view[[name_field, "__STATUS__", "__COLOR__", "__EXPIRY__", "__SIGNAL__", "__BYLAW_NAME__", "__BYLAW_LINK__", "__BORDER_COLOR__", "__LINE_WIDTH__", geom_col]].copy()
 geojson = json.loads(props_df.to_json())
 
 layer = pdk.Layer(
     "GeoJsonLayer",
-    data=geojson,
+    geojson,
     pickable=True,
+    opacity=0.5,
     stroked=True,
     filled=True,
+    extruded=False,
+    wireframe=True,
     get_fill_color="properties.__COLOR__",
-    get_line_color="properties.__LINE_COLOR__",
-    get_line_width="properties.__LINE_WIDTH__",
-    lineWidthUnits="pixels",
-    lineWidthMinPixels=1,
+    get_line_color="properties.__BORDER_COLOR__",
+    lineWidthMinPixels=2,          # <--- Crisp borders
+    auto_highlight=True,
 )
 
 view_state = pdk.ViewState(latitude=44.0, longitude=-80.0, zoom=5.8)
