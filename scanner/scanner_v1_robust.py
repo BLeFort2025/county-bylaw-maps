@@ -22,8 +22,6 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.simplefilter("ignore")
 
 # --- 2. SMART CONFIGURATION ---
-# This block finds the 'signals' folder no matter where you run the script from.
-
 # Get the folder where THIS script is located (e.g., .../county-bylaw-maps/scanner)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -34,42 +32,52 @@ REPO_ROOT = os.path.dirname(SCRIPT_DIR)
 REGISTRY_PATH = os.path.join(REPO_ROOT, "signals", "portal_registry.csv")
 OUTPUT_DIR = os.path.join(REPO_ROOT, "signals")
 
-# Fallback/Sanity Check: If REPO_ROOT looks wrong, try current directory
-if not os.path.exists(REGISTRY_PATH):
-    # Maybe we are already in the root?
-    if os.path.exists("signals/portal_registry.csv"):
-        REGISTRY_PATH = "signals/portal_registry.csv"
-        OUTPUT_DIR = "signals"
-
-KEYWORDS = [
-    # --- The "Start Gun" (Background Studies) ---
-    "Development Charges Background Study",
-    "DC Background Study",
-    "Development Charges Update Study",
-    
-    # --- The "Smoking Gun" (Drafting Laws) ---
-    "Draft Development Charges By-law",
-    "Proposed Development Charges By-law",
-    "Passage of Development Charges By-law",
-    
-    # --- The "Public Process" (Meetings) ---
-    "Statutory Public Meeting regarding Development Charges",
-    "Notice of Public Meeting regarding Development Charges",
-    "Development Charges Public Meeting",  # Safer catch-all
-    
-    # --- The "Agricultural Specific" (The Real Interest) ---
-    "Agricultural Exemption Review",
-    "Farm Building Exemption",
-    "Bona Fide Farm",
-    
-    # --- The "Contextual Triggers" (Legislative Drivers) ---
-    "More Homes Built Faster Act",  # Bill 23 trigger
-    
-    # --- NEW: High-Priority Legislative Terms ---
-    "Community Benefits Charge",
-    "Bill 185",
-    "Comprehensive Zoning Bylaw"
-]
+# --- SMART CONFIGURATION ---
+KEYWORD_CONFIG = {
+    "DC": [
+        "Development Charges Background Study", "DC Background Study",
+        "Development Charges Update Study", "Draft Development Charges By-law",
+        "Proposed Development Charges By-law", "Passage of Development Charges By-law",
+        "Statutory Public Meeting regarding Development Charges",
+        "Notice of Public Meeting regarding Development Charges",
+        "Development Charges Public Meeting", "Agricultural Exemption Review",
+        "Farm Building Exemption", "Bona Fide Farm", "More Homes Built Faster Act",
+        "Community Benefits Charge", "Bill 185", "Comprehensive Zoning Bylaw"
+    ],
+    "STORMWATER": [
+        "Stormwater Rate Study", "Stormwater Utility Feasibility",
+        "Impervious Area Charge", "Runoff Management Fee",
+        "Drainage Master Plan", "Stormwater User Fee",
+        "Stormwater Funding Model"
+    ],
+    "SITE_ALT": [
+        "Site Alteration Bylaw", "Fill Bylaw", "Topsoil Preservation", 
+        "Topsoil Removal", "Dumping of Fill", "Large Scale Fill Agreement", 
+        "Commercial Fill Operation"
+    ],
+    "TREES": [
+        "Tree Cutting Bylaw", "Private Tree Protection", 
+        "Woodland Conservation Bylaw", "Forest Conservation Bylaw", 
+        "Tree Canopy Strategy", "Significant Woodland Review", 
+        "Stop Work Order - Trees"
+    ],
+    "CHICKENS": [
+        "Backyard Chickens",  # <--- The most important one
+        "Backyard Hens", 
+        "Urban Hens Pilot", 
+        "Backyard Poultry", 
+        "Chicken Coop Regulations"
+    ],
+    "LGD": [
+        "Animal Control Bylaw Review", "Dog Control Bylaw", 
+        "Kennel By-law", "Livestock Guardian Dog", 
+        "Working Dog Exemption", "Dog Licensing Fee Review"
+    ],
+    "FENCES": [
+        "Fence Bylaw", "Division Fence", "Line Fences Act", 
+        "Cost of Division Fences"
+    ]
+}
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -78,13 +86,14 @@ HEADERS = {
 # --- 3. HELPER FUNCTIONS ---
 
 def check_keywords(text):
-    """Returns True if any keyword is found in the text."""
-    if not text: return None
+    """Returns (keyword, category) if found."""
+    if not text: return None, None
     text_lower = text.lower()
-    for k in KEYWORDS:
-        if k.lower() in text_lower:
-            return k # Return the specific keyword found
-    return None
+    for cat, phrases in KEYWORD_CONFIG.items():
+        for p in phrases:
+            if p.lower() in text_lower:
+                return p, cat
+    return None, None
 
 def extract_text_from_pdf(pdf_bytes):
     """Extracts text from PDF bytes using pdfplumber."""
@@ -140,7 +149,7 @@ def scan_municipality(row):
             coverage['status'] = 'scanned_html'
             
         # Check Keywords
-        trigger = check_keywords(text_content)
+        trigger, category = check_keywords(text_content)
         if trigger:
             # Grab a snippet (clean up newlines for CSV safety)
             snippet = text_content[:300].replace('\n', ' ').replace('\r', '')
@@ -150,7 +159,8 @@ def scan_municipality(row):
                 'found_url': target_url,
                 'found_date': datetime.date.today(),
                 'snippet': snippet,
-                'trigger_keyword': trigger, # <--- NEW FIELD
+                'trigger_keyword': trigger,
+                'category': category,  # <--- NEW FIELD (DC or STORMWATER)
                 'keywords_detected': True
             }
             return candidate, coverage

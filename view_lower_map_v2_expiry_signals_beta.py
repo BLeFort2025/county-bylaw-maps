@@ -103,7 +103,7 @@ def canon_name(x: str) -> str:
 
 
 def load_signals_data():
-    """Loads signals.csv, filters for hits in the last 90 days, and returns a dict."""
+    """Loads signals.csv, filters for hits in the last 90 days, returns Dict[str, List[Dict]]."""
     sig_path = os.path.join(os.path.dirname(__file__), "signals", "signals.csv")
 
     if not os.path.exists(sig_path):
@@ -118,10 +118,13 @@ def load_signals_data():
             cutoff = pd.Timestamp.now() - pd.Timedelta(days=90)
             df = df[df['discovered_date'] > cutoff]
 
+        # MULTI-CATEGORY SUPPORT: Store as List of Dicts per municipality
         signals_map = {}
         for _, row in df.iterrows():
             cname = canon_name(str(row['munid']))
-            signals_map[cname] = row.to_dict()
+            if cname not in signals_map:
+                signals_map[cname] = []
+            signals_map[cname].append(row.to_dict())
         return signals_map
     except Exception as e:
         st.error(f"Failed to load signals: {e}")
@@ -379,6 +382,74 @@ signal_filter = st.sidebar.selectbox(
 
 # --- NEW: Scanner Signal Filter ---
 show_scanner_hits = st.sidebar.checkbox("🚨 Filter to Scanner Signals", value=False)
+
+# --- DOWNLOAD SCANNER RESULTS ---
+if show_scanner_hits:
+    st.sidebar.markdown("---")
+    st.sidebar.caption("📥 **Export Scanner Results**")
+    
+    report_mode = st.sidebar.radio("Content:", ["Current View Only", "All Scanner Hits"], key="report_mode")
+    
+    if st.sidebar.button("Generate CSV Report"):
+        # 1. Gather Data based on mode
+        export_rows = []
+        
+        # Flatten the signals_data dictionary (values are lists of dicts)
+        all_hits = []
+        for muni_hits in signals_data.values():
+            all_hits.extend(muni_hits)
+            
+        # Define category mapping for filtering
+        LAYER_TO_CATEGORY_EXPORT = {
+            "Farm Exemption for Development Charges": "DC",
+            "Farm Exemption for Stormwater Charges": "STORMWATER",
+            "Farm Exemption for SA": "SITE_ALT",
+            "Farm Exemption - Tree Cutting Bylaw": "TREES",
+            "Can you Keep Backyard Chickens": "CHICKENS",
+            "Licence Required": "CHICKENS",
+            "Welfare Requirements": "CHICKENS",
+            "Has Livestock Guardian dog Definition": "LGD",
+            "LDG - Definition": "LGD",
+            "Herding Dog Definition Exists": "LGD",
+            "LDG and HD exempt from license fees": "LGD",
+            "LDG and HD Collar and tag requirements": "LGD",
+            "LDG and HD Exempt from barking restrictions": "LGD",
+            "Farm Exemption for Security fencing prohibitions": "FENCES",
+            "Farm Exemption for Electrified fencing prohibitions": "FENCES"
+        }
+            
+        for hit in all_hits:
+            # Filter Logic
+            keep = False
+            if report_mode == "All Scanner Hits":
+                keep = True
+            else:
+                # Filter to Current View Category
+                if hit.get('category') == LAYER_TO_CATEGORY_EXPORT.get(selected_label):
+                    keep = True
+            
+            if keep:
+                export_rows.append({
+                    "Municipality": hit.get('munid'),
+                    "Bylaw Category": hit.get('category'),
+                    "Trigger Keyword": hit.get('trigger_keyword'),
+                    "Evidence Link": hit.get('evidence_url'),
+                    "Found Date": hit.get('discovered_date')
+                })
+        
+        # 2. Convert to CSV
+        if export_rows:
+            df_export = pd.DataFrame(export_rows)
+            csv_data = df_export.to_csv(index=False).encode('utf-8')
+            
+            st.sidebar.download_button(
+                label="⬇️ Download CSV",
+                data=csv_data,
+                file_name=f"scanner_hits_{report_mode.replace(' ', '_').lower()}.csv",
+                mime="text/csv"
+            )
+        else:
+            st.sidebar.warning("No hits found for this selection.")
 # ----------------------------------
 display_mode = st.sidebar.selectbox(
     "Display mode",
@@ -430,11 +501,59 @@ if status_filter != "All":
 if signal_filter != "All":
     match_mask &= gdf_all["__SIGNAL__"].eq(signal_filter)
 
-# --- NEW: Apply Scanner Filter ---
-if show_scanner_hits:
-    # Filter to rows where our scanner found something (HAS_SIGNAL is True)
-    if "HAS_SIGNAL" in gdf_all.columns:
-        match_mask &= gdf_all["HAS_SIGNAL"].eq(True)
+# --- SMART SIGNAL FILTERING ---
+if show_scanner_hits and "HAS_SIGNAL" in gdf_all.columns:
+    # 1. Base Filter: Must have a signal
+    signal_mask = gdf_all["HAS_SIGNAL"].eq(True)
+
+    # 2. Category Filter: Match the Map Layer to the Signal Category
+    # Map Sidebar Labels -> Scanner Categories
+    LAYER_TO_CATEGORY = {
+        # Development Charges
+        "Farm Exemption for Development Charges": "DC",
+        
+        # Stormwater
+        "Farm Exemption for Stormwater Charges": "STORMWATER",
+        
+        # Site Alteration
+        "Farm Exemption for SA": "SITE_ALT",
+        
+        # Trees
+        "Farm Exemption - Tree Cutting Bylaw": "TREES",
+        
+        # Chickens (Map multiple sidebar labels to one category)
+        "Can you Keep Backyard Chickens": "CHICKENS",
+        "Licence Required": "CHICKENS",
+        "Welfare Requirements": "CHICKENS",
+        
+        # LGDs (Map multiple sidebar labels to one category)
+        "Has Livestock Guardian dog Definition": "LGD",
+        "LDG - Definition": "LGD",
+        "Herding Dog Definition Exists": "LGD",
+        "LDG and HD exempt from license fees": "LGD",
+        "LDG and HD Collar and tag requirements": "LGD",
+        "LDG and HD Exempt from barking restrictions": "LGD",
+        
+        # Fences
+        "Farm Exemption for Security fencing prohibitions": "FENCES",
+        "Farm Exemption for Electrified fencing prohibitions": "FENCES"
+    }
+
+    target_category = LAYER_TO_CATEGORY.get(selected_label, None)
+
+    if target_category:
+        # Check if ANY of the municipality's signals match the target category
+        def signal_matches_category(muni_name):
+            cname = canon_name(str(muni_name))
+            hits = signals_data.get(cname, [])
+            # Check if any signal in the list matches the target category
+            return any(h.get('category', 'DC') == target_category for h in hits)
+
+        category_match = gdf_all[name_field].apply(signal_matches_category)
+        match_mask &= (signal_mask & category_match)
+    else:
+        # If viewing a layer with no scanner targets (e.g. Fences), hide signals
+        match_mask &= False
 # ---------------------------------
 
 if search_term:
@@ -532,24 +651,53 @@ if gdf_match.empty:
     st.warning("No municipalities match the current filters.")
 
 # ---------- Map data prep ----------
-# COLOR LOGIC: Priority-based borders
-# Priority: Expired > Expiring Soon > Expiry Unknown > Mentioned (Signal) > Default
+# --- SMART BORDER LOGIC ---
+# Define Mapping for Border Logic (matches the filter logic)
+LAYER_TO_CATEGORY_MAP = {
+    "Farm Exemption for Development Charges": "DC",
+    "Farm Exemption for Stormwater Charges": "STORMWATER",
+    "Farm Exemption for SA": "SITE_ALT",
+    "Farm Exemption - Tree Cutting Bylaw": "TREES",
+    "Can you Keep Backyard Chickens": "CHICKENS",
+    "Licence Required": "CHICKENS",
+    "Welfare Requirements": "CHICKENS",
+    "Has Livestock Guardian dog Definition": "LGD",
+    "LDG - Definition": "LGD",
+    "Herding Dog Definition Exists": "LGD",
+    "LDG and HD exempt from license fees": "LGD",
+    "LDG and HD Collar and tag requirements": "LGD",
+    "LDG and HD Exempt from barking restrictions": "LGD",
+    "Farm Exemption for Security fencing prohibitions": "FENCES",
+    "Farm Exemption for Electrified fencing prohibitions": "FENCES"
+}
+
+# Determine the category for the CURRENTLY selected layer
+current_map_category = LAYER_TO_CATEGORY_MAP.get(selected_label, None)
+
 def get_border_color(row):
     sig = row.get("__SIGNAL__")
     
-    # 1. Official Bylaw Status Signals
+    # 1. Official Bylaw Status Signals (Priority High)
     if sig == "Expired":
         return [0, 0, 0, 255]         # Black
     if sig == "Expiring soon":
         return [255, 165, 0, 255]     # Orange
     if sig == "Expiry unknown":
-        return [255, 255, 0, 255]     # Yellow (RESTORED)
+        return [255, 255, 0, 255]     # Yellow
         
-    # 2. Scanner "Minutes/Agendas" Signals
+    # 2. Scanner "Minutes/Agendas" Signals (Priority Medium)
+    # CRITICAL FIX: Only show Red Border if the signal matches the current map layer
     if row.get("HAS_SIGNAL") == True:
-        return [255, 69, 0, 255]      # Red-Orange
+        # Look up the list of signals for this municipality
+        muni_name = str(row[name_field])
+        cname = canon_name(muni_name)
         
-    # 3. Default
+        hits = signals_data.get(cname, [])
+        # Check if ANY signal in the list matches the current map category
+        if any(h.get('category', 'DC') == current_map_category for h in hits):
+            return [255, 69, 0, 255]      # Red-Orange
+        
+    # 3. Default (Priority Low)
     return [100, 100, 100, 100]       # Grey
 
 # Apply to gdf_view so it reflects in the generated GeoJSON
@@ -674,39 +822,64 @@ if len(detail_row) == 1:
     if bylaw_link:
         st.sidebar.markdown(f"**Bylaw Source:** {bylaw_link}")
 
-    # --- NEW: Contextual Signal Display ---
+    # --- NEW: Contextual Signal Display (Multi-Hit Safe) ---
     cname_selected = canon_name(str(selected_muni))
     
-    # Check if we have signal data for this municipality
     if 'signals_data' in locals() and cname_selected in signals_data:
-        sig_entry = signals_data[cname_selected]
-        evidence_url = sig_entry.get('evidence_url', '')
-        snippet = str(sig_entry.get('snippet', '')).strip()
+        hits_list = signals_data[cname_selected] # This is now a LIST
         
-        # Clean up date format
-        raw_date = str(sig_entry.get('discovered_date', 'Unknown'))
-        found_date = raw_date.split(" ")[0] if " " in raw_date else raw_date
+        # Redefine mapping locally to ensure we find the right signal for this view
+        LAYER_TO_CATEGORY_SIDEBAR = {
+            "Farm Exemption for Development Charges": "DC",
+            "Farm Exemption for Stormwater Charges": "STORMWATER",
+            "Farm Exemption for SA": "SITE_ALT",
+            "Farm Exemption - Tree Cutting Bylaw": "TREES",
+            "Can you Keep Backyard Chickens": "CHICKENS",
+            "Licence Required": "CHICKENS",
+            "Welfare Requirements": "CHICKENS",
+            "Has Livestock Guardian dog Definition": "LGD",
+            "LDG - Definition": "LGD",
+            "Herding Dog Definition Exists": "LGD",
+            "LDG and HD exempt from license fees": "LGD",
+            "LDG and HD Collar and tag requirements": "LGD",
+            "LDG and HD Exempt from barking restrictions": "LGD",
+            "Farm Exemption for Security fencing prohibitions": "FENCES",
+            "Farm Exemption for Electrified fencing prohibitions": "FENCES"
+        }
         
-        # Only show if we have a URL (proof of signal)
-        if evidence_url:
-            st.sidebar.markdown("---")
-            st.sidebar.error("🔍 **Scanner Evidence Found**")
-
-            # The Trigger
-            trigger_word = str(sig_entry.get('trigger_keyword', 'General Keyword')).strip()
+        target_category = LAYER_TO_CATEGORY_SIDEBAR.get(selected_label, None)
+        
+        # Find the specific hit that matches the layer we are viewing
+        target_hit = None
+        for h in hits_list:
+            if h.get('category') == target_category:
+                target_hit = h
+                break
+        
+        # If we found a hit for THIS category, display it
+        if target_hit:
+            evidence_url = target_hit.get('evidence_url', '')
+            snippet = str(target_hit.get('snippet', '')).strip()
             
-            st.sidebar.info(f"**Trigger:** Found **'{trigger_word}'** on {found_date}.")
+            # Clean up date format
+            raw_date = str(target_hit.get('discovered_date', 'Unknown'))
+            found_date = raw_date.split(" ")[0] if " " in raw_date else raw_date
+            
+            if evidence_url:
+                st.sidebar.markdown("---")
+                st.sidebar.error("🔍 **Scanner Evidence Found**")
 
-            # The Context
-            if snippet and snippet.lower() != "nan":
-                # --- SANITIZE SNIPPET FOR CLEAN DISPLAY ---
-                clean_snippet = snippet.replace('\r', ' ').replace('\n', ' ')  # Remove newlines
-                clean_snippet = ' '.join(clean_snippet.split())  # Collapse multiple spaces
-                clean_snippet = clean_snippet.strip()[:250]  # Trim and limit length
-                # -------------------------------------------
-                st.sidebar.caption(f"**Context:** \"...{clean_snippet}...\"")
+                trigger_word = str(target_hit.get('trigger_keyword', 'General Keyword')).strip()
+                st.sidebar.info(f"**Trigger:** Found **'{trigger_word}'** on {found_date}.")
 
-            st.sidebar.markdown(f"👉 [**View Source Document**]({evidence_url})")
+                if snippet and snippet.lower() != "nan":
+                    # Sanitize snippet
+                    clean_snippet = snippet.replace('\r', ' ').replace('\n', ' ')
+                    clean_snippet = ' '.join(clean_snippet.split())
+                    clean_snippet = clean_snippet.strip()[:250]
+                    st.sidebar.caption(f"**Context:** \"...{clean_snippet}...\"")
+
+                st.sidebar.markdown(f"👉 [**View Source Document**]({evidence_url})")
 
 # ---------- OFA position + template letter ----------
 content = get_content_for_label(selected_label)

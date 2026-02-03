@@ -13,23 +13,52 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REGISTRY_PATH = os.path.join(SCRIPT_DIR, "signals", "portal_registry.csv")
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "signals")
 
-KEYWORDS = [
-    # The "Early Warning" - Council is opening the bylaw
-    "Development Charges Background Study",
-    "DC Background Study",
-    "Development Charges Update Study",
-    
-    # The "Active Legislation" - A new law is being written
-    "Draft Development Charges By-law",
-    "Proposed Development Charges By-law",
-    
-    # The "Process" - Public input is being sought (mandatory legal step)
-    "Statutory Public Meeting regarding Development Charges",
-    "Notice of Public Meeting regarding Development Charges",
-    
-    # The "Specific Threat" - Explicit review of your interest
-    "Agricultural Exemption Review"
-]
+# --- SMART CONFIGURATION (MATCHING V1) ---
+KEYWORD_CONFIG = {
+    "DC": [
+        "Development Charges Background Study", "DC Background Study",
+        "Development Charges Update Study", "Draft Development Charges By-law",
+        "Proposed Development Charges By-law", "Passage of Development Charges By-law",
+        "Statutory Public Meeting regarding Development Charges",
+        "Notice of Public Meeting regarding Development Charges",
+        "Development Charges Public Meeting", "Agricultural Exemption Review",
+        "Farm Building Exemption", "Bona Fide Farm", "More Homes Built Faster Act",
+        "Community Benefits Charge", "Bill 185", "Comprehensive Zoning Bylaw"
+    ],
+    "STORMWATER": [
+        "Stormwater Rate Study", "Stormwater Utility Feasibility",
+        "Impervious Area Charge", "Runoff Management Fee",
+        "Drainage Master Plan", "Stormwater User Fee",
+        "Stormwater Funding Model"
+    ],
+    "SITE_ALT": [
+        "Site Alteration Bylaw", "Fill Bylaw", "Topsoil Preservation", 
+        "Topsoil Removal", "Dumping of Fill", "Large Scale Fill Agreement", 
+        "Commercial Fill Operation"
+    ],
+    "TREES": [
+        "Tree Cutting Bylaw", "Private Tree Protection", 
+        "Woodland Conservation Bylaw", "Forest Conservation Bylaw", 
+        "Tree Canopy Strategy", "Significant Woodland Review", 
+        "Stop Work Order - Trees"
+    ],
+    "CHICKENS": [
+        "Backyard Chickens",  # <--- The most important one
+        "Backyard Hens", 
+        "Urban Hens Pilot", 
+        "Backyard Poultry", 
+        "Chicken Coop Regulations"
+    ],
+    "LGD": [
+        "Animal Control Bylaw Review", "Dog Control Bylaw", 
+        "Kennel By-law", "Livestock Guardian Dog", 
+        "Working Dog Exemption", "Dog Licensing Fee Review"
+    ],
+    "FENCES": [
+        "Fence Bylaw", "Division Fence", "Line Fences Act", 
+        "Cost of Division Fences"
+    ]
+}
 
 def find_latest_report():
     """Automatically finds the most recent coverage report."""
@@ -50,7 +79,7 @@ def find_latest_report():
     return sorted(found_files)[-1]
 
 def setup_driver():
-    """Configures a headless Chrome browser."""
+    """Configures a headless Chrome browser.""" 
     options = Options()
     options.add_argument("--headless=new") 
     options.add_argument("--no-sandbox")
@@ -61,12 +90,14 @@ def setup_driver():
     return driver
 
 def check_keywords(text):
-    if not text: return None
+    """Returns (keyword, category) if found."""
+    if not text: return None, None
     text_lower = text.lower()
-    for k in KEYWORDS:
-        if k.lower() in text_lower:
-            return k
-    return None
+    for cat, phrases in KEYWORD_CONFIG.items():
+        for p in phrases:
+            if p.lower() in text_lower:
+                return p, cat
+    return None, None
 
 def scan_with_selenium(driver, row):
     munid = row['munid']
@@ -95,7 +126,7 @@ def scan_with_selenium(driver, row):
         
         coverage['status'] = 'scanned_selenium'
         
-        trigger = check_keywords(page_text)
+        trigger, category = check_keywords(page_text)
         if trigger:
             candidate = {
                 'munid': munid,
@@ -103,7 +134,8 @@ def scan_with_selenium(driver, row):
                 'found_url': url,
                 'found_date': datetime.date.today(),
                 'snippet': page_text[:300].replace('\n', ' '),
-                'trigger_keyword': trigger, # <--- NEW
+                'trigger_keyword': trigger,
+                'category': category,  # <--- NEW (DC or STORMWATER)
                 'keywords_detected': True
             }
             return candidate, coverage
