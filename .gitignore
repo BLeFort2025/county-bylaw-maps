@@ -4,6 +4,9 @@ __pycache__/
 *$py.class
 *.so
 
+# Streamlit secrets (NEVER commit — contains SMTP credentials)
+.streamlit/secrets.toml
+
 # Virtual environments
 venv/
 .venv/

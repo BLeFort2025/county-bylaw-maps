@@ -10,7 +10,9 @@ Features:
 • Bulk CSV import
 """
 
-import os, sys, hashlib, datetime
+import os, sys, hashlib, datetime, secrets, smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # ── Path resolution ──
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,9 +31,105 @@ st.set_page_config(page_title="Admin — Municipal Bylaw Database", page_icon="�
 
 DB_PATH = os.path.join(HERE, "bylaws.db")
 
+ADMIN_EMAIL = "ben.lefort@ofa.on.ca"
+
+# ═══════════════════════════════════════════════════════════════
+# Password management helpers
+# ═══════════════════════════════════════════════════════════════
+
+def _ensure_admin_settings_table():
+    """Create admin_settings table if it doesn't exist."""
+    conn = get_connection()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS admin_settings (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+
+
+def _get_db_password_hash():
+    """Get stored password hash from DB, or None if not set."""
+    try:
+        _ensure_admin_settings_table()
+        conn = get_connection()
+        row = conn.execute(
+            "SELECT value FROM admin_settings WHERE key = 'password_hash'"
+        ).fetchone()
+        return row["value"] if row else None
+    except Exception:
+        return None
+
+
+def _set_db_password_hash(new_hash):
+    """Store a new password hash in the DB."""
+    _ensure_admin_settings_table()
+    conn = get_connection()
+    conn.execute("""
+        INSERT INTO admin_settings (key, value) VALUES ('password_hash', ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    """, (new_hash,))
+    conn.commit()
+
+
+def _verify_password(password):
+    """Check password against DB hash first, then config hash as fallback."""
+    pw_hash = hashlib.sha256(password.encode()).hexdigest()
+    db_hash = _get_db_password_hash()
+    if db_hash:
+        return pw_hash == db_hash
+    return pw_hash == ADMIN_PASSWORD_HASH
+
+
+def _send_reset_email(new_password):
+    """Send password reset email via SMTP. Returns (success, message)."""
+    try:
+        smtp_cfg = st.secrets.get("smtp", None)
+        if not smtp_cfg:
+            return False, "SMTP not configured. Add [smtp] section to .streamlit/secrets.toml"
+
+        server_host  = smtp_cfg["server"]
+        server_port  = int(smtp_cfg.get("port", 587))
+        username     = smtp_cfg["username"]
+        app_password = smtp_cfg["password"]
+
+        msg = MIMEMultipart()
+        msg["From"]    = username
+        msg["To"]      = ADMIN_EMAIL
+        msg["Subject"] = "Municipal Bylaw Database — Password Reset"
+
+        body = f"""Hello,
+
+A password reset was requested for the Municipal Bylaw Database Admin panel.
+
+Your new temporary password is:
+
+    {new_password}
+
+Please log in and consider changing this password through the Admin panel.
+
+If you did not request this reset, you can ignore this email — the previous password has been replaced.
+
+— Municipal Bylaw Database System
+"""
+        msg.attach(MIMEText(body, "plain"))
+
+        with smtplib.SMTP(server_host, server_port) as server:
+            server.starttls()
+            server.login(username, app_password)
+            server.sendmail(username, ADMIN_EMAIL, msg.as_string())
+
+        return True, f"New password sent to **{ADMIN_EMAIL}**"
+
+    except Exception as e:
+        return False, f"Failed to send email: {e}"
+
+
 # ═══════════════════════════════════════════════════════════════
 # Password gate
 # ═══════════════════════════════════════════════════════════════
+
 def check_password():
     """Password gate — returns True if authenticated."""
     if "admin_authenticated" not in st.session_state:
@@ -45,11 +143,34 @@ def check_password():
 
     password = st.text_input("Password", type="password", key="admin_password_input")
     if st.button("Login", key="admin_login_btn"):
-        if hashlib.sha256(password.encode()).hexdigest() == ADMIN_PASSWORD_HASH:
+        if _verify_password(password):
             st.session_state.admin_authenticated = True
             st.rerun()
         else:
             st.error("Incorrect password.")
+
+    # ── Forgot Password ──
+    st.markdown("---")
+    with st.expander("🔑 Forgot Password?"):
+        st.markdown(
+            f"Click below to generate a new password and send it to **{ADMIN_EMAIL}**."
+        )
+        if st.button("Send Password Reset Email", type="primary"):
+            new_pw = secrets.token_urlsafe(10)  # ~13 char random password
+            new_hash = hashlib.sha256(new_pw.encode()).hexdigest()
+            _set_db_password_hash(new_hash)
+            ok, msg = _send_reset_email(new_pw)
+            if ok:
+                st.success(f"✅ {msg}")
+                st.info("Check your inbox and log in with the new password.")
+            else:
+                st.error(f"❌ {msg}")
+                st.code(f"As a fallback, your new password is:\n{new_pw}", language="text")
+                st.warning(
+                    "The password has been updated in the database. "
+                    "Copy this password and keep it safe."
+                )
+
     return False
 
 
