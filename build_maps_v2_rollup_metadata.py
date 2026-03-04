@@ -11,8 +11,9 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # Uses files in the same directory as this script
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-# INPUTS
+# INPUTS — prefer SQLite database, fallback to CSV
 BYLAW_CSV = os.path.join(HERE, "Final_Bylaw_Data__Grouped_Correctly_.csv")
+BYLAW_DB  = os.path.join(HERE, "bylaws.db")
 LOWER_GEO = os.path.join(HERE, "Lower_Tier.geojson")
 UPPER_GEO = os.path.join(HERE, "Upper_Tier.geojson")
 NAME_MAP  = os.path.join(HERE, "name_map_lower.csv")
@@ -148,10 +149,20 @@ def agg_min_date(values: pd.Series) -> str:
 def main():
     print(f"Working Directory: {HERE}")
     
-    # 1. READ CSV
-    print("Reading bylaw CSV...")
-    df, used_enc = _read_csv(BYLAW_CSV)
-    print(f"Loaded CSV with encoding: {used_enc}")
+    # 1. READ DATA — SQLite preferred, CSV fallback
+    if os.path.exists(BYLAW_DB):
+        print(f"Reading from SQLite database: {os.path.basename(BYLAW_DB)}")
+        from db_utils import get_connection, export_map_dataframe
+        conn = get_connection(BYLAW_DB)
+        df = export_map_dataframe(conn)
+        conn.close()
+        # Ensure all columns are string-typed for status_val() compatibility
+        df = df.astype(str).replace({"None": "", "nan": ""})
+        print(f"Loaded {len(df)} municipalities from SQLite")
+    else:
+        print("Reading bylaw CSV (SQLite not found, using fallback)...")
+        df, used_enc = _read_csv(BYLAW_CSV)
+        print(f"Loaded CSV with encoding: {used_enc}")
     
     print("Computing status columns...")
     df, status_cols = compute_status_columns(df)

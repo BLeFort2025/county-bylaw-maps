@@ -1,7 +1,12 @@
 import os
+import sys
 import json
 import re
 from datetime import date
+
+# When running from pages/, resolve HERE to the project root (one level up)
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, HERE)
 
 import geopandas as gpd
 import pandas as pd
@@ -12,7 +17,6 @@ from ofa_content import get_content_for_label
 
 st.set_page_config(page_title="Lower Tier Bylaw Exemptions Map", layout="wide")
 
-HERE = os.path.dirname(__file__)
 LOWER_PARQUET = os.path.join(HERE, "lower_single_map_beta.parquet")
 
 # --- Expiry-based signal tuning ---
@@ -104,7 +108,7 @@ def canon_name(x: str) -> str:
 
 def load_signals_data():
     """Loads signals.csv, filters for hits in the last 90 days, returns Dict[str, List[Dict]]."""
-    sig_path = os.path.join(os.path.dirname(__file__), "signals", "signals.csv")
+    sig_path = os.path.join(HERE, "signals", "signals.csv")
 
     if not os.path.exists(sig_path):
         return {}

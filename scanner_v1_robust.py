@@ -27,50 +27,8 @@ REPO_ROOT = SCRIPT_DIR  # We are already in the root
 REGISTRY_PATH = os.path.join(REPO_ROOT, "signals", "portal_registry.csv")
 OUTPUT_DIR = os.path.join(REPO_ROOT, "signals")
 
-# --- 3. CATEGORY & KEYWORD DEFINITIONS ---
-KEYWORD_CONFIG = {
-    "DC": [
-        "Development Charges Background Study", "DC Background Study",
-        "Development Charges Update Study", "Draft Development Charges By-law",
-        "Proposed Development Charges By-law", "Passage of Development Charges By-law",
-        "Statutory Public Meeting regarding Development Charges",
-        "Notice of Public Meeting regarding Development Charges",
-        "Development Charges Public Meeting", "Agricultural Exemption Review",
-        "Farm Building Exemption", "Bona Fide Farm", "More Homes Built Faster Act",
-        "Community Benefits Charge", "Bill 185", "Comprehensive Zoning Bylaw"
-    ],
-    "STORMWATER": [
-        "Stormwater Rate Study", "Stormwater Utility Feasibility",
-        "Impervious Area Charge", "Runoff Management Fee",
-        "Drainage Master Plan", "Stormwater User Fee",
-        "Stormwater Funding Model"
-    ],
-    "SITE_ALT": [
-        "Site Alteration Bylaw", "Fill Bylaw", "Topsoil Preservation", 
-        "Topsoil Removal", "Dumping of Fill", "Large Scale Fill Agreement", 
-        "Commercial Fill Operation"
-    ],
-    "TREES": [
-        "Tree Cutting Bylaw", "Private Tree Protection", 
-        "Woodland Conservation Bylaw", "Forest Conservation Bylaw", 
-        "Tree Canopy Strategy", "Significant Woodland Review", 
-        "Stop Work Order - Trees"
-    ],
-    "CHICKENS": [
-        "Backyard Hens", "Urban Hens Pilot", "Backyard Poultry", 
-        "Keeping of Animals Bylaw", "Chicken Coop Regulations",
-        "Council" # <--- TEMPORARY TEST KEYWORD (Remove later)
-    ],
-    "LGD": [
-        "Animal Control Bylaw Review", "Dog Control Bylaw", 
-        "Kennel By-law", "Livestock Guardian Dog", 
-        "Working Dog Exemption", "Dog Licensing Fee Review"
-    ],
-    "FENCES": [
-        "Fence Bylaw", "Division Fence", "Line Fences Act", 
-        "Cost of Division Fences"
-    ]
-}
+# --- 3. KEYWORD CONFIG (imported from shared module) ---
+from shared_config import KEYWORD_CONFIG, check_keywords, extract_snippet
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -144,7 +102,7 @@ def scan_municipality(row):
         # Check Keywords
         trigger, category = check_keywords(text_content)
         if trigger:
-            snippet = text_content[:300].replace('\n', ' ').replace('\r', '')
+            snippet = extract_snippet(text_content, trigger)
             candidate = {
                 'munid': munid,
                 'name': name,

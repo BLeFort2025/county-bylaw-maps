@@ -8,6 +8,8 @@ import geopandas as gpd
 import pydeck as pdk
 import pandas as pd
 
+from ofa_content import get_content_for_label
+
 st.set_page_config(page_title="Upper Tier Bylaw Exemptions Map", layout="wide")
 
 HERE = os.path.dirname(__file__)
@@ -67,17 +69,23 @@ def canon_name(x: str) -> str:
 
 
 def load_signals_data():
-    """Loads signals.csv and returns a dict mapping {CanonName -> SignalData}"""
+    """Loads signals.csv and returns a dict mapping {CanonName -> [list of signal dicts]}"""
     sig_path = os.path.join(os.path.dirname(__file__), "signals", "signals.csv")
     if not os.path.exists(sig_path):
         return {}
     try:
         df = pd.read_csv(sig_path)
-        # df = df[df['review_status'] == 'auto_published'] # Commented out for Beta
+        # Filter to recent signals only (90 days)
+        if 'date_found' in df.columns:
+            df['date_found'] = pd.to_datetime(df['date_found'], errors='coerce')
+            cutoff = pd.Timestamp.now() - pd.Timedelta(days=90)
+            df = df[df['date_found'] >= cutoff]
         signals_map = {}
         for _, row in df.iterrows():
             cname = canon_name(str(row['munid']))
-            signals_map[cname] = row.to_dict()
+            if cname not in signals_map:
+                signals_map[cname] = []
+            signals_map[cname].append(row.to_dict())
         return signals_map
     except Exception as e:
         return {}
@@ -210,6 +218,24 @@ META_BY_LABEL: dict[str, dict[str, str]] = {
     },
 }
 
+# --- SINGLE SOURCE OF TRUTH: Map sidebar labels -> scanner categories ---
+LAYER_TO_CATEGORY = {
+    "Farm Exemption for Development Charges": "DC",
+    "Farm Exemption for Stormwater Charges": "STORMWATER",
+    "Farm Exemption for SA": "SITE_ALT",
+    "Farm Exemption - Tree Cutting Bylaw": "TREES",
+    "Can you Keep Backyard Chickens": "CHICKENS",
+    "Licence Required": "CHICKENS",
+    "Welfare Requirements": "CHICKENS",
+    "Has Livestock Guardian dog Definition": "LGD",
+    "LDG - Definition": "LGD",
+    "Herding Dog Definition Exists": "LGD",
+    "LDG and HD exempt from license fees": "LGD",
+    "LDG and HD Collar and tag requirements": "LGD",
+    "LDG and HD Exempt from barking restrictions": "LGD",
+    "Farm Exemption for Security fencing prohibitions": "FENCES",
+    "Farm Exemption for Electrified fencing prohibitions": "FENCES",
+}
 
 def _safe_series(df: pd.DataFrame, col: str) -> pd.Series:
     if col and col in df.columns:
@@ -263,17 +289,6 @@ def add_expiry_signal_columns(gdf: gpd.GeoDataFrame, selected_label: str) -> gpd
 # ---------- Load data ----------
 try:
     gdf = load_parquet(UPPER_PARQUET)
-    
-    # --- SIGNALS INTEGRATION ---
-    signals_data = load_signals_data()
-    def check_signal(name_val):
-        return canon_name(name_val) in signals_data
-
-    # Uses pick_name_field result or we have to determine it before this block.
-    # We should determine name_field slightly earlier if possible, usually it's determined after load.
-    # However, to be safe, we can calculate it temporarily or move the logic down.
-    # The user request said: "Find where base_gdf (or gdf) is loaded... Immediately after... add:"
-    # But name_field is calculated lines later. I will defer injection slightly until name_field is known.
 
 except FileNotFoundError:
     st.error(f"Parquet not found: {UPPER_PARQUET}. Commit the file to the repo.")
@@ -312,6 +327,7 @@ signal_filter = st.sidebar.selectbox(
     ["All", "Expiring soon", "Expired", "Expiry unknown"],
     index=0,
 )
+filter_signals = st.sidebar.checkbox("🚨 Filter to Scanner Signals", value=False)
 display_mode = st.sidebar.selectbox(
     "Display mode",
     ["Highlight matches", "Filter to matches"],
@@ -349,6 +365,21 @@ if signal_filter != "All":
 
 if search_term:
     match_mask &= gdf_all[name_field].astype(str).str.contains(search_term, case=False, na=False)
+
+# --- Scanner Signal Filter ---
+if filter_signals:
+    signal_mask = gdf_all["HAS_SIGNAL"].eq(True)
+    target_category = LAYER_TO_CATEGORY.get(selected_label, None)
+    if target_category and signals_data:
+        cat_mask = pd.Series(False, index=gdf_all.index)
+        for i, row in gdf_all.iterrows():
+            cname = canon_name(str(row[name_field]))
+            if cname in signals_data:
+                if any(h.get('category') == target_category for h in signals_data[cname]):
+                    cat_mask.loc[i] = True
+        match_mask &= cat_mask
+    else:
+        match_mask &= signal_mask
 
 gdf_match = gdf_all[match_mask].copy()
 
@@ -437,8 +468,16 @@ def get_border_color(row):
         return [255, 165, 0, 255]     # Orange
     if sig == "Expiry unknown":
         return [255, 255, 0, 255]     # Yellow
+    # Category-aware scanner signal border
     if row.get("HAS_SIGNAL") == True:
-        return [255, 69, 0, 255]      # Red-Orange
+        cname = canon_name(str(row.get(name_field, "")))
+        if cname in signals_data:
+            current_map_category = LAYER_TO_CATEGORY.get(selected_label, None)
+            if current_map_category:
+                if any(h.get('category') == current_map_category for h in signals_data[cname]):
+                    return [255, 69, 0, 255]   # Red-Orange (matches current layer)
+            else:
+                return [255, 69, 0, 255]       # Red-Orange (no category filter)
     return [100, 100, 100, 100]       # Grey
 
 gdf_view["__BORDER_COLOR__"] = gdf_view.apply(get_border_color, axis=1)
@@ -505,6 +544,93 @@ if len(detail_row) == 1:
     if bylaw_link:
         st.sidebar.markdown(f"**Source:** {bylaw_link}")
 
+    # --- Scanner Evidence Panel ---
+    cname_selected = canon_name(str(selected_muni))
+    if cname_selected in signals_data:
+        hits_list = signals_data[cname_selected]
+        target_category = LAYER_TO_CATEGORY.get(selected_label, None)
+        
+        target_hit = None
+        if target_category:
+            for h in hits_list:
+                if h.get('category') == target_category:
+                    target_hit = h
+                    break
+        if target_hit is None and hits_list:
+            target_hit = hits_list[0]
+        
+        if target_hit:
+            st.sidebar.divider()
+            st.sidebar.markdown("### 🚨 Scanner Evidence Found")
+            trigger = target_hit.get('trigger_keyword', 'N/A')
+            date_found = target_hit.get('date_found', 'N/A')
+            snippet = target_hit.get('snippet', '')
+            url = target_hit.get('url', '')
+            
+            st.sidebar.markdown(f"**Trigger word:** `{trigger}`")
+            st.sidebar.markdown(f"**Date found:** {date_found}")
+            if snippet:
+                st.sidebar.info(f"**Context:** _{snippet[:300]}..._" if len(str(snippet)) > 300 else f"**Context:** _{snippet}_")
+            if url:
+                st.sidebar.markdown(f"[View Source Document]({url})")
+
+# ---------- OFA position + template letter ----------
+content = get_content_for_label(selected_label)
+
+if content is not None:
+    st.subheader(content.title)
+    st.markdown(content.body_md)
+
+    if content.letter_path:
+        template_path = os.path.join(HERE, content.letter_path)
+        if os.path.exists(template_path):
+            with open(template_path, "rb") as f:
+                st.download_button(
+                    label="Download template letter for this bylaw (.docx)",
+                    data=f,
+                    file_name=os.path.basename(template_path),
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+        else:
+            st.info(
+                "A template letter is expected for this bylaw, but the .docx file is not present in the repository."
+            )
+    else:
+        st.info("A template letter for this bylaw type is not currently available.")
+
+# --- Export Scanner Results ---
+st.sidebar.divider()
+st.sidebar.subheader("🚨 Export Scanner Results")
+report_mode = st.sidebar.radio("Content:", ["Current View Only", "All Scanner Hits"], key="upper_report_mode")
+if st.sidebar.button("Generate CSV Report", key="upper_csv_btn"):
+    all_hits = []
+    for cname, muni_hits in signals_data.items():
+        all_hits.extend(muni_hits)
+    
+    filtered_hits = []
+    for hit in all_hits:
+        keep = False
+        if report_mode == "All Scanner Hits":
+            keep = True
+        else:
+            if hit.get('category') == LAYER_TO_CATEGORY.get(selected_label):
+                keep = True
+        if keep:
+            filtered_hits.append(hit)
+    
+    if filtered_hits:
+        export_df = pd.DataFrame(filtered_hits)
+        csv_bytes = export_df.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
+        st.sidebar.download_button(
+            f"⬇️ Download {len(filtered_hits)} Scanner Results",
+            data=csv_bytes,
+            file_name="scanner_results_upper.csv",
+            mime="text/csv",
+            key="upper_scanner_dl"
+        )
+    else:
+        st.sidebar.info("No scanner results match the current view.")
+
 # ---------- Legend ----------
 with st.expander("Legend", expanded=False):
     st.markdown(
@@ -515,6 +641,7 @@ with st.expander("Legend", expanded=False):
         "- **Orange outline** = expiring soon  \n"
         "- **Black outline** = expired  \n"
         "- **Yellow outline** = expiry unknown (bylaw exists)  \n"
+        "- **Red-orange outline** = mentioned in recent council minutes/agendas  \n"
         "- **Highlight mode** dims non-matches instead of removing them"
     )
 

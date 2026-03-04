@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Database backups (keep main DB, exclude backups)
+bylaws_backup_*.db
+*.db-wal
+*.db-shm
+
+# Temporary / generated files
+*.log
+*.tmp
+
+# Documents (tracked separately, not part of app)
+*.docx
+*.xlsx
+
+# Selenium / scanner artifacts
+geckodriver.log
+chromedriver.log

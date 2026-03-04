@@ -24,4 +24,4 @@ python generate_signals.py
 
 :: 5. LAUNCH MAP
 echo [5/5] Launching Map...
-streamlit run view_lower_map_v2_expiry_signals_beta.py
+streamlit run app.py
