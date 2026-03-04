@@ -61,13 +61,17 @@ def canon(x: str) -> str:
     return re.sub(r"\s+"," ", s).strip()
 
 YES_SET     = {"YES","Y","TRUE","T","1","ALLOW","ALLOWED","PERMITTED","PERMIT","EXEMPT","EXEMPTION","EXCEPTION","PRESENT","EXISTS"}
-NO_SET      = {"NO","N","FALSE","F","0","NOT ALLOWED","PROHIBITED","NONE","ABSENT"}
-UNKNOWN_SET = {"UNKNOWN","NOT KNOWN","N/A","NA","NOT APPLICABLE","UNSURE","TBD","", "-", "NULL", "NONE (UNKNOWN)"}
+NO_SET      = {"NO","N","FALSE","F","0","2","NOT ALLOWED","PROHIBITED","ABSENT"}
+OTHER_SET   = {"OTHER","3","PARTIAL","CONDITIONAL"}
+NO_BYLAW    = {"4"}   # Access code: municipality has no bylaw at all
+UNKNOWN_SET = {"UNKNOWN","NOT KNOWN","N/A","NA","NOT APPLICABLE","UNSURE","TBD","", "-", "NULL", "NONE", "NONE (UNKNOWN)", "5"}
 
 def status_val(v, treat_text_as_yes=False) -> str:
     s = strip_nbsp_and_space(v).upper()
     if s in YES_SET: return "YES"
     if s in NO_SET:  return "NO"
+    if s in OTHER_SET: return "YES"  # Partial/conditional still means some form of exemption exists
+    if s in NO_BYLAW: return "N/A"   # No bylaw → not applicable
     if s in UNKNOWN_SET: return "NOT KNOWN"
     return "YES" if (treat_text_as_yes and s != "") else "NOT KNOWN"
 
