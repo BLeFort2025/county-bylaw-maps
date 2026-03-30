@@ -258,3 +258,30 @@ with tab_history:
                 mime="text/csv"
             )
 
+# ──────────────────────────────────────────────────────────────────
+# Instructions / User Guide
+# ──────────────────────────────────────────────────────────────────
+st.divider()
+
+st.markdown("""
+## 📖 Farmer's Guide to the Intelligence Scanner
+
+Welcome to the **Intelligence Scanner**! This tool is your early-warning system to see exactly what local municipal councils are talking about—before it becomes a finalized bylaw. 
+
+Because we track over 400 municipalities, hunting through hundreds of pages of council minutes is exhausting. This tool does the reading for you.
+
+### Tab 1: Live Target Scanner (The "Search Party")
+Use this tab when you hear a rumor about a **new or specific issue** popping up in a few municipalities and you want to investigate it *right now*. 
+1. **Select your targets:** Choose one or a handful of municipalities you want to investigate.
+2. **Type your keyword:** Type the exact phrase you are looking for (like `"Solar Storage"`, `"Eminent Domain"`, or a specific road name).
+3. **Run the scan:** The system will rush out to those local websites, download their most recent council minutes, and quickly "speed read" them looking for your exact word. 
+4. **Read the snippet:** If it finds your word, it will show you a small "snippet" of text so you can see exactly how it's being discussed along with a link to the original document.
+
+### Tab 2: Historical Intelligence Database (The "Library")
+Use this tab when you want a broad, immediate overview of the **7 official OFA bylaw categories** (like Development Charges, Stormwater Fees, or Backyard Chickens) across the whole province.
+1. Every week, a master automated system quietly reads thousands of documents looking for official OFA agricultural bylaws and saves whatever it finds in this "library."
+2. **Filter by County:** Select your county to instantly see every single official bylaw update that has hit council desks recently in your area. 
+3. **Filter by Issue:** Select issues like `"Site Alteration"` to see everyone in the province who is actively proposing new fill rules.
+4. **Search inside the snippets:** Use the text box to search for specific words (like `"fee"` or `"exemption"`) *inside* the evidence the automated scanner already saved. 
+""")
+
