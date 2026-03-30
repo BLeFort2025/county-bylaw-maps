@@ -234,7 +234,9 @@ CREATE TABLE IF NOT EXISTS scanner_signals (
     trigger_keyword TEXT,
     category        TEXT,
     snippet         TEXT,
-    evidence_url    TEXT
+    evidence_url    TEXT,
+    ai_summary      TEXT,
+    ai_confidence   INTEGER
 );
 
 -- ═══════════════════════════════════════════════

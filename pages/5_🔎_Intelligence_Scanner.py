@@ -57,6 +57,8 @@ def load_historical_signals():
             s.category,
             s.trigger_keyword,
             s.snippet,
+            s.ai_summary,
+            s.ai_confidence,
             s.evidence_url
         FROM scanner_signals s
         LEFT JOIN municipalities m ON s.municipality_id = m.id
@@ -242,12 +244,27 @@ with tab_history:
             mask = (
                 filtered_df['snippet'].str.contains(search_text, case=False, na=False) |
                 filtered_df['trigger_keyword'].str.contains(search_text, case=False, na=False) |
-                filtered_df['municipality'].str.contains(search_text, case=False, na=False)
+                filtered_df['municipality'].str.contains(search_text, case=False, na=False) |
+                (filtered_df['ai_summary'].str.contains(search_text, case=False, na=False) if 'ai_summary' in filtered_df.columns else False)
             )
             filtered_df = filtered_df[mask]
             
         st.metric("Total Historical Hits", len(filtered_df))
-        st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+        
+        # Format for display
+        display_cols = ['discovered_date', 'municipality', 'county', 'category']
+        
+        if 'ai_summary' in filtered_df.columns and not filtered_df['ai_summary'].isna().all():
+            display_cols.extend(['ai_summary', 'ai_confidence'])
+        else:
+            display_cols.extend(['snippet', 'trigger_keyword'])
+            
+        display_cols.append('evidence_url')
+        
+        # Ensure all requested columns actually exist
+        display_cols = [c for c in display_cols if c in filtered_df.columns]
+        
+        st.dataframe(filtered_df[display_cols], use_container_width=True, hide_index=True)
         
         if not filtered_df.empty:
             csv_hist = filtered_df.to_csv(index=False).encode('utf-8')

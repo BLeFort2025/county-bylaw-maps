@@ -64,6 +64,8 @@ def generate_signals():
     signals['trigger_keyword'] = full_df.get('trigger_keyword', 'General Keyword')
     signals['category'] = full_df.get('category', 'DC') # <--- CRITICAL
     signals['snippet'] = full_df.get('snippet', '').astype(str).str.slice(0, 300)
+    signals['ai_summary'] = full_df.get('ai_summary', '')
+    signals['ai_confidence'] = full_df.get('ai_confidence', 0).fillna(0).astype(int)
     signals['evidence_url'] = full_df.get('found_url', '')
 
     # 4. Save
