@@ -30,6 +30,7 @@ for keywords related to bylaw changes that may affect farmers. Municipalities
 with recent scanner hits are highlighted with a **red-orange border** on the map.
 
 ### Quick Links
+- Access the **🔎 Intelligence Scanner** from the sidebar to perform on-demand custom keyword searches or query historical bylaw trends across the province.
 - Toggle the **🚨 Filter to Scanner Signals** checkbox to see only municipalities
   with recent scanner activity
 - Use the **Expiry alert** dropdown to find bylaws that are expiring soon
