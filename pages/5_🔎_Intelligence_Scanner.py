@@ -264,7 +264,7 @@ with tab_history:
 st.divider()
 
 st.markdown("""
-## 📖 Farmer's Guide to the Intelligence Scanner
+## 📖 Guide to the Intelligence Scanner
 
 Welcome to the **Intelligence Scanner**! This tool is your early-warning system to see exactly what local municipal councils are talking about—before it becomes a finalized bylaw. 
 
