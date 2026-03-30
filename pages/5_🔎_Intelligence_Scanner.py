@@ -51,15 +51,9 @@ def load_historical_signals():
     conn = get_connection()
     query = """
         SELECT 
-            s.discovered_date,
+            s.*,
             m.name as municipality,
-            m.geographic_area as county,
-            s.category,
-            s.trigger_keyword,
-            s.snippet,
-            s.ai_summary,
-            s.ai_confidence,
-            s.evidence_url
+            m.geographic_area as county
         FROM scanner_signals s
         LEFT JOIN municipalities m ON s.municipality_id = m.id
         ORDER BY s.discovered_date DESC
@@ -209,8 +203,17 @@ with tab_live:
 # ──────────────────────────────────────────────────────────────────
 with tab_history:
     st.header("Historical Intelligence Insights")
+    
+    db_path = os.path.join(ROOT_DIR, "bylaws.db")
+    last_update = "Unknown"
+    if os.path.exists(db_path):
+        import time
+        mtime = os.path.getmtime(db_path)
+        last_update = datetime.datetime.fromtimestamp(mtime).strftime('%B %d, %Y at %I:%M %p')
+        
     st.markdown("Query the master database of weekly automated scanner hits. This is the fastest way "
                 "to see comprehensive reporting on established OFA bylaw categories across the province.")
+    st.info(f"🤖 **Intelligence Database Last Synced:** {last_update}")
     
     hist_df = load_historical_signals()
     
