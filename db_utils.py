@@ -180,6 +180,91 @@ def get_audit_log(conn, limit=50):
     )
 
 
+def get_report_data(conn, scope='provincial', scope_value=None):
+    """Fetch all data needed for report generation in efficient batch queries.
+
+    Args:
+        conn: SQLite connection
+        scope: 'provincial', 'county', or 'municipality'
+        scope_value: county name or municipality name
+
+    Returns:
+        dict with keys: municipalities, bylaws, details, contacts, signals, scope, scope_value
+    """
+    empty = {'municipalities': pd.DataFrame(), 'bylaws': pd.DataFrame(),
+             'details': {}, 'contacts': pd.DataFrame(), 'signals': pd.DataFrame(),
+             'scope': scope, 'scope_value': scope_value}
+
+    # 1. Municipalities
+    if scope == 'provincial':
+        munis = pd.read_sql_query(
+            "SELECT * FROM municipalities ORDER BY geographic_area, name", conn)
+    elif scope == 'county':
+        munis = pd.read_sql_query(
+            "SELECT * FROM municipalities WHERE geographic_area = ? ORDER BY name",
+            conn, params=[scope_value])
+    else:
+        munis = pd.read_sql_query(
+            "SELECT * FROM municipalities WHERE name = ? ORDER BY name",
+            conn, params=[scope_value])
+
+    if munis.empty:
+        return empty
+
+    muni_ids = munis['id'].tolist()
+    ph = ','.join(['?'] * len(muni_ids))
+
+    # 2. Bylaws + exemptions
+    bylaws = pd.read_sql_query(f"""
+        SELECT b.*, be.exemption_status, be.exemption_wording,
+               m.name as municipality_name, m.geographic_area
+        FROM bylaws b
+        LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
+        LEFT JOIN municipalities m ON m.id = b.municipality_id
+        WHERE b.municipality_id IN ({ph})
+        ORDER BY m.name, b.category
+    """, conn, params=muni_ids)
+
+    # 3. Details for each category
+    bylaw_ids = bylaws['id'].tolist() if not bylaws.empty else []
+    bph = ','.join(['?'] * len(bylaw_ids)) if bylaw_ids else '0'
+
+    detail_tables = {
+        'DC': 'details_dc', 'STORMWATER': 'details_stormwater',
+        'SITE_ALT': 'details_site_alt', 'LGD': 'details_lgd',
+        'TREES': 'details_trees', 'CHICKENS': 'details_chickens',
+        'FENCES': 'details_fences',
+    }
+    details = {}
+    for cat, table in detail_tables.items():
+        if bylaw_ids:
+            details[cat] = pd.read_sql_query(
+                f"SELECT * FROM {table} WHERE bylaw_id IN ({bph})",
+                conn, params=bylaw_ids)
+        else:
+            details[cat] = pd.DataFrame()
+
+    # 4. Contacts
+    contacts = pd.read_sql_query(
+        f"SELECT * FROM contacts WHERE municipality_id IN ({ph}) ORDER BY municipality_id",
+        conn, params=muni_ids)
+
+    # 5. Scanner signals
+    signals = pd.read_sql_query(f"""
+        SELECT s.*, m.name as municipality_name, m.geographic_area
+        FROM scanner_signals s
+        LEFT JOIN municipalities m ON m.id = s.municipality_id
+        WHERE s.municipality_id IN ({ph})
+        ORDER BY s.discovered_date DESC
+    """, conn, params=muni_ids)
+
+    return {
+        'municipalities': munis, 'bylaws': bylaws, 'details': details,
+        'contacts': contacts, 'signals': signals,
+        'scope': scope, 'scope_value': scope_value,
+    }
+
+
 def export_map_dataframe(conn):
     """Reconstruct the original wide-table CSV column layout from SQLite.
 

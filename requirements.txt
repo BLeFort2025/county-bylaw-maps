@@ -1,4 +1,4 @@
-﻿streamlit
+streamlit
 geopandas
 pandas
 pydeck
@@ -6,3 +6,4 @@ pyarrow
 shapely
 fiona
 openpyxl
+python-docx
