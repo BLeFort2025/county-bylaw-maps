@@ -145,7 +145,11 @@ def highlight_status(val):
         return "background-color: #fff3cd; color: #856404"
     return ""
 
-styled = display_df.style.applymap(highlight_status, subset=["Farm Exemption"] if "Farm Exemption" in display_df.columns else [])
+subset = ["Farm Exemption"] if "Farm Exemption" in display_df.columns else []
+if hasattr(display_df.style, "map"):
+    styled = display_df.style.map(highlight_status, subset=subset)
+else:
+    styled = display_df.style.applymap(highlight_status, subset=subset)
 st.dataframe(styled, use_container_width=True, height=500)
 
 # ── Export ──
