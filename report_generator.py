@@ -279,13 +279,13 @@ def _add_executive_summary(doc, data):
 
     # Scorecard table
     _heading(doc, "Exemption Scorecard", level=2)
-    headers = ["Category", "Yes", "No", "N/A", "Not Known", "Total", "Coverage"]
+    headers = ["Category", "Yes", "No", "N/A", "Unknown", "Total", "Bylaw %", "Exempt %"]
     rows = []
 
     for cat in CATEGORY_ORDER:
         cat_bylaws = bylaws[bylaws['category'] == cat]
         if cat_bylaws.empty:
-            rows.append([CATEGORY_NAMES[cat], "0", "0", "0", "0", "0", "—"])
+            rows.append([CATEGORY_NAMES[cat], "0", "0", "0", "0", "0", "—", "—"])
             continue
         statuses = cat_bylaws['exemption_status'].apply(_resolve)
         yes = (statuses == "Yes").sum()
@@ -293,19 +293,22 @@ def _add_executive_summary(doc, data):
         na = statuses.isin(["N/A"]).sum()
         nk = len(statuses) - yes - no - na
         total = len(statuses)
-        applicable_total = total - na
-        cov = f"{yes / applicable_total * 100:.0f}%" if applicable_total > 0 else "—"
-        rows.append([CATEGORY_NAMES[cat], str(yes), str(no), str(na), str(nk), str(total), cov])
+        
+        active_bylaws = yes + no
+        bylaw_cov = f"{active_bylaws / total * 100:.0f}%" if total > 0 else "—"
+        exempt_cov = f"{yes / active_bylaws * 100:.0f}%" if active_bylaws > 0 else "—"
+        
+        rows.append([CATEGORY_NAMES[cat], str(yes), str(no), str(na), str(nk), str(total), bylaw_cov, exempt_cov])
 
     table = _add_table(doc, headers, rows)
 
-    # Color the coverage column
+    # Color the Exempt % column
     for i, row_data in enumerate(rows):
-        cov = row_data[6]
+        cov = row_data[7]
         if cov != "—":
             pct = int(cov.replace("%", ""))
             bg = GREEN_BG if pct >= 70 else AMBER_BG if pct >= 40 else RED_BG
-            _set_cell_shading(table.rows[i + 1].cells[6], bg)
+            _set_cell_shading(table.rows[i + 1].cells[7], bg)
 
     doc.add_page_break()
 
@@ -331,12 +334,17 @@ def _add_category_section(doc, data, cat_code):
     no = (statuses == "No").sum()
     na = statuses.isin(["N/A"]).sum()
     total = len(statuses)
-    applicable_total = total - na
-    cov = f"{yes / applicable_total * 100:.0f}%" if applicable_total > 0 else "N/A"
+    
+    active_bylaws = yes + no
+    bylaw_cov = f"{active_bylaws / total * 100:.0f}%" if total > 0 else "0%"
+    exempt_cov = f"{yes / active_bylaws * 100:.0f}%" if active_bylaws > 0 else "N/A"
     
     doc.add_paragraph(
-        f"Farm exemption coverage: {cov} ({yes} out of {applicable_total} municipalities with a bylaw). "
-        f"{no} municipalities have no exemption, and {na} do not have this type of bylaw."
+        f"Bylaw presence: {bylaw_cov} ({active_bylaws} active bylaws identified out of {total} municipalities)."
+    )
+    doc.add_paragraph(
+        f"Farm exemption coverage: {exempt_cov} ({yes} out of {active_bylaws} active bylaws). "
+        f"{no} active bylaws have no exemption, and {na} municipalities explicitly do not have this type of bylaw."
     )
 
     if scope == 'provincial':
@@ -354,7 +362,7 @@ def _add_category_provincial(doc, cat_bylaws):
     cat_bylaws = cat_bylaws.copy()
     cat_bylaws['_status'] = cat_bylaws['exemption_status'].apply(_resolve)
 
-    headers = ["County / Region", "Yes", "No", "N/A", "Not Known", "Total", "Coverage"]
+    headers = ["County / Region", "Yes", "No", "N/A", "Unknown", "Total", "Bylaw %", "Exempt %"]
     rows = []
 
     for county, group in sorted(cat_bylaws.groupby('geographic_area'), key=lambda x: str(x[0])):
@@ -365,9 +373,12 @@ def _add_category_provincial(doc, cat_bylaws):
         na = s.isin(["N/A"]).sum()
         nk = len(s) - yes - no - na
         total = len(s)
-        applicable_total = total - na
-        cov = f"{yes / applicable_total * 100:.0f}%" if applicable_total > 0 else "—"
-        rows.append([county, str(yes), str(no), str(na), str(nk), str(total), cov])
+        
+        active_bylaws = yes + no
+        bylaw_cov = f"{active_bylaws / total * 100:.0f}%" if total > 0 else "—"
+        exempt_cov = f"{yes / active_bylaws * 100:.0f}%" if active_bylaws > 0 else "—"
+        
+        rows.append([county, str(yes), str(no), str(na), str(nk), str(total), bylaw_cov, exempt_cov])
 
     _add_table(doc, headers, rows)
 
