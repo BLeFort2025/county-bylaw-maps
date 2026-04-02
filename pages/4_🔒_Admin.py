@@ -74,12 +74,16 @@ def _set_db_password_hash(new_hash):
 
 
 def _verify_password(password):
-    """Check password against DB hash first, then config hash as fallback."""
+    """Check password against config hash OR DB hash (either works)."""
     pw_hash = hashlib.sha256(password.encode()).hexdigest()
+    # Always accept the master config password
+    if pw_hash == ADMIN_PASSWORD_HASH:
+        return True
+    # Also accept DB-stored password if one exists
     db_hash = _get_db_password_hash()
-    if db_hash:
-        return pw_hash == db_hash
-    return pw_hash == ADMIN_PASSWORD_HASH
+    if db_hash and pw_hash == db_hash:
+        return True
+    return False
 
 
 def _send_reset_email(new_password):
@@ -153,23 +157,19 @@ def check_password():
     st.markdown("---")
     with st.expander("🔑 Forgot Password?"):
         st.markdown(
-            f"Click below to generate a new password and send it to **{ADMIN_EMAIL}**."
+            "Click below to reset the admin password back to the default."
         )
-        if st.button("Send Password Reset Email", type="primary"):
-            new_pw = secrets.token_urlsafe(10)  # ~13 char random password
-            new_hash = hashlib.sha256(new_pw.encode()).hexdigest()
-            _set_db_password_hash(new_hash)
-            ok, msg = _send_reset_email(new_pw)
-            if ok:
-                st.success(f"✅ {msg}")
-                st.info("Check your inbox and log in with the new password.")
-            else:
-                st.error(f"❌ {msg}")
-                st.code(f"As a fallback, your new password is:\n{new_pw}", language="text")
-                st.warning(
-                    "The password has been updated in the database. "
-                    "Copy this password and keep it safe."
-                )
+        if st.button("Reset to Default Password", type="primary"):
+            # Clear DB override so config hash (ofa2026) works again
+            try:
+                _ensure_admin_settings_table()
+                conn_reset = get_connection()
+                conn_reset.execute("DELETE FROM admin_settings WHERE key = 'password_hash'")
+                conn_reset.commit()
+            except Exception:
+                pass
+            st.success("✅ Password has been reset to the default.")
+            st.info(f"Please contact **{ADMIN_EMAIL}** for the default password.")
 
     return False
 
