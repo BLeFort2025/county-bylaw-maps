@@ -429,7 +429,10 @@ if admin_mode == "✏️ Edit Municipality":
                 # Submit button
                 if st.form_submit_button(f"💾 Save {cat_label}"):
                     try:
-                        # Save bylaw fields — always write all values
+                        diag = []  # diagnostic messages
+
+                        # Track rows updated
+                        total_rows_updated = 0
                         bylaw_fields = {
                             "bylaw_name": new_bylaw_name or None,
                             "bylaw_link": new_bylaw_link or None,
@@ -440,23 +443,27 @@ if admin_mode == "✏️ Edit Municipality":
                             "other_notes": new_other or None,
                         }
                         for field, value in bylaw_fields.items():
-                            conn.execute(
+                            cur = conn.execute(
                                 f"UPDATE bylaws SET [{field}] = ? WHERE id = ?",
-                                (value, bylaw_id)
+                                (value, int(bylaw_id))
                             )
+                            total_rows_updated += cur.rowcount
 
-                        # Save exemption — always write
+                        diag.append(f"Bylaw UPDATE: {total_rows_updated} field-rows affected (bylaw_id={bylaw_id}, type={type(bylaw_id).__name__})")
+
+                        # Save exemption
                         exemption_row = conn.execute(
-                            "SELECT id FROM bylaw_exemptions WHERE bylaw_id = ?", (bylaw_id,)
+                            "SELECT id FROM bylaw_exemptions WHERE bylaw_id = ?", (int(bylaw_id),)
                         ).fetchone()
                         if exemption_row:
                             ex_id = exemption_row["id"]
-                            conn.execute(
+                            cur = conn.execute(
                                 "UPDATE bylaw_exemptions SET exemption_status = ?, exemption_wording = ? WHERE id = ?",
-                                (new_exemption or None, new_wording or None, ex_id)
+                                (new_exemption or None, new_wording or None, int(ex_id))
                             )
+                            diag.append(f"Exemption UPDATE: {cur.rowcount} rows (ex_id={ex_id})")
 
-                        # Save category details — always write
+                        # Save category details
                         if detail_updates and not detail_df.empty:
                             detail_id = detail_df.iloc[0]["id"]
                             detail_table = {
@@ -466,37 +473,44 @@ if admin_mode == "✏️ Edit Municipality":
                                 "FENCES": "details_fences",
                             }[cat_code]
                             for field, value in detail_updates.items():
-                                conn.execute(
+                                cur = conn.execute(
                                     f"UPDATE {detail_table} SET [{field}] = ? WHERE id = ?",
-                                    (value if value else None, detail_id)
+                                    (value if value else None, int(detail_id))
                                 )
+                                total_rows_updated += cur.rowcount
 
                         conn.commit()
+                        diag.append("conn.commit() succeeded")
 
-                        # ── Verify the save by re-reading with a fresh connection ──
-                        verify_conn = get_connection(DB_PATH)
+                        # ── Verify on SAME connection ──
+                        same_row = conn.execute(
+                            "SELECT bylaw_name FROM bylaws WHERE id = ?", (int(bylaw_id),)
+                        ).fetchone()
+                        diag.append(f"Same-conn verify: {'FOUND' if same_row else 'NOT FOUND'} — value={same_row['bylaw_name'] if same_row else 'N/A'}")
+
+                        # ── Verify on FRESH connection with explicit path ──
+                        import os as _os
+                        db_exists = _os.path.isfile(DB_PATH)
+                        db_size = _os.path.getsize(DB_PATH) if db_exists else 0
+                        diag.append(f"DB_PATH: {DB_PATH}")
+                        diag.append(f"DB exists: {db_exists}, size: {db_size:,} bytes")
+
+                        verify_conn = sqlite3.connect(DB_PATH)
+                        verify_conn.row_factory = sqlite3.Row
+                        row_count = verify_conn.execute("SELECT COUNT(*) FROM bylaws").fetchone()[0]
                         verify_row = verify_conn.execute(
-                            "SELECT * FROM bylaws WHERE id = ?", (bylaw_id,)
+                            "SELECT bylaw_name FROM bylaws WHERE id = ?", (int(bylaw_id),)
                         ).fetchone()
                         verify_conn.close()
+                        diag.append(f"Fresh-conn: total bylaws={row_count}, target row={'FOUND' if verify_row else 'NOT FOUND'}")
 
-                        if verify_row:
-                            verify_name = verify_row["bylaw_name"]
-                            if verify_name == (new_bylaw_name or None):
-                                st.success(f"✅ Saved & verified {cat_label} for {selected_name}")
-                                st.info(f"DB path: `{DB_PATH}` — Bylaw name in DB: `{verify_name}`")
-                            else:
-                                st.warning(
-                                    f"⚠️ Commit succeeded but verification mismatch!\n\n"
-                                    f"Expected: `{new_bylaw_name}`\n\n"
-                                    f"Got from DB: `{verify_name}`"
-                                )
+                        # Show results
+                        if same_row and total_rows_updated > 0:
+                            st.success(f"✅ Saved {cat_label} for {selected_name}")
                         else:
-                            st.error(f"❌ Could not re-read bylaw ID {bylaw_id} after save!")
+                            st.error("❌ Save did not update any rows!")
 
-                        # Use session state to trigger rerun on next interaction
-                        st.session_state["_save_pending_rerun"] = True
-                        st.info("💡 Click anywhere or interact with the page to refresh the data.")
+                        st.code("\n".join(diag), language="text")
 
                     except Exception as e:
                         import traceback
