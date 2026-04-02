@@ -5,7 +5,9 @@ All Streamlit pages and scripts import from here to interact with bylaws.db.
 """
 
 import os
-import sqlite3
+import psycopg2
+import psycopg2.extras
+import streamlit as st
 import datetime
 import pandas as pd
 
@@ -21,11 +23,30 @@ YES_NO_LOOKUP = {
 }
 
 
-def get_connection(db_path: str = DB_PATH) -> sqlite3.Connection:
-    """Return a SQLite connection with row_factory set."""
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    return conn
+class PgWrapper:
+    def __init__(self, url):
+        self.conn = psycopg2.connect(url)
+        self.conn.autocommit = False
+
+    def execute(self, query, params=tuple()):
+        query = query.replace('[', '"').replace(']', '"')
+        cur = self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        if isinstance(params, list): params = tuple(params)
+        cur.execute(query, params if params else tuple())
+        return cur
+
+    def commit(self):
+        self.conn.commit()
+
+    def close(self):
+        self.conn.close()
+
+    def cursor(self, *args, **kwargs):
+        return self.conn.cursor(*args, **kwargs)
+
+def get_connection(db_path: str = None):
+    url = st.secrets.get("DATABASE_URL", "postgresql://neondb_owner:npg_gjmiS41HEeXB@ep-fancy-resonance-amthrghm.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require")
+    return PgWrapper(url)
 
 
 def resolve_yes_no(val):
@@ -61,10 +82,10 @@ def get_bylaws(conn, municipality_id=None, category=None):
     """
     params = []
     if municipality_id:
-        sql += " AND b.municipality_id = ?"
+        sql += " AND b.municipality_id = %s"
         params.append(municipality_id)
     if category:
-        sql += " AND b.category = ?"
+        sql += " AND b.category = %s"
         params.append(category)
     sql += " ORDER BY b.category"
     return pd.read_sql_query(sql, conn, params=params)
@@ -89,8 +110,8 @@ def get_bylaws_with_details(conn, municipality_id, category):
 
     if detail_table:
         detail_df = pd.read_sql_query(
-            f"SELECT * FROM {detail_table} WHERE bylaw_id = ?",
-            conn, params=[bylaw_id]
+            f"SELECT * FROM {detail_table} WHERE bylaw_id = %s",
+            conn.conn, params=(bylaw_id,)
         )
     else:
         detail_df = pd.DataFrame()
@@ -101,21 +122,21 @@ def get_bylaws_with_details(conn, municipality_id, category):
 def get_contacts(conn, municipality_id):
     """Return contacts for a municipality."""
     return pd.read_sql_query(
-        "SELECT * FROM contacts WHERE municipality_id = ? ORDER BY title",
-        conn, params=[municipality_id]
+        "SELECT * FROM contacts WHERE municipality_id = %s ORDER BY title",
+        conn.conn, params=(municipality_id,)
     )
 
 
 def get_signals(conn, municipality_id=None, days=90):
     """Return recent scanner signals, optionally for one municipality."""
     cutoff = (datetime.datetime.now() - datetime.timedelta(days=days)).strftime("%Y-%m-%d")
-    sql = "SELECT * FROM scanner_signals WHERE discovered_date >= ?"
+    sql = "SELECT * FROM scanner_signals WHERE discovered_date >= %s"
     params = [cutoff]
     if municipality_id:
-        sql += " AND municipality_id = ?"
+        sql += " AND municipality_id = %s"
         params.append(municipality_id)
     sql += " ORDER BY discovered_date DESC"
-    return pd.read_sql_query(sql, conn, params=params)
+    return pd.read_sql_query(sql, conn.conn, params=tuple(params))
 
 
 def get_category_summary(conn, category):
@@ -131,7 +152,7 @@ def get_category_summary(conn, category):
         WHERE b.category = ?
         ORDER BY m.name
     """
-    df = pd.read_sql_query(sql, conn, params=[category])
+    df = pd.read_sql_query(sql, conn.conn, params=(category,))
     # Resolve integer codes to labels
     df['exemption_status'] = df['exemption_status'].apply(resolve_yes_no)
     return df
@@ -149,20 +170,20 @@ def update_record(conn, table, record_id, field, new_value, user='admin'):
     """Update a single field and log the change."""
     # Get old value
     old = conn.execute(
-        f"SELECT [{field}] FROM {table} WHERE id = ?", (record_id,)
+        f'SELECT "{field}" FROM {table} WHERE id = %s', (record_id,)
     ).fetchone()
     old_value = old[0] if old else None
 
     # Update
     conn.execute(
-        f"UPDATE {table} SET [{field}] = ? WHERE id = ?",
+        f'UPDATE {table} SET "{field}" = %s WHERE id = %s',
         (new_value, record_id)
     )
 
     # Audit log
     conn.execute("""
         INSERT INTO audit_log (timestamp, user_name, table_name, record_id, field_name, old_value, new_value)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
     """, (
         datetime.datetime.now().isoformat(),
         user, table, record_id, field,
@@ -175,8 +196,8 @@ def update_record(conn, table, record_id, field, new_value, user='admin'):
 def get_audit_log(conn, limit=50):
     """Return recent audit log entries."""
     return pd.read_sql_query(
-        "SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT ?",
-        conn, params=[limit]
+        "SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT %s",
+        conn.conn, params=(limit,)
     )
 
 
@@ -201,18 +222,18 @@ def get_report_data(conn, scope='provincial', scope_value=None):
             "SELECT * FROM municipalities ORDER BY geographic_area, name", conn)
     elif scope == 'county':
         munis = pd.read_sql_query(
-            "SELECT * FROM municipalities WHERE geographic_area = ? ORDER BY name",
-            conn, params=[scope_value])
+            "SELECT * FROM municipalities WHERE geographic_area = %s ORDER BY name",
+            conn.conn, params=(scope_value,))
     else:
         munis = pd.read_sql_query(
-            "SELECT * FROM municipalities WHERE name = ? ORDER BY name",
-            conn, params=[scope_value])
+            "SELECT * FROM municipalities WHERE name = %s ORDER BY name",
+            conn.conn, params=(scope_value,))
 
     if munis.empty:
         return empty
 
     muni_ids = munis['id'].tolist()
-    ph = ','.join(['?'] * len(muni_ids))
+    ph = ','.join(['%s'] * len(muni_ids))
 
     # 2. Bylaws + exemptions
     bylaws = pd.read_sql_query(f"""
@@ -223,11 +244,11 @@ def get_report_data(conn, scope='provincial', scope_value=None):
         LEFT JOIN municipalities m ON m.id = b.municipality_id
         WHERE b.municipality_id IN ({ph})
         ORDER BY m.name, b.category
-    """, conn, params=muni_ids)
+    """, conn.conn, params=tuple(muni_ids))
 
     # 3. Details for each category
     bylaw_ids = bylaws['id'].tolist() if not bylaws.empty else []
-    bph = ','.join(['?'] * len(bylaw_ids)) if bylaw_ids else '0'
+    bph = ','.join(['%s'] * len(bylaw_ids)) if bylaw_ids else '0'
 
     detail_tables = {
         'DC': 'details_dc', 'STORMWATER': 'details_stormwater',
@@ -240,14 +261,14 @@ def get_report_data(conn, scope='provincial', scope_value=None):
         if bylaw_ids:
             details[cat] = pd.read_sql_query(
                 f"SELECT * FROM {table} WHERE bylaw_id IN ({bph})",
-                conn, params=bylaw_ids)
+                conn.conn, params=tuple(bylaw_ids))
         else:
             details[cat] = pd.DataFrame()
 
     # 4. Contacts
     contacts = pd.read_sql_query(
         f"SELECT * FROM contacts WHERE municipality_id IN ({ph}) ORDER BY municipality_id",
-        conn, params=muni_ids)
+        conn.conn, params=tuple(muni_ids))
 
     # 5. Scanner signals
     signals = pd.read_sql_query(f"""
@@ -256,7 +277,7 @@ def get_report_data(conn, scope='provincial', scope_value=None):
         LEFT JOIN municipalities m ON m.id = s.municipality_id
         WHERE s.municipality_id IN ({ph})
         ORDER BY s.discovered_date DESC
-    """, conn, params=muni_ids)
+    """, conn.conn, params=tuple(muni_ids))
 
     return {
         'municipalities': munis, 'bylaws': bylaws, 'details': details,

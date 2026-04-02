@@ -67,7 +67,7 @@ def _set_db_password_hash(new_hash):
     _ensure_admin_settings_table()
     conn = get_connection()
     conn.execute("""
-        INSERT INTO admin_settings (key, value) VALUES ('password_hash', ?)
+        INSERT INTO admin_settings (key, value) VALUES ('password_hash', %s)
         ON CONFLICT(key) DO UPDATE SET value = excluded.value
     """, (new_hash,))
     conn.commit()
@@ -209,7 +209,7 @@ if admin_mode == "✏️ Edit Municipality":
     selected_name = st.selectbox("Select Municipality", muni_names, key="edit_muni_select")
 
     muni_row = conn.execute(
-        "SELECT * FROM municipalities WHERE name = ?", (selected_name,)
+        "SELECT * FROM municipalities WHERE name = %s", (selected_name,)
     ).fetchone()
 
     if not muni_row:
@@ -259,7 +259,7 @@ if admin_mode == "✏️ Edit Municipality":
                     }
                     for field, value in fields.items():
                         conn.execute(
-                            f"UPDATE municipalities SET [{field}] = ? WHERE id = ?",
+                            f'UPDATE municipalities SET "{field}" = %s WHERE id = %s',
                             (value if value else None, muni_id)
                         )
                     conn.commit()
@@ -441,18 +441,18 @@ if admin_mode == "✏️ Edit Municipality":
                         }
                         for field, value in bylaw_fields.items():
                             conn.execute(
-                                f"UPDATE bylaws SET [{field}] = ? WHERE id = ?",
+                                f'UPDATE bylaws SET "{field}" = %s WHERE id = %s',
                                 (value, int(bylaw_id))
                             )
 
                         # Save exemption
                         exemption_row = conn.execute(
-                            "SELECT id FROM bylaw_exemptions WHERE bylaw_id = ?", (int(bylaw_id),)
+                            "SELECT id FROM bylaw_exemptions WHERE bylaw_id = %s", (int(bylaw_id),)
                         ).fetchone()
                         if exemption_row:
                             ex_id = exemption_row["id"]
                             conn.execute(
-                                "UPDATE bylaw_exemptions SET exemption_status = ?, exemption_wording = ? WHERE id = ?",
+                                "UPDATE bylaw_exemptions SET exemption_status = %s, exemption_wording = %s WHERE id = %s",
                                 (new_exemption or None, new_wording or None, int(ex_id))
                             )
 
@@ -467,7 +467,7 @@ if admin_mode == "✏️ Edit Municipality":
                             }[cat_code]
                             for field, value in detail_updates.items():
                                 conn.execute(
-                                    f"UPDATE {detail_table} SET [{field}] = ? WHERE id = ?",
+                                    f'UPDATE {detail_table} SET "{field}" = %s WHERE id = %s',
                                     (value if value else None, int(detail_id))
                                 )
 
@@ -535,7 +535,7 @@ elif admin_mode == "📤 Bulk Import":
                 for _, row in import_df.iterrows():
                     # Find municipality
                     muni = conn.execute(
-                        "SELECT id FROM municipalities WHERE name = ?",
+                        "SELECT id FROM municipalities WHERE name = %s",
                         (row["municipality_name"],)
                     ).fetchone()
                     if not muni:
@@ -544,7 +544,7 @@ elif admin_mode == "📤 Bulk Import":
 
                     # Find bylaw
                     bylaw = conn.execute(
-                        "SELECT id FROM bylaws WHERE municipality_id = ? AND category = ?",
+                        "SELECT id FROM bylaws WHERE municipality_id = %s AND category = %s",
                         (muni["id"], row["category"])
                     ).fetchone()
                     if not bylaw:
@@ -555,7 +555,7 @@ elif admin_mode == "📤 Bulk Import":
                     field = row["field"]
                     if field in ("exemption_status", "exemption_wording"):
                         ex = conn.execute(
-                            "SELECT id FROM bylaw_exemptions WHERE bylaw_id = ?",
+                            "SELECT id FROM bylaw_exemptions WHERE bylaw_id = %s",
                             (bylaw["id"],)
                         ).fetchone()
                         if ex:
