@@ -1,0 +1,60 @@
+=====================================================
+  MUNICIPAL BYLAW DATABASE — QUICK START GUIDE
+=====================================================
+
+RUNNING THE APP LOCALLY
+-----------------------
+1. Open a terminal / PowerShell
+2. Navigate to the project folder:
+   cd "C:\Users\ben.lefort\OneDrive - Ontario Federation of Agriculture\Desktop\Municipal Bylaw Database\Data Pulls\Reports\Province Wide\All bylaws\county-bylaw-maps"
+3. Run the app:
+   streamlit run app.py
+4. The app opens in your browser at: http://localhost:8501
+
+
+APP PAGES
+---------
+• Home         — Landing page with project overview
+• Lower Tier Map — Interactive map of lower-tier municipalities
+• Upper Tier Map — Interactive map of upper-tier municipalities
+• Data Browser — Search, filter, and export bylaw data
+• Admin        — Password-protected editing interface
+
+
+ADMIN LOGIN
+-----------
+Password:  ofa2026
+
+To change the password:
+1. Open shared_config.py
+2. Generate a new hash:
+   python -c "import hashlib; print(hashlib.sha256(b'YOUR_NEW_PASSWORD').hexdigest())"
+3. Replace the ADMIN_PASSWORD_HASH value with the new hash
+4. Restart the app
+
+
+DATABASE
+--------
+File:     bylaws.db  (SQLite, ~3.5 MB)
+Tables:   17 (municipalities, bylaws, contacts, etc.)
+Records:  444 municipalities × 7 bylaw categories
+
+
+WEEKLY SCANNER
+--------------
+Run:  run_weekly_scan.bat
+This scans municipal websites for bylaw changes and updates signals.
+
+
+KEY FILES
+---------
+app.py                  — Main Streamlit entry point
+bylaws.db               — SQLite database
+shared_config.py        — Keywords, password hash, category config
+db_utils.py             — Database query functions
+db_schema.py            — Database schema definitions
+pages/
+  1_Lower_Tier_Map.py   — Lower-tier municipality map
+  2_Upper_Tier_Map.py   — Upper-tier municipality map
+  3_📋_Data_Browser.py  — Database browser
+  4_🔒_Admin.py         — Admin/edit interface
