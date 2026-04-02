@@ -472,10 +472,36 @@ if admin_mode == "✏️ Edit Municipality":
                                 )
 
                         conn.commit()
-                        st.success(f"✅ Saved {cat_label} for {selected_name}")
-                        st.rerun()
+
+                        # ── Verify the save by re-reading with a fresh connection ──
+                        verify_conn = get_connection(DB_PATH)
+                        verify_row = verify_conn.execute(
+                            "SELECT * FROM bylaws WHERE id = ?", (bylaw_id,)
+                        ).fetchone()
+                        verify_conn.close()
+
+                        if verify_row:
+                            verify_name = verify_row["bylaw_name"]
+                            if verify_name == (new_bylaw_name or None):
+                                st.success(f"✅ Saved & verified {cat_label} for {selected_name}")
+                                st.info(f"DB path: `{DB_PATH}` — Bylaw name in DB: `{verify_name}`")
+                            else:
+                                st.warning(
+                                    f"⚠️ Commit succeeded but verification mismatch!\n\n"
+                                    f"Expected: `{new_bylaw_name}`\n\n"
+                                    f"Got from DB: `{verify_name}`"
+                                )
+                        else:
+                            st.error(f"❌ Could not re-read bylaw ID {bylaw_id} after save!")
+
+                        # Use session state to trigger rerun on next interaction
+                        st.session_state["_save_pending_rerun"] = True
+                        st.info("💡 Click anywhere or interact with the page to refresh the data.")
+
                     except Exception as e:
+                        import traceback
                         st.error(f"❌ Save failed: {e}")
+                        st.code(traceback.format_exc(), language="text")
 
 
 # ═══════════════════════════════════════════════════════════════
