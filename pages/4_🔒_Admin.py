@@ -10,7 +10,7 @@ Features:
 • Bulk CSV import
 """
 
-import os, sys, hashlib, datetime, secrets, smtplib
+import os, sys, hashlib, datetime, secrets, smtplib, sqlite3
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
