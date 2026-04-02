@@ -245,23 +245,28 @@ if admin_mode == "✏️ Edit Municipality":
                 new_phone = st.text_input("Clerk Phone", value=muni_row["clerk_phone"] or "")
 
             if st.form_submit_button("💾 Save Municipality Info"):
-                fields = {
-                    "name": new_name,
-                    "municipal_status": new_status,
-                    "geographic_area": new_area,
-                    "zone": new_zone,
-                    "website": new_website,
-                    "contact_name": new_contact,
-                    "contact_position": new_position,
-                    "clerk_email": new_email,
-                    "clerk_phone": new_phone,
-                }
-                for field, value in fields.items():
-                    old = muni_row[field]
-                    if str(value) != str(old or ""):
-                        update_record(conn, "municipalities", muni_id, field, value)
-                st.success(f"✅ Saved municipality info for {new_name}")
-                st.rerun()
+                try:
+                    fields = {
+                        "name": new_name,
+                        "municipal_status": new_status,
+                        "geographic_area": new_area,
+                        "zone": new_zone,
+                        "website": new_website,
+                        "contact_name": new_contact,
+                        "contact_position": new_position,
+                        "clerk_email": new_email,
+                        "clerk_phone": new_phone,
+                    }
+                    for field, value in fields.items():
+                        conn.execute(
+                            f"UPDATE municipalities SET [{field}] = ? WHERE id = ?",
+                            (value if value else None, muni_id)
+                        )
+                    conn.commit()
+                    st.success(f"✅ Saved municipality info for {new_name}")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Save failed: {e}")
 
     # --- Tabs 1-7: Bylaw categories ---
     EXEMPTION_OPTIONS = ["Yes", "No", "NOT KNOWN", "N/A",
@@ -423,47 +428,54 @@ if admin_mode == "✏️ Edit Municipality":
 
                 # Submit button
                 if st.form_submit_button(f"💾 Save {cat_label}"):
-                    # Save bylaw fields
-                    bylaw_fields = {
-                        "bylaw_name": new_bylaw_name,
-                        "bylaw_link": new_bylaw_link,
-                        "date_enacted": new_enacted,
-                        "expiry_date": new_expiry,
-                        "expiry_notes": new_expiry_notes,
-                        "progress_label": new_progress,
-                        "other_notes": new_other,
-                    }
-                    for field, value in bylaw_fields.items():
-                        old = brow[field]
-                        if str(value or "") != str(old or ""):
-                            update_record(conn, "bylaws", bylaw_id, field, value or None)
+                    try:
+                        # Save bylaw fields — always write all values
+                        bylaw_fields = {
+                            "bylaw_name": new_bylaw_name or None,
+                            "bylaw_link": new_bylaw_link or None,
+                            "date_enacted": new_enacted or None,
+                            "expiry_date": new_expiry or None,
+                            "expiry_notes": new_expiry_notes or None,
+                            "progress_label": new_progress or None,
+                            "other_notes": new_other or None,
+                        }
+                        for field, value in bylaw_fields.items():
+                            conn.execute(
+                                f"UPDATE bylaws SET [{field}] = ? WHERE id = ?",
+                                (value, bylaw_id)
+                            )
 
-                    # Save exemption
-                    exemption_row = conn.execute(
-                        "SELECT * FROM bylaw_exemptions WHERE bylaw_id = ?", (bylaw_id,)
-                    ).fetchone()
-                    if exemption_row:
-                        ex_id = exemption_row["id"]
-                        if new_exemption != resolve_yes_no(exemption_row["exemption_status"]):
-                            update_record(conn, "bylaw_exemptions", ex_id, "exemption_status", new_exemption)
-                        if (new_wording or "") != (exemption_row["exemption_wording"] or ""):
-                            update_record(conn, "bylaw_exemptions", ex_id, "exemption_wording", new_wording or None)
+                        # Save exemption — always write
+                        exemption_row = conn.execute(
+                            "SELECT id FROM bylaw_exemptions WHERE bylaw_id = ?", (bylaw_id,)
+                        ).fetchone()
+                        if exemption_row:
+                            ex_id = exemption_row["id"]
+                            conn.execute(
+                                "UPDATE bylaw_exemptions SET exemption_status = ?, exemption_wording = ? WHERE id = ?",
+                                (new_exemption or None, new_wording or None, ex_id)
+                            )
 
-                    # Save category details
-                    if detail_updates and not detail_df.empty:
-                        detail_id = detail_df.iloc[0]["id"]
-                        detail_table = {
-                            "DC": "details_dc", "STORMWATER": "details_stormwater",
-                            "SITE_ALT": "details_site_alt", "LGD": "details_lgd",
-                            "TREES": "details_trees", "CHICKENS": "details_chickens",
-                            "FENCES": "details_fences",
-                        }[cat_code]
-                        for field, value in detail_updates.items():
-                            if value is not None and value != "":
-                                update_record(conn, detail_table, detail_id, field, value)
+                        # Save category details — always write
+                        if detail_updates and not detail_df.empty:
+                            detail_id = detail_df.iloc[0]["id"]
+                            detail_table = {
+                                "DC": "details_dc", "STORMWATER": "details_stormwater",
+                                "SITE_ALT": "details_site_alt", "LGD": "details_lgd",
+                                "TREES": "details_trees", "CHICKENS": "details_chickens",
+                                "FENCES": "details_fences",
+                            }[cat_code]
+                            for field, value in detail_updates.items():
+                                conn.execute(
+                                    f"UPDATE {detail_table} SET [{field}] = ? WHERE id = ?",
+                                    (value if value else None, detail_id)
+                                )
 
-                    st.success(f"✅ Saved {cat_label} for {selected_name}")
-                    st.rerun()
+                        conn.commit()
+                        st.success(f"✅ Saved {cat_label} for {selected_name}")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Save failed: {e}")
 
 
 # ═══════════════════════════════════════════════════════════════
