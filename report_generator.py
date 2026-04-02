@@ -293,7 +293,8 @@ def _add_executive_summary(doc, data):
         na = statuses.isin(["N/A"]).sum()
         nk = len(statuses) - yes - no - na
         total = len(statuses)
-        cov = f"{yes / total * 100:.0f}%" if total else "—"
+        applicable_total = total - na
+        cov = f"{yes / applicable_total * 100:.0f}%" if applicable_total > 0 else "—"
         rows.append([CATEGORY_NAMES[cat], str(yes), str(no), str(na), str(nk), str(total), cov])
 
     table = _add_table(doc, headers, rows)
@@ -328,11 +329,14 @@ def _add_category_section(doc, data, cat_code):
     statuses = cat_bylaws['exemption_status'].apply(_resolve)
     yes = (statuses == "Yes").sum()
     no = (statuses == "No").sum()
+    na = statuses.isin(["N/A"]).sum()
     total = len(statuses)
-    cov = f"{yes / total * 100:.0f}%" if total else "N/A"
+    applicable_total = total - na
+    cov = f"{yes / applicable_total * 100:.0f}%" if applicable_total > 0 else "N/A"
+    
     doc.add_paragraph(
-        f"Farm exemption coverage: {cov} ({yes} of {total} municipalities). "
-        f"{no} municipalities have no exemption."
+        f"Farm exemption coverage: {cov} ({yes} out of {applicable_total} municipalities with a bylaw). "
+        f"{no} municipalities have no exemption, and {na} do not have this type of bylaw."
     )
 
     if scope == 'provincial':
@@ -361,7 +365,8 @@ def _add_category_provincial(doc, cat_bylaws):
         na = s.isin(["N/A"]).sum()
         nk = len(s) - yes - no - na
         total = len(s)
-        cov = f"{yes / total * 100:.0f}%" if total else "—"
+        applicable_total = total - na
+        cov = f"{yes / applicable_total * 100:.0f}%" if applicable_total > 0 else "—"
         rows.append([county, str(yes), str(no), str(na), str(nk), str(total), cov])
 
     _add_table(doc, headers, rows)
