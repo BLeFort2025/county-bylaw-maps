@@ -35,6 +35,7 @@ class PgWrapper:
 
     def execute(self, query, params=tuple()):
         query = query.replace('[', '"').replace(']', '"')
+        query = query.replace('?', '%s')
         cur = self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         if isinstance(params, list): params = tuple(params)
         cur.execute(query, params if params else tuple())

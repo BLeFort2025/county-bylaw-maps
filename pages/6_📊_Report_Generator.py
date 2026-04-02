@@ -78,7 +78,7 @@ if scope_key == "provincial":
 
 elif scope_key == "county":
     count = conn.execute(
-        "SELECT COUNT(*) FROM municipalities WHERE geographic_area = ?",
+        "SELECT COUNT(*) FROM municipalities WHERE geographic_area = %s",
         (scope_value,),
     ).fetchone()[0]
     st.info(f"**{scope_value}** report covering **{count}** municipalities.")
