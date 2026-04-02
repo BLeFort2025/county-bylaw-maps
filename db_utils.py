@@ -10,6 +10,11 @@ import psycopg2.extras
 import streamlit as st
 import datetime
 import pandas as pd
+import numpy as np
+
+# Register numpy types to make psycopg2 compatible with pandas
+psycopg2.extensions.register_adapter(np.int64, psycopg2.extensions.AsIs)
+psycopg2.extensions.register_adapter(np.float64, psycopg2.extensions.AsIs)
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bylaws.db")
 
@@ -97,7 +102,7 @@ def get_bylaws_with_details(conn, municipality_id, category):
     if bylaw_df.empty:
         return bylaw_df, pd.DataFrame()
 
-    bylaw_id = bylaw_df.iloc[0]['id']
+    bylaw_id = int(bylaw_df.iloc[0]['id'])
     detail_table = {
         'DC': 'details_dc',
         'STORMWATER': 'details_stormwater',
