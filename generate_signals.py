@@ -86,55 +86,64 @@ def generate_signals():
     signals.to_csv(output_path, index=False)
     print(f"SUCCESS: Saved signals to {SIGNALS_FILE}")
 
-    # 5. Sync to SQLite Database for the Streamlit App
+    # 5. Sync to PostgreSQL Database (Neon) for the Streamlit App
     try:
-        import sqlite3
-        db_path = os.path.join(SCRIPT_DIR, "bylaws.db")
-        conn = sqlite3.connect(db_path)
-        
-        # Ensure new AI columns exist
+        import psycopg2
+
+        # Use the same DATABASE_URL as db_utils.py
+        NEON_URL = os.environ.get(
+            "DATABASE_URL",
+            "postgresql://neondb_owner:npg_gjmiS41HEeXB@ep-fancy-resonance-amthrghm.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require"
+        )
+        conn = psycopg2.connect(NEON_URL)
         cursor = conn.cursor()
-        cursor.execute("PRAGMA table_info(scanner_signals)")
-        cols = [r[1] for r in cursor.fetchall()]
-        if 'ai_summary' not in cols:
-            conn.execute("ALTER TABLE scanner_signals ADD COLUMN ai_summary TEXT")
-        if 'ai_confidence' not in cols:
-            conn.execute("ALTER TABLE scanner_signals ADD COLUMN ai_confidence INTEGER")
-            
-        conn.execute("DELETE FROM scanner_signals")
-        
+
+        # Ensure AI columns exist (idempotent — PostgreSQL will error if column exists,
+        # so we catch and move on)
+        for col_def in [
+            ("ai_summary", "TEXT"),
+            ("ai_confidence", "INTEGER"),
+        ]:
+            try:
+                cursor.execute(f"ALTER TABLE scanner_signals ADD COLUMN {col_def[0]} {col_def[1]}")
+                conn.commit()
+            except Exception:
+                conn.rollback()
+
+        cursor.execute("DELETE FROM scanner_signals")
+
         munis = pd.read_sql_query("SELECT id, lookup_key, name FROM municipalities", conn)
         muni_map = dict(zip(munis['lookup_key'], munis['id']))
         name_map = dict(zip(munis['name'], munis['id']))
-        
+
         rows_to_insert = []
         for _, s in signals.iterrows():
             raw_id = str(s.get("munid", ""))
             muni_id = muni_map.get(raw_id)
             if not muni_id:
                 muni_id = name_map.get(raw_id)
-                
+
             ai_sum = str(s.get("ai_summary", ""))
             ai_conf = int(s.get("ai_confidence", 0)) if pd.notna(s.get("ai_confidence")) else 0
-            
+
             rows_to_insert.append((
                 muni_id, raw_id, "scanner_hit", str(s.get("discovered_date", "")),
                 str(s.get("trigger_keyword", "")), str(s.get("category", "")),
                 str(s.get("snippet", "")), ai_sum, ai_conf, str(s.get("evidence_url", ""))
             ))
-            
-        conn.executemany("""
+
+        cursor.executemany("""
             INSERT INTO scanner_signals (
                 municipality_id, munid_raw, signal_type, discovered_date,
                 trigger_keyword, category, snippet, ai_summary, ai_confidence, evidence_url
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, rows_to_insert)
-        
+
         conn.commit()
         conn.close()
-        print(f"SUCCESS: Synchronized {len(rows_to_insert)} signals into SQLite database.")
+        print(f"SUCCESS: Synchronized {len(rows_to_insert)} signals into PostgreSQL database.")
     except Exception as e:
-        print(f"WARNING: Failed to sync to SQLite database: {e}")
+        print(f"WARNING: Failed to sync to PostgreSQL database: {e}")
 
 if __name__ == "__main__":
     generate_signals()

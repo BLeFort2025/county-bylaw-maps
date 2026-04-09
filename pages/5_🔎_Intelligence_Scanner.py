@@ -58,7 +58,7 @@ def load_historical_signals():
         LEFT JOIN municipalities m ON s.municipality_id = m.id
         ORDER BY s.discovered_date DESC
     """
-    df = pd.read_sql_query(query, conn)
+    df = pd.read_sql_query(query, conn.conn)
     conn.close()
     return df
 
@@ -204,13 +204,20 @@ with tab_live:
 with tab_history:
     st.header("Historical Intelligence Insights")
     
-    db_path = os.path.join(ROOT_DIR, "bylaws.db")
+    # Query the database for the most recent signal date
     last_update = "Unknown"
-    if os.path.exists(db_path):
-        import time
-        mtime = os.path.getmtime(db_path)
-        last_update = datetime.datetime.fromtimestamp(mtime).strftime('%B %d, %Y at %I:%M %p')
-        
+    try:
+        sync_conn = get_connection()
+        latest = pd.read_sql_query(
+            "SELECT MAX(discovered_date) as latest FROM scanner_signals",
+            sync_conn.conn
+        )
+        sync_conn.close()
+        if not latest.empty and latest.iloc[0]['latest']:
+            last_update = str(latest.iloc[0]['latest'])
+    except Exception:
+        pass
+
     st.markdown("Query the master database of weekly automated scanner hits. This is the fastest way "
                 "to see comprehensive reporting on established OFA bylaw categories across the province.")
     st.info(f"🤖 **Intelligence Database Last Synced:** {last_update}")
