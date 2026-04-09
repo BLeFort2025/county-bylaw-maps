@@ -173,6 +173,11 @@ def _find_recent_doc_links(listing_url, headers, max_links=3):
             has_doc_keyword = any(w in text.lower() for w in
                                  ["minute", "agenda", "council meeting", "regular meeting"])
 
+            # Skip self-referential loops or folder navigation that isn't a likely document
+            is_self_loop = full_url.lower().rstrip("/") == listing_url.lower().rstrip("/")
+            if is_self_loop:
+                continue
+
             if (is_pdf or is_ashx or is_filestream or has_doc_keyword) and full_url not in seen_urls:
                 # Try to extract a date for sorting
                 date_hint = _extract_date_from_text(text + " " + full_url)
