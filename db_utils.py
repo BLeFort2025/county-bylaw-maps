@@ -155,7 +155,7 @@ def get_category_summary(conn, category):
         FROM municipalities m
         JOIN bylaws b ON b.municipality_id = m.id
         JOIN bylaw_exemptions be ON be.bylaw_id = b.id
-        WHERE b.category = ?
+        WHERE b.category = %s
         ORDER BY m.name
     """
     df = pd.read_sql_query(sql, conn.conn, params=(category,))
@@ -302,7 +302,7 @@ def export_map_dataframe(conn):
     """
     # Build one wide row per municipality — mirroring the Access layout
     rows = []
-    munis = pd.read_sql_query("SELECT * FROM municipalities", conn)
+    munis = pd.read_sql_query("SELECT * FROM municipalities", conn.conn)
 
     for _, m in munis.iterrows():
         mid = m["id"]
@@ -321,8 +321,8 @@ def export_map_dataframe(conn):
             FROM bylaws b
             LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
             LEFT JOIN details_dc d ON d.bylaw_id = b.id
-            WHERE b.municipality_id = ? AND b.category = 'DC'
-        """, conn, params=[mid])
+            WHERE b.municipality_id = %s AND b.category = 'DC'
+        """, conn.conn, params=[mid])
         if not dc.empty:
             d = dc.iloc[0]
             row["Farm Exemption for Development Charges"] = d["exemption_status"]
@@ -339,8 +339,8 @@ def export_map_dataframe(conn):
             FROM bylaws b
             LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
             LEFT JOIN details_stormwater d ON d.bylaw_id = b.id
-            WHERE b.municipality_id = ? AND b.category = 'STORMWATER'
-        """, conn, params=[mid])
+            WHERE b.municipality_id = %s AND b.category = 'STORMWATER'
+        """, conn.conn, params=[mid])
         if not sw.empty:
             d = sw.iloc[0]
             row["Farm Exemption for Stormwater Charges"] = d["exemption_status"]
@@ -357,8 +357,8 @@ def export_map_dataframe(conn):
             FROM bylaws b
             LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
             LEFT JOIN details_site_alt d ON d.bylaw_id = b.id
-            WHERE b.municipality_id = ? AND b.category = 'SITE_ALT'
-        """, conn, params=[mid])
+            WHERE b.municipality_id = %s AND b.category = 'SITE_ALT'
+        """, conn.conn, params=[mid])
         if not sa.empty:
             d = sa.iloc[0]
             row["Farm Exemption for SA"]      = d["exemption_status"]
@@ -375,8 +375,8 @@ def export_map_dataframe(conn):
             FROM bylaws b
             LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
             LEFT JOIN details_lgd d ON d.bylaw_id = b.id
-            WHERE b.municipality_id = ? AND b.category = 'LGD'
-        """, conn, params=[mid])
+            WHERE b.municipality_id = %s AND b.category = 'LGD'
+        """, conn.conn, params=[mid])
         if not lgd.empty:
             d = lgd.iloc[0]
             row["Has Livestock Guardian dog Definition"] = d.get("has_lgd_definition", "")
@@ -398,8 +398,8 @@ def export_map_dataframe(conn):
             FROM bylaws b
             LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
             LEFT JOIN details_trees d ON d.bylaw_id = b.id
-            WHERE b.municipality_id = ? AND b.category = 'TREES'
-        """, conn, params=[mid])
+            WHERE b.municipality_id = %s AND b.category = 'TREES'
+        """, conn.conn, params=[mid])
         if not trees.empty:
             d = trees.iloc[0]
             row["Farm Exemption - Tree Cutting Bylaw"] = d["exemption_status"]
@@ -415,8 +415,8 @@ def export_map_dataframe(conn):
             FROM bylaws b
             LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
             LEFT JOIN details_chickens d ON d.bylaw_id = b.id
-            WHERE b.municipality_id = ? AND b.category = 'CHICKENS'
-        """, conn, params=[mid])
+            WHERE b.municipality_id = %s AND b.category = 'CHICKENS'
+        """, conn.conn, params=[mid])
         if not chk.empty:
             d = chk.iloc[0]
             row["Can you Keep Backyard Chickens"] = d.get("can_keep", "")
@@ -434,8 +434,8 @@ def export_map_dataframe(conn):
             FROM bylaws b
             LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
             LEFT JOIN details_fences d ON d.bylaw_id = b.id
-            WHERE b.municipality_id = ? AND b.category = 'FENCES'
-        """, conn, params=[mid])
+            WHERE b.municipality_id = %s AND b.category = 'FENCES'
+        """, conn.conn, params=[mid])
         if not fen.empty:
             d = fen.iloc[0]
             row["Municipality Has Fence Bylaw"] = d.get("has_fence_bylaw", "")
