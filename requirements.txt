@@ -8,3 +8,5 @@ fiona
 openpyxl
 python-docx
 psycopg2-binary
+pdfplumber
+requests
