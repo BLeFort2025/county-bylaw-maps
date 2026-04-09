@@ -417,9 +417,16 @@ with tab_health:
         st.warning(f"⚠️ {len(stale_df)} municipalities have stale portals and require investigation.")
         
         # Clean up presentation
-        stale_df["Days Stale"] = stale_df["example_recent_minutes_date"].apply(
-            lambda x: (datetime.date.today() - datetime.date.fromisoformat(x)).days if x != "2000-01-01" else "Unknown"
-        )
+        def safe_days_stale(date_str):
+            if date_str == "2000-01-01":
+                return "Unknown"
+            try:
+                d = datetime.date.fromisoformat(str(date_str)[:10])
+                return (datetime.date.today() - d).days
+            except Exception:
+                return "Invalid Data"
+                
+        stale_df["Days Stale"] = stale_df["example_recent_minutes_date"].apply(safe_days_stale)
         stale_df["Last Document Date"] = stale_df['example_recent_minutes_date'].replace("2000-01-01", "Never Scraped")
         
         display_stale = stale_df[["municipality_name", "tier", "portal_type", "Last Document Date", "Days Stale", "minutes_listing_url"]].sort_values("Last Document Date")
