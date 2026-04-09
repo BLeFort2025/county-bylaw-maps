@@ -3,6 +3,10 @@ echo ==========================================
 echo      STARTING WEEKLY INTELLIGENCE SCAN
 echo ==========================================
 
+:: 0. REFRESH REGISTRY URLS (for JS-heavy portals like eScribe)
+echo [0/5] Refreshing portal registry URLs for JS-heavy portals...
+python refresh_registry.py
+
 :: 1. CLEAN SWEEP
 echo [1/5] Cleaning up old data files...
 if exist signals\candidates_*.csv del signals\candidates_*.csv

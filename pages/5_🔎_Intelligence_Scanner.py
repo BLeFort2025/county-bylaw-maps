@@ -132,7 +132,11 @@ def _extract_date_from_text(text):
 
 
 def _find_recent_doc_links(listing_url, headers, max_links=3):
-    """Spider a listing page to find the most recent document links."""
+    """Spider a listing page to find the most recent document links.
+
+    Includes special handling for CivicWeb portals which organize
+    documents in nested folder structures (filepro/documents/{id}).
+    """
     if not BS4_SUPPORT:
         return []
 
@@ -144,6 +148,13 @@ def _find_recent_doc_links(listing_url, headers, max_links=3):
         soup = BeautifulSoup(resp.text, "html.parser")
         links = soup.find_all("a", href=True)
 
+        # ── CivicWeb special handling ──
+        # CivicWeb portals have filepro/documents/ folder trees.
+        # Strategy: find "Minutes" folder → latest year folder → grab files
+        if "civicweb.net" in listing_url:
+            return _spider_civicweb(listing_url, soup, headers, max_links)
+
+        # ── General-purpose spider for custom HTML sites ──
         candidates = []
         seen_urls = set()
         for link in links:
@@ -158,10 +169,11 @@ def _find_recent_doc_links(listing_url, headers, max_links=3):
             # Identify document links
             is_pdf = full_url.lower().endswith(".pdf")
             is_ashx = "View.ashx" in full_url or "FileStream" in full_url
+            is_filestream = "filestream" in full_url.lower()
             has_doc_keyword = any(w in text.lower() for w in
                                  ["minute", "agenda", "council meeting", "regular meeting"])
 
-            if (is_pdf or is_ashx or has_doc_keyword) and full_url not in seen_urls:
+            if (is_pdf or is_ashx or is_filestream or has_doc_keyword) and full_url not in seen_urls:
                 # Try to extract a date for sorting
                 date_hint = _extract_date_from_text(text + " " + full_url)
                 candidates.append((full_url, text[:80], date_hint))
@@ -176,6 +188,86 @@ def _find_recent_doc_links(listing_url, headers, max_links=3):
 
         # Return just the URLs, limited to top N
         return [url for url, _, _ in sorted_candidates[:max_links]]
+
+    except Exception:
+        return []
+
+
+def _spider_civicweb(base_url, soup, headers, max_links=3):
+    """Navigate CivicWeb filepro folder hierarchy to find recent documents.
+
+    CivicWeb structure:
+      /filepro/documents/{id}  (root or Portal page)
+        → Minutes folder (or Agendas)
+          → Year folders (2026, 2025, ...)
+            → FileStream download links (actual documents)
+    """
+    try:
+        links = soup.find_all("a", href=True)
+
+        # Step 1: If we're on a Portal page, find the documents/filepro link
+        doc_folder_url = None
+        for link in links:
+            href = link["href"]
+            text = link.get_text().strip().lower()
+            full = urllib.parse.urljoin(base_url, href)
+            if "filepro/documents" in href and ("minute" in text or "agenda" in text):
+                doc_folder_url = full
+                break
+
+        # If we didn't find a specific minutes folder, check if we're already in filepro
+        if not doc_folder_url and "filepro/documents" in base_url:
+            doc_folder_url = base_url
+
+        if not doc_folder_url:
+            return []
+
+        # Step 2: Load the folder and look for year subfolders or files
+        if doc_folder_url != base_url:
+            resp2 = requests.get(doc_folder_url, headers=headers, timeout=12, verify=False)
+            if resp2.status_code != 200:
+                return []
+            soup2 = BeautifulSoup(resp2.text, "html.parser")
+        else:
+            soup2 = soup
+
+        # Collect files (filestream) and year folders
+        files = []
+        year_folders = []
+        for link in soup2.find_all("a", href=True):
+            href = link["href"]
+            text = link.get_text().strip()
+            full = urllib.parse.urljoin(doc_folder_url, href)
+
+            if "filestream" in href.lower():
+                date_hint = _extract_date_from_text(text + " " + full)
+                files.append((full, text, date_hint))
+            elif "filepro/documents" in href and text.strip().isdigit() and len(text.strip()) == 4:
+                year_folders.append((full, int(text.strip())))
+
+        # Step 3: If we found year folders, go into the most recent one
+        if year_folders and not files:
+            year_folders.sort(key=lambda x: x[1], reverse=True)
+            latest_year_url = year_folders[0][0]
+            resp3 = requests.get(latest_year_url, headers=headers, timeout=12, verify=False)
+            if resp3.status_code == 200:
+                soup3 = BeautifulSoup(resp3.text, "html.parser")
+                for link in soup3.find_all("a", href=True):
+                    href = link["href"]
+                    text = link.get_text().strip()
+                    full = urllib.parse.urljoin(latest_year_url, href)
+                    if "filestream" in href.lower():
+                        date_hint = _extract_date_from_text(text + " " + full)
+                        files.append((full, text, date_hint))
+
+        # Sort by date (newest first)
+        dated = [(u, t, d) for u, t, d in files if d is not None]
+        undated = [(u, t, d) for u, t, d in files if d is None]
+        dated.sort(key=lambda x: x[2], reverse=True)
+
+        # For undated CivicWeb files, reverse the list (newest typically at top)
+        all_sorted = dated + undated
+        return [url for url, _, _ in all_sorted[:max_links]]
 
     except Exception:
         return []
