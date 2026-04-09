@@ -274,22 +274,35 @@ def _spider_civicweb(base_url, soup, headers, max_links=3):
 
 
 def _fetch_and_extract_text(url, headers):
-    """Download a URL and extract its text content (HTML or PDF)."""
+    """Download a URL and extract its text content (HTML or PDF).
+
+    For HTML pages, strips tags and returns only visible body text
+    to avoid false matches on navigation, headers, and scripts.
+    Returns a tuple of (text_content, is_pdf).
+    """
     try:
         response = requests.get(url, headers=headers, timeout=12, verify=False)
         if response.status_code != 200:
-            return ""
+            return "", False
 
         content_type = response.headers.get('Content-Type', '').lower()
 
         if 'pdf' in content_type or url.lower().endswith('.pdf'):
             if PDF_SUPPORT:
-                return extract_text_from_pdf(response.content)
-            return ""
+                return extract_text_from_pdf(response.content), True
+            return "", True
         else:
-            return response.text
+            # Strip HTML to get only visible text content
+            if BS4_SUPPORT:
+                soup = BeautifulSoup(response.text, "html.parser")
+                # Remove script and style elements
+                for tag in soup(["script", "style", "nav", "header", "footer"]):
+                    tag.decompose()
+                text = soup.get_text(separator=" ", strip=True)
+                return text, False
+            return response.text, False
     except Exception:
-        return ""
+        return "", False
 
 
 def run_live_scan(registry_subset, custom_keyword):
@@ -321,22 +334,35 @@ def run_live_scan(registry_subset, custom_keyword):
         status_text.text(f"Scanning {name} ({i+1}/{total})...")
         progress_bar.progress((i + 1) / total)
 
-        # Step 1: Spider the listing page for recent documents
+        # Normalize URLs for comparison
+        listing_clean = str(listing_url).strip().rstrip("/") if listing_url and not pd.isna(listing_url) else ""
+        fallback_clean = str(fallback_url).strip().rstrip("/") if fallback_url and not pd.isna(fallback_url) else ""
+
+        # Step 1: Spider the listing page for recent document links
         urls_to_scan = []
-        if listing_url and not pd.isna(listing_url) and str(listing_url).strip():
-            urls_to_scan = _find_recent_doc_links(str(listing_url).strip(), headers, max_links=3)
+        found_real_docs = False
+        if listing_clean:
+            urls_to_scan = _find_recent_doc_links(listing_clean, headers, max_links=3)
+            if urls_to_scan:
+                found_real_docs = True
 
         # Step 2: Fall back to the hardcoded example URL if spidering found nothing
-        if not urls_to_scan:
-            if fallback_url and not pd.isna(fallback_url) and str(fallback_url).strip():
-                urls_to_scan = [str(fallback_url).strip()]
+        if not urls_to_scan and fallback_clean:
+            urls_to_scan = [fallback_clean]
 
         if not urls_to_scan:
             continue
 
         # Step 3: Scan each document for the keyword
         for url in urls_to_scan:
-            text_content = _fetch_and_extract_text(url, headers)
+            text_content, is_pdf = _fetch_and_extract_text(url, headers)
+
+            # Skip HTML portal/listing pages — they produce false positives.
+            # Only trust keyword matches from actual documents (PDFs) or
+            # from document-specific pages found by the spider.
+            if not is_pdf and not found_real_docs:
+                # This URL is likely just a portal landing page, skip it
+                continue
 
             if kw_lower in text_content.lower():
                 snippet = extract_snippet(text_content, custom_keyword, window=200)
