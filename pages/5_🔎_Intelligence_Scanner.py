@@ -5,6 +5,7 @@ import io
 import time
 import requests
 import urllib3
+import urllib.parse
 
 import streamlit as st
 import pandas as pd
@@ -72,72 +73,190 @@ def load_registry():
 
 # --- Live Scanner Logic ---
 
+try:
+    from bs4 import BeautifulSoup
+    BS4_SUPPORT = True
+except ImportError:
+    BS4_SUPPORT = False
+
 def extract_text_from_pdf(pdf_bytes):
     text = ""
     try:
         with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
-            for page in pdf.pages:
+            for page in pdf.pages[:30]:  # Limit pages for speed
                 page_text = page.extract_text()
                 if page_text:
-                    text += page_text + "\\n"
+                    text += page_text + "\n"
     except Exception as e:
         return f"[PDF Error: {e}]"
     return text
 
+
+def _extract_date_from_text(text):
+    """Try to extract a date from link text or URL for sorting by recency."""
+    import re
+    text = text.lower()
+    # Match patterns like "march 19, 2026", "2026-03-19", "march-19-2026"
+    months = {
+        'january': 1, 'february': 2, 'march': 3, 'april': 4,
+        'may': 5, 'june': 6, 'july': 7, 'august': 8,
+        'september': 9, 'october': 10, 'november': 11, 'december': 12
+    }
+
+    # "March 19, 2026" or "March 19 2026"
+    for m_name, m_num in months.items():
+        match = re.search(rf'{m_name}\s+(\d{{1,2}}),?\s*(\d{{4}})', text)
+        if match:
+            try:
+                return datetime.date(int(match.group(2)), m_num, int(match.group(1)))
+            except ValueError:
+                pass
+
+    # ISO-style "2026-03-19" or in URL paths "2026/03"
+    match = re.search(r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})', text)
+    if match:
+        try:
+            return datetime.date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
+        except ValueError:
+            pass
+
+    # Partial: "2026/03" (year/month only)
+    match = re.search(r'(\d{4})[-/](\d{1,2})', text)
+    if match:
+        try:
+            return datetime.date(int(match.group(1)), int(match.group(2)), 1)
+        except ValueError:
+            pass
+
+    return None
+
+
+def _find_recent_doc_links(listing_url, headers, max_links=3):
+    """Spider a listing page to find the most recent document links."""
+    if not BS4_SUPPORT:
+        return []
+
+    try:
+        resp = requests.get(listing_url, headers=headers, timeout=12, verify=False)
+        if resp.status_code != 200:
+            return []
+
+        soup = BeautifulSoup(resp.text, "html.parser")
+        links = soup.find_all("a", href=True)
+
+        candidates = []
+        seen_urls = set()
+        for link in links:
+            href = link["href"]
+            text = link.get_text().strip()
+            full_url = urllib.parse.urljoin(listing_url, href)
+
+            # Skip javascript links, anchors, and non-document links
+            if href.startswith("javascript:") or href == "#":
+                continue
+
+            # Identify document links
+            is_pdf = full_url.lower().endswith(".pdf")
+            is_ashx = "View.ashx" in full_url or "FileStream" in full_url
+            has_doc_keyword = any(w in text.lower() for w in
+                                 ["minute", "agenda", "council meeting", "regular meeting"])
+
+            if (is_pdf or is_ashx or has_doc_keyword) and full_url not in seen_urls:
+                # Try to extract a date for sorting
+                date_hint = _extract_date_from_text(text + " " + full_url)
+                candidates.append((full_url, text[:80], date_hint))
+                seen_urls.add(full_url)
+
+        # Sort: dated links first (newest first), then undated
+        dated = [(u, t, d) for u, t, d in candidates if d is not None]
+        undated = [(u, t, d) for u, t, d in candidates if d is None]
+        dated.sort(key=lambda x: x[2], reverse=True)
+
+        sorted_candidates = dated + undated
+
+        # Return just the URLs, limited to top N
+        return [url for url, _, _ in sorted_candidates[:max_links]]
+
+    except Exception:
+        return []
+
+
+def _fetch_and_extract_text(url, headers):
+    """Download a URL and extract its text content (HTML or PDF)."""
+    try:
+        response = requests.get(url, headers=headers, timeout=12, verify=False)
+        if response.status_code != 200:
+            return ""
+
+        content_type = response.headers.get('Content-Type', '').lower()
+
+        if 'pdf' in content_type or url.lower().endswith('.pdf'):
+            if PDF_SUPPORT:
+                return extract_text_from_pdf(response.content)
+            return ""
+        else:
+            return response.text
+    except Exception:
+        return ""
+
+
 def run_live_scan(registry_subset, custom_keyword):
-    """Executes a live HTTP/PDF scan over a subset of municipalities."""
+    """Executes a live HTTP/PDF scan over a subset of municipalities.
+
+    For each municipality:
+      1. Spider the listing page to find recent documents
+      2. Scan the top 3 most recent documents for the keyword
+      3. Fall back to the hardcoded example URL if spidering finds nothing
+    """
     results = []
-    
+
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
                       'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
-    
+
     progress_bar = st.progress(0)
     status_text = st.empty()
-    
+
     total = len(registry_subset)
     kw_lower = custom_keyword.lower()
-    
+
     for i, row in registry_subset.reset_index(drop=True).iterrows():
         name = row.get('municipality_name', 'Unknown')
-        url = row.get('example_recent_minutes_url', None)
-        
+        listing_url = row.get('minutes_listing_url', None)
+        fallback_url = row.get('example_recent_minutes_url', None)
+
         status_text.text(f"Scanning {name} ({i+1}/{total})...")
         progress_bar.progress((i + 1) / total)
-        
-        if pd.isna(url) or not str(url).strip():
+
+        # Step 1: Spider the listing page for recent documents
+        urls_to_scan = []
+        if listing_url and not pd.isna(listing_url) and str(listing_url).strip():
+            urls_to_scan = _find_recent_doc_links(str(listing_url).strip(), headers, max_links=3)
+
+        # Step 2: Fall back to the hardcoded example URL if spidering found nothing
+        if not urls_to_scan:
+            if fallback_url and not pd.isna(fallback_url) and str(fallback_url).strip():
+                urls_to_scan = [str(fallback_url).strip()]
+
+        if not urls_to_scan:
             continue
-            
-        try:
-            # 10s timeout to keep UI responsive
-            response = requests.get(url, headers=headers, timeout=10, verify=False)
-            if response.status_code == 200:
-                content_type = response.headers.get('Content-Type', '').lower()
-                text_content = ""
-                
-                # Extract text
-                if 'pdf' in content_type or str(url).lower().endswith('.pdf'):
-                    if PDF_SUPPORT:
-                        text_content = extract_text_from_pdf(response.content)
-                else:
-                    text_content = response.text
-                
-                # Check Keyword
-                if kw_lower in text_content.lower():
-                    # Extract 200-char context window mapping against exact casing
-                    snippet = extract_snippet(text_content, custom_keyword, window=200)
-                    results.append({
-                        "Municipality": name,
-                        "Date Scanned": datetime.date.today().isoformat(),
-                        "Keyword Found": custom_keyword,
-                        "Context Snippet": snippet,
-                        "Source URL": url
-                    })
-        except Exception as e:
-            # Skip on timeout/SSL error during live scans
-            pass
-            
+
+        # Step 3: Scan each document for the keyword
+        for url in urls_to_scan:
+            text_content = _fetch_and_extract_text(url, headers)
+
+            if kw_lower in text_content.lower():
+                snippet = extract_snippet(text_content, custom_keyword, window=200)
+                results.append({
+                    "Municipality": name,
+                    "Date Scanned": datetime.date.today().isoformat(),
+                    "Keyword Found": custom_keyword,
+                    "Context Snippet": snippet,
+                    "Source URL": url
+                })
+                break  # One hit per municipality is enough
+
     status_text.text("Scan Complete!")
     progress_bar.empty()
     return pd.DataFrame(results)
