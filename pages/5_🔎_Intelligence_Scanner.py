@@ -386,10 +386,60 @@ def run_live_scan(registry_subset, custom_keyword):
 
 # --- UI Layout ---
 
-tab_live, tab_history = st.tabs(["🚀 Live Target Scanner", "📂 Historical Intelligence Database"])
+tab_live, tab_history, tab_health = st.tabs(["🚀 Live Target Scanner", "📂 Historical Intelligence Database", "🩺 Portal Health Monitor"])
 
 # ──────────────────────────────────────────────────────────────────
-# TAB 1: Live Target Scanner
+# TAB 3: PORTAL HEALTH MONITOR
+# ──────────────────────────────────────────────────────────────────
+with tab_health:
+    st.markdown("### 🩺 Portal Health Monitor")
+    st.markdown("""
+    This monitor identifies municipalities that **have not published a readable document in the last 60 days**. 
+    If a municipality is listed here, they have likely either:
+    1. Changed their website portal completely (e.g., migrated to eScribe)
+    2. Stopped uploading documents and switched to Video-only (YouTube)
+    3. Experienced a broken link on their homepage
+    
+    **Action Required:** Locate their new Agendas & Minutes portal online and update the `minutes_listing_url` in your database.
+    """)
+    
+    registry_df = pd.read_csv("signals/portal_registry.csv")
+    cutoff_date = (datetime.date.today() - datetime.timedelta(days=60)).isoformat()
+    
+    # Fill missing dates with a very old date so they show up as stale
+    registry_df["example_recent_minutes_date"] = registry_df["example_recent_minutes_date"].fillna("2000-01-01")
+    
+    stale_df = registry_df[registry_df["example_recent_minutes_date"] < cutoff_date].copy()
+    
+    if stale_df.empty:
+        st.success("✅ All 444 municipal portals are healthy and reporting recent documents!")
+    else:
+        st.warning(f"⚠️ {len(stale_df)} municipalities have stale portals and require investigation.")
+        
+        # Clean up presentation
+        stale_df["Days Stale"] = stale_df["example_recent_minutes_date"].apply(
+            lambda x: (datetime.date.today() - datetime.date.fromisoformat(x)).days if x != "2000-01-01" else "Unknown"
+        )
+        stale_df["Last Document Date"] = stale_df['example_recent_minutes_date'].replace("2000-01-01", "Never Scraped")
+        
+        display_stale = stale_df[["municipality_name", "tier", "portal_type", "Last Document Date", "Days Stale", "minutes_listing_url"]].sort_values("Last Document Date")
+        
+        st.dataframe(
+            display_stale,
+            use_container_width=True,
+            column_config={
+                "municipality_name": "Municipality",
+                "tier": "Tier",
+                "portal_type": "Tech Stack",
+                "Last Document Date": "Latest Doc Date",
+                "Days Stale": "Days Stale",
+                "minutes_listing_url": st.column_config.LinkColumn("Current Registered Portal URL", max_chars=100)
+            },
+            hide_index=True
+        )
+
+# ──────────────────────────────────────────────────────────────────
+# TAB 1: LIVE TARGET SCANNER
 # ──────────────────────────────────────────────────────────────────
 with tab_live:
     st.header("Live Target Scanner")
