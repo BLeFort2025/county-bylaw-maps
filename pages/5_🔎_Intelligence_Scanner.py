@@ -188,7 +188,17 @@ with tab_live:
                     st.info("No matches found for the specified keyword in the selected municipalities.")
                 else:
                     st.success(f"Found {len(live_results)} matches!")
-                    st.dataframe(live_results, use_container_width=True, hide_index=True)
+                    st.dataframe(
+                        live_results,
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            "Source URL": st.column_config.LinkColumn(
+                                "Source URL",
+                                display_text="🔗 Open Document"
+                            )
+                        }
+                    )
                     
                     csv = live_results.to_csv(index=False).encode('utf-8')
                     st.download_button(
@@ -274,7 +284,17 @@ with tab_history:
         # Ensure all requested columns actually exist
         display_cols = [c for c in display_cols if c in filtered_df.columns]
         
-        st.dataframe(filtered_df[display_cols], use_container_width=True, hide_index=True)
+        st.dataframe(
+            filtered_df[display_cols],
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "evidence_url": st.column_config.LinkColumn(
+                    "Evidence URL",
+                    display_text="🔗 Open Document"
+                )
+            }
+        )
         
         if not filtered_df.empty:
             csv_hist = filtered_df.to_csv(index=False).encode('utf-8')
