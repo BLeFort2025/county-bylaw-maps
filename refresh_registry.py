@@ -99,6 +99,20 @@ def find_latest_document(driver, listing_url):
             if result:
                 return result
 
+        # ── Strategy 4: Laserfiche folder navigation ──
+        iframes = soup.find_all("iframe")
+        for iframe in iframes:
+            src = iframe.get("src", "")
+            if src and "laserfiche" in src.lower() or "weblink" in src.lower():
+                result = _navigate_laserfiche(driver, urllib.parse.urljoin(listing_url, src))
+                if result:
+                    return result
+        # Also check if the URL itself is already Laserfiche
+        if "weblink/browse.aspx" in listing_url.lower():
+            result = _navigate_laserfiche(driver, listing_url)
+            if result:
+                return result
+
         return None
 
     except Exception as e:
@@ -204,6 +218,106 @@ def _navigate_civicweb(driver, soup, base_url):
 
     except Exception:
         pass
+    return None
+
+
+def _navigate_laserfiche(driver, base_url):
+    """Navigate Laserfiche WebLink folders to find the latest PDF.
+    Transforms DocView.aspx links into ElectronicFile.aspx PDF downloads.
+    """
+    try:
+        driver.get(base_url)
+        time.sleep(5)
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+
+        # Step 1: Look for Council / Minutes folder
+        council_url = None
+        for link in soup.find_all("a", href=True):
+            href = link["href"]
+            text = link.get_text().strip().lower()
+            if "browse.aspx" in href.lower() and ("council" in text or "minute" in text):
+                council_url = urllib.parse.urljoin(base_url, href)
+                break
+        
+        if not council_url and "browse.aspx" in base_url.lower():
+            council_url = base_url
+
+        if council_url:
+            driver.get(council_url)
+            time.sleep(4)
+            soup = BeautifulSoup(driver.page_source, "html.parser")
+
+            # Step 2: Find the most recent year folder
+            year_folders = []
+            for link in soup.find_all("a", href=True):
+                text = link.get_text().strip()
+                href = link["href"]
+                if "browse.aspx" in href.lower() and text.isdigit() and len(text) == 4:
+                    year_folders.append((urllib.parse.urljoin(council_url, href), int(text)))
+            
+            if year_folders:
+                year_folders.sort(key=lambda x: x[1], reverse=True)
+                latest_year_url = year_folders[0][0]
+                driver.get(latest_year_url)
+                time.sleep(4)
+                soup = BeautifulSoup(driver.page_source, "html.parser")
+
+                # Step 3: Find highest numbered month/date folder
+                date_folders = []
+                for link in soup.find_all("a", href=True):
+                    text = link.get_text().strip()
+                    href = link["href"]
+                    # Usually "12 December" or "12", so try to extract leading number
+                    if "browse.aspx" in href.lower() and text:
+                        match = re.match(r"^(\d+)", text)
+                        if match:
+                            date_folders.append((urllib.parse.urljoin(latest_year_url, href), int(match.group(1))))
+                
+                if date_folders:
+                    date_folders.sort(key=lambda x: x[1], reverse=True)
+                    latest_date_url = date_folders[0][0]
+                    driver.get(latest_date_url)
+                    time.sleep(4)
+                    soup = BeautifulSoup(driver.page_source, "html.parser")
+            
+            # Step 4: Now find DocView links
+            doc_links = []
+            for link in soup.find_all("a", href=True):
+                href = link["href"]
+                text = link.get_text().strip().lower()
+                if "docview.aspx" in href.lower() and ("council" in text or "minute" in text or "agenda" in text):
+                    doc_links.append(urllib.parse.urljoin(driver.current_url, href))
+            
+            # Fallback to any DocView link if none specify council/minutes
+            if not doc_links:
+                for link in soup.find_all("a", href=True):
+                    if "docview.aspx" in link["href"].lower():
+                        doc_links.append(urllib.parse.urljoin(driver.current_url, link["href"]))
+
+            if doc_links:
+                # Convert DocView.aspx to ElectronicFile.aspx direct PDF link
+                selected = doc_links[0]
+                return selected.replace("DocView.aspx", "ElectronicFile.aspx").replace("docid=", "id=") # Some laserfiche use id= some docid=
+                # Actually ElectronicFile uses docid= but DocView uses id=, so let's do safe replace
+                
+                # Best way is to construct the new URL manually
+                parsed = urllib.parse.urlparse(selected)
+                query = urllib.parse.parse_qs(parsed.query)
+                doc_id = query.get("id", [""])[0]
+                repo = query.get("repo", [""])[0]
+                dbid = query.get("dbid", ["0"])[0]
+                
+                new_query = urllib.parse.urlencode({
+                    "docid": doc_id,
+                    "dbid": dbid,
+                    "repo": repo
+                })
+                # Construct path
+                new_path = parsed.path.replace("DocView.aspx", "ElectronicFile.aspx")
+                return urllib.parse.urlunparse((parsed.scheme, parsed.netloc, new_path, "", new_query, ""))
+                
+    except Exception as e:
+        print(f" Laserfiche error: {e}")
     return None
 
 
@@ -313,10 +427,10 @@ def main():
                 df.at[idx, "example_recent_minutes_url"] = new_url
                 df.at[idx, "example_recent_minutes_date"] = datetime.date.today().isoformat()
                 updated += 1
-                print(f"✅")
+                print("OK")
             else:
                 failed += 1
-                print(f"⚠️ no doc found")
+                print("-- no doc found")
 
     except KeyboardInterrupt:
         print("\nInterrupted by user.")
@@ -327,7 +441,7 @@ def main():
     if updated > 0:
         df.to_csv(REGISTRY_PATH, index=False)
         print(f"\n{'='*50}")
-        print(f"✅ Updated {updated} URLs ({failed} failed)")
+        print(f"DONE: Updated {updated} URLs ({failed} failed)")
         print(f"   Registry saved to {REGISTRY_PATH}")
     else:
         print(f"\nNo URLs were updated ({failed} failed).")
