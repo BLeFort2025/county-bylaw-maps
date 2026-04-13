@@ -231,13 +231,15 @@ if muni_names:
                     if brow["bylaw_link"]:
                         st.markdown(f"[🔗 View Bylaw]({brow['bylaw_link']})")
 
-                if brow["exemption_wording"]:
+                wording = brow["exemption_wording"]
+                if pd.notna(wording) and str(wording).strip():
                     st.markdown("**Exemption Wording:**")
-                    st.info(brow["exemption_wording"][:500])
+                    st.info(str(wording)[:500])
 
-                if brow["other_notes"]:
+                notes = brow["other_notes"]
+                if pd.notna(notes) and str(notes).strip():
                     st.markdown("**Notes:**")
-                    st.caption(brow["other_notes"][:300])
+                    st.caption(str(notes)[:300])
 
                 # Category-specific details
                 _, detail_df = get_bylaws_with_details(conn, muni_id, cat)
