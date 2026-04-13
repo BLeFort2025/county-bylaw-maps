@@ -1,0 +1,448 @@
+munid,name,scan_date,status,error,target_url
+ADDINGTON HIGHLANDS TP,ADDINGTON HIGHLANDS,2026-04-09,scanned_pdf,,https://addingtonhighlands.civicweb.net/document/79653
+ADELAIDE METCALFE TP,ADELAIDE METCALFE,2026-04-09,scanned_pdf,,https://www.adelaidemetcalfe.on.ca/sites/default/files/2025-08/Venfor%20-%20Minutes%20-%20June%2016%202025.pdf
+ADJALA TOSORONTIO TP,ADJALA TOSORONTIO,2026-04-09,scanned_pdf,,https://adjala-tosorontio.civicweb.net/document/62292/
+ADMASTON BROMLEY TP,ADMASTON BROMLEY,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202561D26D0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+AJAX TP,AJAX,2026-04-09,scanned_html,,https://events.ajax.ca/Meetings/Detail/2025-09-15-1300-Council-Meeting
+ALBERTON TP,ALBERTON,2026-04-09,scanned_pdf,,https://alberton.ca/wp-content/uploads/2026/03/March-19-2026-Agenda.pdf
+ALFRED AND PLANTAGENET TP,ALFRED AND PLANTAGENET,2026-04-09,scanned_pdf,,https://pub-alfred-plantagenet.escribemeetings.com:443/FileStream.ashx?DocumentId=4011
+ALGONQUIN HIGHLANDS TP,ALGONQUIN HIGHLANDS,2026-04-09,scanned_html,,https://algonquinhighlands.civicweb.net/Portal/
+ALNWICK HALDIMAND TP,ALNWICK HALDIMAND,2026-04-09,scanned_html,,https://alnwickhaldimand.civicweb.net/Portal/
+AMARANTH TP,AMARANTH,2026-04-09,scanned_pdf,,https://pub-amaranth.escribemeetings.com:443/FileStream.ashx?DocumentId=6964
+AMHERSTBURG TP,AMHERSTBURG,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002020CC2C6D0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+ARMOUR TP,ARMOUR,2026-04-09,no_url_in_registry,,
+ARMSTRONG TP,ARMSTRONG,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202178833D0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+ARNPRIOR TP,ARNPRIOR,2026-04-09,scanned_pdf,,https://calendar.arnprior.ca/default/Download?_mid_=10085&StartDate=04/01/2026&EndDate=04/30/2026
+ARRAN ELDERSLIE M,ARRAN ELDERSLIE,2026-04-09,scanned_html,,https://pub-arranelderslie.escribemeetings.com/
+ASHFIELD COLBORNE WAWANOSH TP,ASHFIELD COLBORNE WAWANOSH,2026-04-09,scanned_html,,https://mail.google.com/mail
+ASPHODEL NORWOOD TP,ASPHODEL NORWOOD,2026-04-09,scanned_html,,https://asphodelnorwood.com/council/minutes-agendas/
+ASSIGINACK TP,ASSIGINACK,2026-04-09,scanned_html,,https://pub-assiginack.escribemeetings.com/
+ATHENS TP,ATHENS,2026-04-09,no_url_in_registry,,
+ATIKOKAN TP,ATIKOKAN,2026-04-09,scanned_html,,https://atikokan.civicweb.net/Portal/
+AUGUSTA TP,AUGUSTA,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202178AAF50>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+AURORA TP,AURORA,2026-04-09,scanned_pdf,,https://calendar.aurora.ca/default/Download?StartDate=04/01/2026&EndDate=04/30/2026
+AYLMER TP,AYLMER,2026-04-09,scanned_html,,https://aylmer.civicweb.net/Portal/
+BALDWIN TP,BALDWIN,2026-04-09,scanned_pdf,,https://baldwin.ca/wp-content/uploads/2025/12/2025-003-Hall-Rental-Agreement-Form-With-Pricing.pdf
+BANCROFT TP,BANCROFT,2026-04-09,scanned_html,,https://bancroft.civicweb.net/Portal/
+BARRIE C,BARRIE,2026-04-09,scanned_pdf,,https://barrie.legistar.com/View.ashx?M=M&ID=1328973&GUID=9D9066B6-D265-41C3-920F-CBBB8FFD35DA
+BAYHAM M,BAYHAM,2026-04-09,scanned_pdf,,https://laserfiche.bayham.on.ca/WebLink/ElectronicFile.aspx?docid=536969&dbid=0&repo=BAYHAM
+BECKWITH TP,BECKWITH,2026-04-09,scanned_html,,https://beckwith.civicweb.net/Portal/
+BELLEVILLE C,BELLEVILLE,2026-04-09,scanned_pdf,,https://citybellevilleon.civicweb.net/document/92907
+BILLINGS TP,BILLINGS,2026-04-09,no_url_in_registry,,
+BLACK RIVER MATHESON TP,BLACK RIVER MATHESON,2026-04-09,scanned_pdf,,https://events.twpbrm.ca/default/Download?StartDate=04/01/2026&EndDate=04/30/2026
+BLANDFORD BLENHEIM TP,BLANDFORD BLENHEIM,2026-04-09,scanned_html,,https://pub-blandfordblenheim.escribemeetings.com/
+BLIND RIVER T,BLIND RIVER,2026-04-09,scanned_html,,https://pub-blindriver.escribemeetings.com/
+BLUEWATER M,BLUEWATER,2026-04-09,scanned_html,,https://bluewater.civicweb.net/Portal/
+BONFIELD TP,BONFIELD,2026-04-09,scanned_pdf,,https://events.bonfieldtownship.com/default/Download?StartDate=04/01/2026&EndDate=04/30/2026
+BONNECHERE VALLEY TP,BONNECHERE VALLEY,2026-04-09,scanned_pdf,,https://www.bonnecherevalleytwp.com/download.php?dl=YToyOntzOjI6ImlkIjtzOjQ6IjM4MTYiO3M6Mzoia2V5IjtpOjc7fQ==
+BRACEBRIDGE TP,BRACEBRIDGE,2026-04-09,scanned_html,,https://bracebridge.civicweb.net/Portal/
+BRADFORD WEST GWILLIMBURY TP,BRADFORD WEST GWILLIMBURY,2026-04-09,error,"HTTPSConnectionPool(host='westgrey.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020254608BD0>: Failed to resolve 'westgrey.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://westgrey.civicweb.net/Portal/
+BRAMPTON C,BRAMPTON,2026-04-09,scanned_html,,https://www.brampton.ca/EN/Arts-Culture-Tourism/Festivals-and-Events/Calendar/
+BRANT,BRANT,2026-04-09,scanned_html,,https://pub-brant.escribemeetings.com/
+BRANTFORD C,BRANTFORD,2026-04-09,scanned_html,,https://pub-brantford.escribemeetings.com/
+BRETHOUR TP,BRETHOUR,2026-04-09,scanned_html,,https://sports-inter.com/
+BRIGHTON M,BRIGHTON,2026-04-09,scanned_pdf,,https://brighton.civicweb.net/document/177260/2025%20Council%20and%20Planning%20Mtg%20Schedule.pdf
+BROCK TP,BROCK,2026-04-09,scanned_html,,https://pub-townshipofbrock.escribemeetings.com/Meeting.aspx?Agenda=PostMinutes&Id=7a8e1196-1c9f-4a9a-a3ba-239b4849de51&lang=English
+BROCKTON M,BROCKTON,2026-04-09,scanned_html,,https://pub-brockton.escribemeetings.com/
+BROCKVILLE C,BROCKVILLE,2026-04-09,scanned_html,,https://brockville.civicweb.net/Portal/
+BROOKE ALVINSTON M,BROOKE ALVINSTON,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002020B7761D0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+BRUCE MINES T,BRUCE MINES,2026-04-09,scanned_html,,https://www.brucemines.ca/government/agendas/
+BRUDENELL LYNDOCH AND RAGLAN TP,BRUDENELL LYNDOCH AND RAGLAN,2026-04-09,scanned_pdf,,https://blrtownship.ca/wp-content/uploads/2026/04/April-1st-2026-Regular-Agenda-Amended.pdf
+BURK TMS FALLS TP,BURK TMS FALLS,2026-04-09,scanned_pdf,,https://irp.cdn-website.com/55929d1f/files/uploaded/05-2025_Rules_Proceedings_of_Council.pdf
+BURLINGTON C,BURLINGTON C,2026-04-09,scanned_html,,https://burlingtonpublishing.escribemeetings.com/Meeting.aspx?Id=5623816a-75a4-4ec3-9188-5e8ad474cc19&Agenda=Merged&lang=English
+BURPEE AND MILLS TP,BURPEE AND MILLS TP,2026-04-09,scanned_pdf,,https://www.burpeemills.com/app/download/13247844987/2024+Consolidated+FS+Burpee+Mills+FIR.pdf?t=1775587295
+CALEDON TP,CALEDON TP,2026-04-09,scanned_html,,https://pub-caledon.escribemeetings.com/Meeting.aspx?Id=3d70f5a0-595f-47ea-836c-551271f6b69a&Agenda=Agenda&lang=English
+CALLANDER M,CALLANDER M,2026-04-09,scanned_html,,https://callander.civicweb.net/Portal/
+CALVIN M,CALVIN M,2026-04-09,scanned_pdf,,https://calvintownship.ca/uploads/November%2025%20Approved%20Minutes.pdf
+CAMBRIDGE C,CAMBRIDGE C,2026-04-09,scanned_html,,https://pub-cambridge.escribemeetings.com/
+CARLETON PLACE TP,CARLETON PLACE TP,2026-04-09,scanned_pdf,,https://pub-carletonplace.escribemeetings.com:443/FileStream.ashx?DocumentId=16666
+CARLING TP,CARLING TP,2026-04-09,error,"('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",https://carling.ca/municipal-information/info-about-carling-council/agenda-and-minutes/
+CARLOW MAYO TP,CARLOW MAYO TP,2026-04-09,scanned_html,,https://carlowmayo.civicweb.net/Portal/
+CASEY TP,CASEY TP,2026-04-09,scanned_html,,https://casey.ca/minutes/
+CASSELMAN M,CASSELMAN M,2026-04-09,scanned_pdf,,https://pub-casselman.escribemeetings.com/FileStream.ashx?DocumentId=1112
+CAVAN MONAGHAN TP,CAVAN MONAGHAN TP,2026-04-09,scanned_html,,https://pub-cavanmonaghan.escribemeetings.com/Meeting.aspx?Id=4e0daf3e-ad7e-4e74-b0d9-07bf567f2e12&Agenda=Agenda&lang=English
+CENTER WELLINGTON TP,CENTER WELLINGTON TP,2026-04-09,scanned_html,,https://zhidao.baidu.com/question/2086069024744583708.html
+CENTRAL ELGIN M,CENTRAL ELGIN M,2026-04-09,scanned_html,,https://centralelgin.civicweb.net/filepro/documents/134005?handle=325B4562D4D74780AAA7C172A052169D
+CENTRAL FRONTENAC TP,CENTRAL FRONTENAC TP,2026-04-09,no_url_in_registry,,
+CENTRAL HURON M,CENTRAL HURON M,2026-04-09,scanned_html,,https://centralhuron.civicweb.net/Portal/
+CENTRAL MANITOULIN M,CENTRAL MANITOULIN M,2026-04-09,scanned_pdf,,https://www.centralmanitoulin.ca/media/xirlffaq/council_agenda_2023_09_18.pdf
+CENTRE HASTINGS M,CENTRE HASTINGS M,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002025C728A90>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+CHAMBERLAIN TP,CHAMBERLAIN TP,2026-04-09,scanned_html,,https://www.chamberlain.com/ca
+CHAMPLAIN TP,CHAMPLAIN TP,2026-04-09,scanned_pdf,,https://pub-champlain.escribemeetings.com/FileStream.ashx?DocumentId=13673
+CHAPLEAU TP,CHAPLEAU TP,2026-04-09,scanned_html,,https://www.chapleau.ca/township/administration/council-agenda-minutes/
+CHAPPLE TP,CHAPPLE TP,2026-04-09,scanned_html,,https://chapple.civicweb.net/Portal/
+CHARLTON AND DACK M,CHARLTON AND DACK M,2026-04-09,scanned_pdf,,https://cdn.charltonafc.com/sites/default/files/2026-03/2026%3A27%20Season%20Ticket%20FAQs.pdf
+CHATHAM KENT M,CHATHAM KENT M,2026-04-09,scanned_html,,https://pub-chatham-kent.escribemeetings.com/Meeting.aspx?Id=83633a45-4153-4ff4-a28d-d5a6014c5f63&Agenda=Agenda&lang=English
+CHATSWORTH TP,CHATSWORTH TP,2026-04-09,scanned_pdf,,https://chatsworth.ca/wp-content/uploads/2025/08/16-May-3-2023-1.pdf
+CHISHOLM TP,CHISHOLM TP,2026-04-09,scanned_pdf,,"https://www.chisholm.ca/uploads/documents/Elections/Agenda Package April 8, 2026.pdf"
+CLARENCE ROCKLAND C,CLARENCE ROCKLAND C,2026-04-09,scanned_html,,https://clarencerockland.civicweb.net/Portal/
+CLARINGTON M,CLARINGTON M,2026-04-09,scanned_pdf,,https://pub-clarington.escribemeetings.com/FileStream.ashx?DocumentId=62013
+CLEARVIEW TP,CLEARVIEW TP,2026-04-09,scanned_pdf,,https://www.clearview.ca/file/2025-11-24-council-meeting-minutespdf-0
+COBALT TP,COBALT TP,2026-04-09,scanned_pdf,,https://cobalt.ca/wp-content/uploads/2026/03/March-31-2026-Council-Meeting-Package.pdf
+COBOURG TP,COBOURG TP,2026-04-09,scanned_html,,https://pub-cobourg.escribemeetings.com/
+COCHRANE TP,COCHRANE TP,2026-04-09,scanned_html,,https://cochrane.civicweb.net/Portal/
+COCKBURN ISLAND TP,COCKBURN ISLAND TP,2026-04-09,scanned_pdf,,https://cockburnisland.ca/docs/2025/FinancialStatement-2023.pdf
+COLEMAN TP,COLEMAN TP,2026-04-09,no_url_in_registry,,
+COLLINGWOOD TP,COLLINGWOOD TP,2026-04-09,scanned_pdf,,https://pub-collingwood.escribemeetings.com/FileStream.ashx?DocumentId=8864
+CONMEE TP,CONMEE TP,2026-04-09,no_url_in_registry,,
+CORNWALL C,CORNWALL C,2026-04-09,scanned_html,,https://pub-cornwall.escribemeetings.com/
+CRAMAHE TP,CRAMAHE TP,2026-04-09,scanned_pdf,,https://pub-cramahe.escribemeetings.com/FileStream.ashx?DocumentId=32906
+DAWN EUPHEMIA TP,DAWN EUPHEMIA TP,2026-04-09,scanned_pdf,,https://dawneuphemia.ca/wp-content/uploads/2025/10/Council-Meetings-2026.pdf
+DAWSON TP,DAWSON TP,2026-04-09,scanned_pdf,,https://www.dawsontownship.ca/wp-content/uploads/2023/02/dawson_council_minutes_may_2_2012-1.pdf
+DEEP RIVER TP,DEEP RIVER TP,2026-04-09,scanned_html,,https://deepriver.civicweb.net/Portal/
+DESERONTO TP,DESERONTO TP,2026-04-09,scanned_pdf,,https://www.deseronto.ca/s/Minutes-November-22-2023.pdf
+DORION TP,DORION TP,2026-04-09,scanned_pdf,,https://doriontownship.ca/application/files/4517/6460/6066/AGENDA_-18-NOVEMBER-2025.pdf
+DOURO DUMMER TP,DOURO DUMMER TP,2026-04-09,scanned_html,,https://pub-douro-dummer.escribemeetings.com/
+DRUMMOND NORTH ELMSLEY TP,DRUMMOND NORTH ELMSLEY TP,2026-04-09,scanned_pdf,,https://drummondnorthelmsley.civicweb.net/filepro/document/66105/26-01-13 - Committee of the Whole Minutes (1).pdf
+DRYDEN C,DRYDEN C,2026-04-09,scanned_html,,https://pub-dryden.escribemeetings.com/
+DUBREUILVILLE TP,DUBREUILVILLE TP,2026-04-09,error,404 Client Error: Not Found for url: https://dubreuilville.ca/town-hall/mayor-council/municipal-council-meeting-agendas-minutes/,https://www.dubreuilville.ca/town-hall/mayor-council/municipal-council-meeting-agendas-minutes/
+DUTTON DUNWICH M,DUTTON DUNWICH M,2026-04-09,scanned_html,,https://pub-duttondunwich.escribemeetings.com/
+DYSART ET AL M,DYSART ET AL M,2026-04-09,scanned_html,,https://dysartetal.civicweb.net/Portal/
+EAR FALLS TP,EAR FALLS TP,2026-04-09,scanned_pdf,,https://ear-falls.com/wp-content/uploads/2026/03/April-1-2026-Agenda-Proposed-Motions.pdf
+EAST FERRIS M,EAST FERRIS M,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002021D446890>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+EAST GARAFRAXA TP,EAST GARAFRAXA TP,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202588F8390>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+EAST GWILLIMBURY TP,EAST GWILLIMBURY TP,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202013A7390>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+EAST HAWKESBURY TP,EAST HAWKESBURY TP,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002020A242710>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+EAST ZORRA TAVISTOCK TP,EAST ZORRA TAVISTOCK TP,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202013A75D0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+EDWARDSBURGH CARDINAL TP,EDWARDSBURGH CARDINAL TP,2026-04-09,scanned_pdf,,https://pub-twpec.escribemeetings.com:443/FileStream.ashx?DocumentId=20343
+ELIZABETHTOWN KITLEY TP,ELIZABETHTOWN KITLEY TP,2026-04-09,scanned_html,,https://elizabethtownkitley.civicweb.net/Portal/
+ELLIOT LAKE C,ELLIOT LAKE C,2026-04-09,scanned_html,,https://www.elliotlake.ca/en/city-hall/agendas-and-minutes.aspx
+EMO TP,EMO TP,2026-04-09,scanned_pdf,,https://emo.ca/wp-content/uploads/2025/06/11-June-11-2025-Regular-Council-Meeting-Agenda.pdf
+ENGLEHART TP,ENGLEHART TP,2026-04-09,scanned_html,,https://englehart.civicweb.net/Portal/
+ENNISKILLEN TP,ENNISKILLEN TP,2026-04-09,scanned_pdf,,https://www.enniskillen.ca/wp-content/uploads/2026/04/Agenda-Council-April-7-2026.pdf
+ERIN TP,ERIN TP,2026-04-09,scanned_pdf,,https://pub-erin.escribemeetings.com/FileStream.ashx?DocumentId=18592
+ESPANOLA TP,ESPANOLA TP,2026-04-09,scanned_pdf,,https://pub-espanola.escribemeetings.com/filestream.ashx?DocumentId=12018
+ESSA TP,ESSA TP,2026-04-09,scanned_html,,https://www.esaa.dz/
+ESSEX TP,ESSEX TP,2026-04-09,scanned_pdf,,https://townofessex-pub.escribemeetings.com/FileStream.ashx?DocumentId=27117
+EVANTUREL TP,EVANTUREL TP,2026-04-09,scanned_html,,https://evanturel.com/council/minutes-agendas/
+FARADAY TP,FARADAY TP,2026-04-09,scanned_html,,https://faraday.civicweb.net/Portal/
+FAUQUIER STRICKLAND TP,FAUQUIER STRICKLAND TP,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002021A1E4DD0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+FORT ERIE TP,FORT ERIE TP,2026-04-09,scanned_pdf,,https://pub-forterie.escribemeetings.com/FileStream.ashx?DocumentId=34787
+FORT FRANCES TP,FORT FRANCES TP,2026-04-09,scanned_html,,https://fortfrances.civicweb.net/Portal/
+FRENCH RIVER M,FRENCH RIVER M,2026-04-09,scanned_html,,https://frenchriver.civicweb.net/Portal/
+FRONT OF YONGE TP,FRONT OF YONGE TP,2026-04-09,scanned_html,,https://zhidao.baidu.com/question/765412751504246844.html
+FRONTENAC ISLANDS TP,FRONTENAC ISLANDS TP,2026-04-09,scanned_html,,https://frontenacislands.community-ca.diligentoneplatform.com
+GANANOQUE TP,GANANOQUE TP,2026-04-09,scanned_pdf,,https://s3.ca-central-1.amazonaws.com/gananoque.ca/s3fs-public/meetings/agendas/Agenda-Council-10-With Paperclips-08Apr2026.pdf
+GAUTHIER TP,GAUTHIER TP,2026-04-09,scanned_pdf,,https://www.gauthierchrysler.com/GAUTHIER-2023-FORCED-LABOUR-AND-CHILD-LABOUR.pdf
+GEORGIAN BAY TP,Georgian Bay,2026-04-09,scanned_pdf,,https://georgianbay.civicweb.net/document/238947
+GEORGIAN BLUFFS TP,Georgian Bluffs,2026-04-09,scanned_html,,https://pub-georgianbluffs.escribemeetings.com/
+GEORGINA T,Georgina,2026-04-09,scanned_pdf,,https://www.georgina.ca/sites/default/files/2026-01/2026-council-meeting-calendar-jan2026.pdf
+GILLIES TP,Gillies,2026-04-09,scanned_html,,https://www.gilliestownship.com/en/our-government/agendas-and-minutes.aspx
+GODERICH T,Goderich,2026-04-09,scanned_html,,https://pub-goderich.escribemeetings.com/
+GORDON/BARRIE ISLAND M,Gordon/Barrie Island,2026-04-09,scanned_html,,https://www.gordonbarrieisland.ca/app/download/20089563825/Minutes+of+Council+Meeting+January+13+2026.docx?t=1771423303
+GORE BAY T,Gore Bay,2026-04-09,scanned_html,,https://gorebay.civicweb.net/Portal/
+GRAND VALLEY T,Grand Valley,2026-04-09,scanned_html,,https://pub-townofgrandvalley.escribemeetings.com/
+GRAVENHURST T,Gravenhurst,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020377D52650>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+GREATER MADAWASKA TP,Greater Madawaska,2026-04-09,scanned_pdf,,https://greatermadawaska.civicweb.net/document/8912
+GREATER NAPANEE T,Greater Napanee,2026-04-09,scanned_pdf,,https://greaternapanee.civicweb.net/document/229941
+GREATER SUDBURY C,Greater Sudbury,2026-04-09,scanned_pdf,,https://pub-greatersudbury.escribemeetings.com/FileStream.ashx?DocumentId=60019
+GREENSTONE M,Greenstone,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002031F5027D0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+GREY HIGHLANDS M,Grey Highlands,2026-04-09,scanned_pdf,,https://greyhighlands.civicweb.net/document/340085
+GRIMSBY T,Grimsby,2026-04-09,scanned_html,,https://pub-grimsby.escribemeetings.com/
+GUELPH C,Guelph,2026-04-09,scanned_html,,https://pub-guelph.escribemeetings.com/
+GUELPH/ERAMOSA TP,Guelph/Eramosa,2026-04-09,error,404 Client Error: Not Found for url: https://www.get.on.ca/township-services/council/agendas-and-minutes,https://www.get.on.ca/township-services/council/agendas-and-minutes
+HALDIMAND COUNTY,Haldimand County,2026-04-09,scanned_html,,https://pub-haldimandcounty.escribemeetings.com/
+HALTON HILLS T,Halton Hills,2026-04-09,scanned_html,,https://pub-haltonhills.escribemeetings.com/
+HAMILTON C,Hamilton,2026-04-09,scanned_html,,https://pub-milton.escribemeetings.com/
+HAMILTON TP,Hamilton,2026-04-09,scanned_html,,https://hamilton.civicweb.net/Portal/
+HANOVER T,Hanover,2026-04-09,scanned_pdf,,https://pub-hanover.escribemeetings.com:443/FileStream.ashx?DocumentId=6270
+HARLEY TP,Harley,2026-04-09,scanned_pdf,,https://harley.ca/wp-content/uploads/2024/01/December-12-2023.pdf
+HARRIS TP,Harris,2026-04-09,scanned_html,,https://harris.ca/recreation/#calendar
+HASTINGS HIGHLANDS M,Hastings Highlands,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202FFC5F650>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+HAVELOCK BELMONT METHUEN TP,HAVELOCK BELMONT METHUEN,2026-04-09,scanned_pdf,,https://www.hbmtwp.ca/media/id3jvbyv/privacy-policy-township-of-hbm.pdf
+HAWKESBURY T,HAWKESBURY,2026-04-09,scanned_pdf,,https://pub-hawkesbury.escribemeetings.com/FileStream.ashx?DocumentId=669
+HEAD CLARA AND MARIA TP,HEAD CLARA AND MARIA,2026-04-09,scanned_html,,https://townshipsofheadclaramaria.ca/council/minutes-agendas/
+HEARST T,HEARST,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202FF6BF8D0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+HIGHLANDS EAST M,HIGHLANDS EAST,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202FFC6F690>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+HILLIARD TP,HILLIARD,2026-04-09,scanned_html,,https://www.hilliardcorp.com/
+HILTON BEACH V,HILTON BEACH,2026-04-09,scanned_pdf,,https://hiltonbeach.com/wp-content/uploads/sites/3/2026/03/Agenda-March-11-2026.pdf
+HILTON TP,HILTON,2026-04-09,scanned_html,,https://www.reddit.com/r/Hilton/comments/13gi2p2/getting_on_wifi_at_hiltons/
+HORNEPAYNE TP,HORNEPAYNE,2026-04-09,scanned_pdf,,https://www.hornepayne.ca/media/ve5bhply/deputation-presentation-request-form.pdf
+HORTON TP,HORTON,2026-04-09,scanned_html,,https://www.hortonww.com/
+HOWICK TP,HOWICK,2026-04-09,scanned_pdf,,https://howick.nyc3.cdn.digitaloceanspaces.com/Agendas-Minutes/March-24-2026-Council-Agenda-Package-Compressed_Redacted_2026-03-20-201819_aqdu.pdf
+]HUDSON TP,HUDSON,2026-04-09,scanned_html,,https://hudson.civicweb.net/Portal/
+HUNTSVILLE T,HUNTSVILLE,2026-04-09,scanned_html,,https://events.huntsville.ca/meetings
+]HURON EAST M,HURON EAST,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202D2852850>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+HURON KINLOSS TP,HURON KINLOSS,2026-04-09,scanned_html,,https://pub-huronkinloss.escribemeetings.com/
+HURON SHORES M,HURON SHORES,2026-04-09,scanned_html,,https://pub-huronshores.escribemeetings.com/
+IGNACE TP,IGNACE,2026-04-09,scanned_html,,https://ignace.civicweb.net/Portal/
+INGERSOLL T,INGERSOLL,2026-04-09,scanned_html,,https://ingersoll.civicweb.net/Portal/
+INNISFIL T,INNISFIL,2026-04-09,scanned_html,,https://innisfil.civicweb.net/Portal/
+IROQUOIS FALLS T,IROQUOIS FALLS,2026-04-09,scanned_html,,https://iroquoisfalls.civicweb.net/Portal/
+JAMES TP,JAMES,2026-04-09,scanned_html,,https://www.zhihu.com/tardis/bd/ans/1378066318
+JOCELYN TP,JOCELYN,2026-04-09,scanned_pdf,,https://jocelyn.ca/wp-content/uploads/2025/12/October-8-2025-Meeting-Minutes.pdf
+JOHNSON TP,JOHNSON,2026-04-09,no_url_in_registry,,
+JOLY TP,JOLY,2026-04-09,scanned_html,,http://www.starphoto.joinbbs.net/forumdisplay.php?fid=2&filter=0&orderby=dateline&page=1
+KAPUSKASING T,KAPUSKASING,2026-04-09,scanned_html,,https://kapuskasing.civicweb.net/Portal/
+KAWARTHA LAKES C,KAWARTHA LAKES,2026-04-09,scanned_pdf,,https://pub-kawarthalakes.escribemeetings.com/FileStream.ashx?DocumentId=89765
+KEARNEY TP,KEARNEY,2026-04-09,scanned_pdf,,https://www.townofkearney.ca/sites/6/files/2024-04/Application%20to%20Purchase%20Shore%20Road%20Allowance.pdf
+KENORA C,KENORA,2026-04-09,scanned_html,,https://kenora.civicweb.net/Portal/
+KERNS TP,KERNS,2026-04-09,scanned_html,,https://kerns.ca/council-minutes/
+KILLALOE HAGARTY AND RICHARDS TP,KILLALOE HAGARTY AND RICHARDS,2026-04-09,error,404 Client Error: Not Found for url: https://www.killaloe-hagarty-richards.ca/council/minutes-agendas,https://www.killaloe-hagarty-richards.ca/council/minutes-agendas
+KILLARNEY M,KILLARNEY,2026-04-09,scanned_html,,https://www.killarney.ca/p/meeting-minutes#downloadOurApp
+KINCARDINE M,KINCARDINE,2026-04-09,scanned_html,,https://pub-kincardine.escribemeetings.com/
+KING TP,KING,2026-04-09,scanned_html,,https://king.civicweb.net/Portal/
+KINGSTON C,KINGSTON,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002020A0F2E50>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+KINGSVILLE TP,KINGSVILLE,2026-04-09,scanned_pdf,,https://kingsville-pub.escribemeetings.com/FileStream.ashx?DocumentId=36978
+KIRKLAND LAKE TP,KIRKLAND LAKE,2026-04-09,scanned_html,,https://kirklandlake.civicweb.net/document/62211
+KITCHENER C,KITCHENER,2026-04-09,scanned_pdf,,https://pub-kitchener.escribemeetings.com/FileStream.ashx?DocumentId=34818
+LA VALLEE TP,LA VALLEE,2026-04-09,scanned_pdf,,https://lavallee.ca/wp-content/uploads/2026/04/Agenda-April-8-2026.pdf
+LAIRD TP,LAIRD,2026-04-09,scanned_pdf,,https://lairdtownship.ca/wp-content/uploads/2026/03/03-March-19-2026-Regular-Agenda-53.pdf
+LAKE OF BAYS TP,LAKE OF BAYS,2026-04-09,scanned_html,,https://lakeofbays.civicweb.net/Portal/
+LAKE OF THE WOODS TP,LAKE OF THE WOODS,2026-04-09,scanned_pdf,,https://www.lakeofthewoods.ca/wp-content/uploads/2012/10/LOW-council-minute-December-2-2014.pdf
+LAKESHORE M,LAKESHORE,2026-04-09,scanned_html,,https://pub-lakeshore.escribemeetings.com/
+LAMBTON SHORES M,LAMBTON SHORES,2026-04-09,scanned_html,,https://pub-lambtonshores.escribemeetings.com/
+LANARK HIGHLANDS TP,LANARK HIGHLANDS,2026-04-09,scanned_pdf,,https://pub-lanarkhighlands.escribemeetings.com/FileStream.ashx?DocumentId=14163
+LARDER LAKE TP,LARDER LAKE,2026-04-09,scanned_pdf,,https://www.larderlake.ca/wp-content/uploads/2022/03/Delegation-Request-Form.pdf
+LASALLE TP,LASALLE,2026-04-09,scanned_pdf,,https://pub-lasalle.escribemeetings.com/FileStream.ashx?DocumentId=28007
+LATCHFORD TP,LATCHFORD,2026-04-09,error,404 Client Error: Not Found for url: https://www.latchford.ca/municipal-office/council/minutes-and-agendas/,https://latchford.ca/municipal-office/council/minutes-and-agendas/
+LAURENTIAN HILLS TP,LAURENTIAN HILLS,2026-04-09,error,"HTTPSConnectionPool(host='laurentianhills.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002037798F190>: Failed to resolve 'laurentianhills.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://laurentianhills.civicweb.net/Portal/
+LAURENTIAN VALLEY TP,LAURENTIAN VALLEY,2026-04-09,error,"HTTPSConnectionPool(host='laurentianvalley.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020356656010>: Failed to resolve 'laurentianvalley.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://laurentianvalley.civicweb.net/Portal/
+LEAMINGTON M,LEAMINGTON,2026-04-09,scanned_html,,https://www.leamington.ca/en/discover/community-calendar.aspx?_mid_=5367
+LEEDS AND THE THOUSAND ISLANDS TP,LEEDS AND THE THOUSAND ISLANDS,2026-04-09,scanned_pdf,,https://pub-leeds1000islands.escribemeetings.com/FileStream.ashx?DocumentId=12289
+LIMERICK TP,LIMERICK,2026-04-09,scanned_html,,https://limerick.civicweb.net/Portal/
+LINCOLN TP,LINCOLN,2026-04-09,scanned_html,,https://lincoln.civicweb.net/Portal/
+LONDON C,LONDON,2026-04-09,scanned_pdf,,https://pub-london.escribemeetings.com/FileStream.ashx?DocumentId=122948
+LOYALIST TP,LOYALIST,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002022F0427D0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+LUCAN BIDDULPH TP,LUCAN BIDDULPH,2026-04-09,scanned_html,,https://pub-lucanbiddulph.escribemeetings.com/
+MACDONALD MEREDITH AND ABERDEEN ADDL TP,MACDONALD MEREDITH AND ABERDEEN ADDL,2026-04-09,scanned_pdf,,https://echobay.ca/wp-content/uploads/2025/04/December-16-2025-Agenda.pdf
+MACHAR TP,MACHAR,2026-04-09,scanned_pdf,,https://www.townshipofmachar.ca/uploads/agenda-council-meeting-mar23-2026.pdf
+MACHIN M,MACHIN,2026-04-09,error,404 Client Error: Not Found for url: https://visitmachin.com/council/minutes/,https://visitmachin.com/council/minutes/
+MADAWASKA VALLEY TP,MADAWASKA VALLEY,2026-04-09,error,404 Client Error: Not Found for url: https://www.madawaskavalley.ca/deptdocs/Madawaska%20Valley%20-%20The%20Path%20Forward%202015-2019%20Strategic%20Plan.pdf,http://www.madawaskavalley.ca/deptdocs/Madawaska%20Valley%20-%20The%20Path%20Forward%202015-2019%20Strategic%20Plan.pdf
+munid,municipality_name,2026-04-09,error,Invalid URL 'example_recent_minutes_url': No scheme supplied. Perhaps you meant https://example_recent_minutes_url?,example_recent_minutes_url
+MADOC TP,MADOC,2026-04-09,scanned_html,,https://madoc.civicweb.net/Portal/
+MAGNETAWAN M,MAGNETAWAN,2026-04-09,error,404 Client Error: Not Found for url: https://magnetawan.com/municipal-services/council/council-meetings,https://magnetawan.com/municipal-services/council/council-meetings
+MALAHIDE TP,MALAHIDE,2026-04-09,error,404 Client Error: Not Found for url: https://www.malahide.ca/en/resident-services/calendar.aspx,https://www.malahide.ca/en/resident-services/calendar.aspx
+MANITOUWADGE TP,MANITOUWADGE,2026-04-09,scanned_html,,https://manitouwadge.civicweb.net/Portal/
+MAPLETON TP,MAPLETON,2026-04-09,error,404 Client Error: Not Found for url: https://www.mapleton.ca/content/township-services/council/delegation-request-1.pdf,https://mapleton.ca/content/township-services/council/delegation-request-1.pdf
+MARATHON TP,MARATHON,2026-04-09,error,404 Client Error: Not Found for url: https://www.marathon.ca/en/town-hall/council-meetings.aspx,https://www.marathon.ca/en/town-hall/council-meetings.aspx
+MARKHAM C,MARKHAM,2026-04-09,scanned_pdf,,https://pub-markham.escribemeetings.com/FileStream.ashx?DocumentId=112227
+MARKSTAY WARREN M,MARKSTAY WARREN,2026-04-09,scanned_html,,https://markstay-warren.civicweb.net/Portal/
+MARMORA AND LAKE M,MARMORA AND LAKE,2026-04-09,scanned_html,,https://marmoraandlake.civicweb.net/Portal/
+MATTAWA TP,MATTAWA,2026-04-09,error,404 Client Error: Not Found for url: https://mattawa.ca/town-hall/council/agendas-minutes/,https://mattawa.ca/town-hall/council/agendas-minutes/
+MATTAWAN M,MATTAWAN,2026-04-09,error,"HTTPSConnectionPool(host='www.mattawantownship.ca', port=443): Max retries exceeded with url: /content/council-minutes (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002020A1C7690>: Failed to resolve 'www.mattawantownship.ca' ([Errno 11001] getaddrinfo failed)""))",https://www.mattawantownship.ca/content/council-minutes
+MATTICE VAL C T TP,MATTICE VAL COTE,2026-04-09,scanned_pdf,,https://www.matticevalcote.ca/en/_files/ugd/93a5a9_7ec1ca332f29481d8159f664fcd1d129.pdf
+MCDOUGALL TP,MCDOUGALL,2026-04-09,error,"HTTPSConnectionPool(host='mcdougall.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002020A18DA10>: Failed to resolve 'mcdougall.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://mcdougall.civicweb.net/Portal/
+MCGARRY TP,MCGARRY,2026-04-09,scanned_html,,https://www.mcgarry.ca/community-calendar
+MCKELLAR TP,MCKELLAR,2026-04-09,scanned_pdf,,https://calendar.mckellar.ca/default/Download?StartDate=04/01/2026&EndDate=04/30/2026
+MCMURRICH MONTEITH TP,MCMURRICH MONTEITH,2026-04-09,error,403 Client Error: Forbidden for url: https://mcmurrichmonteith.com/municipal-services/council/minutes-agendas,https://mcmurrichmonteith.com/municipal-services/council/minutes-agendas
+MCNAB BRAESIDE TP,MCNAB BRAESIDE,2026-04-09,scanned_pdf,,http://www.mcnabbraeside.com/userfiles/file/municipal-information/information/200942992143.pdf
+MEAFORD M,MEAFORD,2026-04-09,scanned_html,,https://meaford.civicweb.net/Portal/
+MELANCTHON TP,MELANCTHON,2026-04-09,scanned_pdf,,https://melancthontownship.ca/wp-content/uploads/2016/11/commissioner-for-taking-oaths.pdf
+MERRICKVILLE WOLFORD TP,MERRICKVILLE WOLFORD,2026-04-09,error,404 Client Error: Not Found for url: https://www.merrickville-wolford.ca/governance/agendas-minutes/2024-minutes/council-2/2418-dec-9-council-minutes-1/file,https://www.merrickville-wolford.ca/governance/agendas-minutes/2024-minutes/council-2/2418-dec-9-council-minutes-1/file
+MIDDLESEX CENTRE M,MIDDLESEX CENTRE,2026-04-09,scanned_html,,https://pub-middlesexcentre.escribemeetings.com/
+MIDLAND TP,MIDLAND,2026-04-09,scanned_html,,https://midland.civicweb.net/Portal/
+MILTON TP,MILTON,2026-04-09,scanned_html,,https://pub-milton.escribemeetings.com/
+MINDEN HILLS TP,MINDEN HILLS,2026-04-09,scanned_html,,https://mindenhills.civicweb.net/Portal/
+MINTO TP,MINTO,2026-04-09,error,404 Client Error: Not Found for url: https://www.town.minto.on.ca/town-hall/council/council-agenda-minutes,https://town.minto.on.ca/town-hall/council/council-agenda-minutes
+MISSISSAUGA C,MISSISSAUGA,2026-04-09,scanned_html,,https://www.mississauga.ca/events-and-attractions/events-calendar/
+MISSISSIPPI MILLS M,MISSISSIPPI MILLS,2026-04-09,error,"HTTPSConnectionPool(host='mississippimills.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002029191D590>: Failed to resolve 'mississippimills.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://mississippimills.civicweb.net/Portal/
+MONO TP,MONO,2026-04-09,scanned_pdf,,"https://mono.civicweb.net/FileStorage/A23802FCE2124A4A8199667B861B919B-Motion%20by%20Mayor%20Creelman,%20Hwy%20Highway%2010%20and%20Count.pdf"
+MONTAGUE TP,MONTAGUE,2026-04-09,scanned_html,,https://montague.civicweb.net/Portal/
+MOONBEAM TP,MOONBEAM,2026-04-09,scanned_html,,https://moonbeam.civicweb.net/Portal/
+MOOSONEE TP,MOOSONEE,2026-04-09,error,404 Client Error: Not Found for url: https://www.moosonee.ca/town-hall/council-minutes/,https://moosonee.ca/town-hall/council-minutes/
+MORLEY TP,MORLEY,2026-04-09,error,404 Client Error: Not Found for url: https://townshipofmorley.ca/council/minutes/,https://townshipofmorley.ca/council/minutes/
+MORRIS TURNBERRY M,MORRIS TURNBERRY,2026-04-09,scanned_pdf,,https://morristurnberry.ca/content/government/2022-municipal-election/results-3.pdf
+MULMUR TP,MULMUR,2026-04-09,scanned_pdf,,https://mulmur.ca/content/town-hall/agendas-minutes/council-meeting-agendas-packages-minutes/0-04-01-2026-april-council-package.pdf
+MUSKOKA LAKES TP,MUSKOKA LAKES,2026-04-09,scanned_html,,https://muskokalakes.civicweb.net/Portal/
+NAIRN AND HYMAN TP,NAIRN AND HYMAN,2026-04-09,scanned_pdf,,https://nairncentre.ca/wp-content/uploads/2026/02/Revised-Building-Permit-Application-Nairn.pdf
+NEEBING M,NEEBING,2026-04-09,error,404 Client Error: Not Found for url: https://www.neebing.org/en/your-local-government/resources/By-Laws-and-Policies/2019-007-amd-procedure-bylaw.pdf,https://www.neebing.org/en/your-local-government/resources/By-Laws-and-Policies/2019-007-amd-procedure-bylaw.pdf
+NEW TECUMSETH TP,NEW TECUMSETH,2026-04-09,error,404 Client Error: Not Found for url: https://newtecumseth.civicweb.net/document/99201/,https://newtecumseth.civicweb.net/document/99201
+NEWBURY TP,NEWBURY,2026-04-09,error,404 Client Error: Not Found for url: https://www.newbury.ca/wp-content/uploads/2024/12/Minutes-Dec-16-2024.pdf,https://newbury.ca/wp-content/uploads/2024/12/Minutes-Dec-16-2024.pdf
+NEWMARKET TP,NEWMARKET,2026-04-09,scanned_pdf,,https://pub-newmarket.escribemeetings.com/FileStream.ashx?DocumentId=56089
+NIAGARA FALLS C,NIAGARA FALLS,2026-04-09,scanned_html,,https://niagarafalls.civicweb.net/Portal/
+NIAGARA ON THE LAKE TP,NIAGARA ON THE LAKE,2026-04-09,error,404 Client Error: Not Found for url: https://notl.civicweb.net/document/21150/,https://notl.civicweb.net/document/21150
+NIPIGON TP,NIPIGON,2026-04-09,error,"HTTPSConnectionPool(host='nipigon.civicweb.net', port=443): Max retries exceeded with url: /document/32011 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202059ED250>: Failed to resolve 'nipigon.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://nipigon.civicweb.net/document/32011
+NIPISSING TP,NIPISSING,2026-04-09,scanned_pdf,,https://nipissingtownship.com/wp-content/uploads/2026/04/2025-12-31-Township-of-Nipissing-FS.pdf
+NORFOLK,NORFOLK,2026-04-09,scanned_html,,https://pub-norfolkcounty.escribemeetings.com/
+NORTH ALGONA WILBERFORCE TP,NORTH ALGONA WILBERFORCE,2026-04-09,error,404 Client Error: Not Found for url: http://nalgonawil.com/wp-content/uploads/2024/12/Minutes-Dec-19-2024.pdf,http://nalgonawil.com/wp-content/uploads/2024/12/Minutes-Dec-19-2024.pdf
+NORTH BAY C,NORTH BAY,2026-04-09,scanned_pdf,,https://pub-northbay.escribemeetings.com/FileStream.ashx?DocumentId=38613
+NORTH DUMFRIES TP,NORTH DUMFRIES,2026-04-09,scanned_html,,https://www.northdumfries.ca/living-here/events-calendar/
+NORTH DUNDAS TP,NORTH DUNDAS,2026-04-09,scanned_html,,https://pub-northdundas.escribemeetings.com/
+NORTH FRONTENAC TP,NORTH FRONTENAC,2026-04-09,scanned_html,,https://northfrontenac.civicweb.net/Portal/
+NORTH GLENGARRY TP,NORTH GLENGARRY,2026-04-09,scanned_html,,https://pub-northglengarry.escribemeetings.com/
+NORTH GRENVILLE M,NORTH GRENVILLE,2026-04-09,scanned_html,,https://www.northgrenville.ca/community-and-culture/resources/community-events
+NORTH HURON TP,NORTH HURON,2026-04-09,scanned_pdf,,https://calendar.northhuron.ca/default/Download?_mid_=78865&StartDate=04/01/2026&EndDate=04/30/2026
+NORTH KAWARTHA TP,NORTH KAWARTHA,2026-04-09,scanned_pdf,,https://www.northkawartha.ca/media/jjmh4eqx/by-law_2025-0050-procedure-by-law.pdf
+NORTH MIDDLESEX M,NORTH MIDDLESEX,2026-04-09,scanned_pdf,,https://pub-northmiddlesex.escribemeetings.com:443/FileStream.ashx?DocumentId=18919
+NORTH PERTH M,NORTH PERTH,2026-04-09,error,"HTTPSConnectionPool(host='pertheast.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020301EA5D10>: Failed to resolve 'pertheast.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://pertheast.civicweb.net/Portal/
+NORTH STORMONT TP,NORTH STORMONT,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002020E9BF110>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+NORTHEASTERN MANITOULIN AND THE ISLANDS TP,NORTHEASTERN MANITOULIN AND THE ISLANDS,2026-04-09,error,"HTTPSConnectionPool(host='nemi.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020200C08790>: Failed to resolve 'nemi.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://nemi.civicweb.net/Portal/
+NORTHERN BRUCE PENINSULA M,NORTHERN BRUCE PENINSULA,2026-04-09,scanned_html,,https://northernbrucepeninsula.civicweb.net/Portal/
+NORWICH TP,NORWICH,2026-04-09,scanned_html,,https://norwich.civicweb.net/Portal/
+O TMCONNOR TP,O'CONNOR,2026-04-09,error,404 Client Error: Not Found for url: https://www.oconnortownship.ca/wp-content/uploads/2024/12/Minutes-December-16-2024.pdf,https://oconnortownship.ca/wp-content/uploads/2024/12/Minutes-December-16-2024.pdf
+OAKVILLE TP,OAKVILLE,2026-04-09,scanned_pdf,,https://pub-oakville.escribemeetings.com/FileStream.ashx?DocumentId=96377
+OIL SPRINGS TP,OIL SPRINGS,2026-04-09,error,404 Client Error: Not Found for url: https://oilsprings.ca/village-office/council-minutes/,https://oilsprings.ca/village-office/council-minutes/
+OLIVER PAIPOONGE M,OLIVER PAIPOONGE,2026-04-09,scanned_html,,https://oliverpaipoonge.civicweb.net/Portal/
+OPASATIKA TP,OPASATIKA,2026-04-09,error,"HTTPSConnectionPool(host='opasatika.ca', port=443): Max retries exceeded with url: /wp-content/uploads/2024/12/Minutes-Dec-11-2024.pdf (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020200C09810>: Failed to resolve 'opasatika.ca' ([Errno 11001] getaddrinfo failed)""))",https://opasatika.ca/wp-content/uploads/2024/12/Minutes-Dec-11-2024.pdf
+ORANGEVILLE TP,ORANGEVILLE,2026-04-09,scanned_pdf,,https://www.orangeville.ca/en/doing-business/resources/Documents/Procurement Policy 2023 Final.pdf
+ORILLIA C,ORILLIA,2026-04-09,scanned_html,,https://orillia.civicweb.net/Portal/
+ORO MEDONTE TP,ORO MEDONTE,2026-04-09,scanned_html,,https://oromedonte.civicweb.net/document/131000
+OSHAWA C,OSHAWA,2026-04-09,scanned_html,,https://pub-oshawa.escribemeetings.com/
+OTONABEE SOUTH MONAGHAN TP,OTONABEE SOUTH MONAGHAN,2026-04-09,error,"HTTPSConnectionPool(host='otonabee.civicweb.net', port=443): Max retries exceeded with url: /document/32200 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002020B232DD0>: Failed to resolve 'otonabee.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://otonabee.civicweb.net/document/32200
+OTTAWA C,OTTAWA,2026-04-09,scanned_html,,https://pub-ottawa.escribemeetings.com/
+OWEN SOUND C,OWEN SOUND,2026-04-09,scanned_html,,https://pub-owensound.escribemeetings.com/
+PAPINEAU CAMERON TP,PAPINEAU CAMERON,2026-04-09,scanned_pdf,,http://papineaucameron.ca/wp-content/uploads/2021/08/Cameron-OP-2021-07-04-Land-Use-Map.pdf
+PARRY SOUND TP,PARRY SOUND,2026-04-09,error,"HTTPSConnectionPool(host='parrysound.civicweb.net', port=443): Max retries exceeded with url: /document/51100 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002027DE34450>: Failed to resolve 'parrysound.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://parrysound.civicweb.net/document/51100
+PELEE TP,PELEE,2026-04-09,scanned_pdf,,https://www.pelee.org/wp-content/uploads/2024/12/Regular-Council-Minutes-Dec-10-2024.pdf
+PELHAM TP,PELHAM,2026-04-09,error,"HTTPSConnectionPool(host='pelham.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020254A83190>: Failed to resolve 'pelham.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://pelham.civicweb.net/Portal/
+PEMBROKE C,PEMBROKE,2026-04-09,scanned_pdf,,http://calendar.pembroke.ca/default/Download?StartDate=04/01/2026&EndDate=04/30/2026
+PENETANGUISHENE TP,PENETANGUISHENE,2026-04-09,error,"HTTPSConnectionPool(host='pub-penetanguishene.escribemeetings.com', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202121387D0>: Failed to resolve 'pub-penetanguishene.escribemeetings.com' ([Errno 11001] getaddrinfo failed)""))",https://pub-penetanguishene.escribemeetings.com/
+PERRY TP,PERRY,2026-04-09,scanned_html,,https://pub-perry.escribemeetings.com/
+PERTH EAST TP,PERTH EAST,2026-04-09,error,"HTTPSConnectionPool(host='pertheast.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002021213B250>: Failed to resolve 'pertheast.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://pertheast.civicweb.net/Portal/
+PERTH SOUTH TP,PERTH SOUTH,2026-04-09,error,"HTTPSConnectionPool(host='pertheast.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002036B0E3E10>: Failed to resolve 'pertheast.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://pertheast.civicweb.net/Portal/
+PERTH TP,PERTH,2026-04-09,error,"HTTPSConnectionPool(host='pertheast.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002036B0E0710>: Failed to resolve 'pertheast.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://pertheast.civicweb.net/Portal/
+PETAWAWA TP,PETAWAWA,2026-04-09,error,"HTTPSConnectionPool(host='petawawa.civicweb.net', port=443): Max retries exceeded with url: /document/61000 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002036CF64210>: Failed to resolve 'petawawa.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://petawawa.civicweb.net/document/61000
+PETERBOROUGH C,PETERBOROUGH,2026-04-09,scanned_html,,https://pub-peterborough.escribemeetings.com/
+PETROLIA TP,PETROLIA,2026-04-09,scanned_html,,https://petrolia.civicweb.net/Portal/
+PICKERING C,PICKERING,2026-04-09,scanned_html,,https://pub-pickering.escribemeetings.com/
+PICKLE LAKE TP,PICKLE LAKE,2026-04-09,scanned_pdf,,https://picklelake.ca/wp-content/uploads/2026/03/2026.03.17-Agenda-for-the-Regular-Meeting-of-Council-Pkg.pdf
+PLUMMER ADDITIONAL TP,PLUMMER ADDITIONAL,2026-04-09,scanned_pdf,,https://plummertownship.ca/wp-content/uploads/2026/04/Agenda-2026-04-15.pdf
+PLYMPTON WYOMING TP,PLYMPTON WYOMING,2026-04-09,error,"HTTPSConnectionPool(host='plymptonwyoming.civicweb.net', port=443): Max retries exceeded with url: /document/32001 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002020896C450>: Failed to resolve 'plymptonwyoming.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://plymptonwyoming.civicweb.net/document/32001
+POINT EDWARD TP,POINT EDWARD,2026-04-09,error,404 Client Error: Not Found for url: https://www.villageofpointedward.com/council/minutes/,https://villageofpointedward.com/council/minutes/
+PORT COLBORNE C,PORT COLBORNE,2026-04-09,scanned_html,,https://pub-portcolborne.escribemeetings.com/
+PORT HOPE M,PORT HOPE,2026-04-09,scanned_html,,https://pub-porthope.escribemeetings.com/
+POWASSAN M,POWASSAN,2026-04-09,error,"HTTPSConnectionPool(host='powassan.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202059DB9D0>: Failed to resolve 'powassan.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://powassan.civicweb.net/Portal/
+PRESCOTT TP,PRESCOTT,2026-04-09,error,404 Client Error: Not Found for url: https://www.prescott.ca/government/agendas-minutes/,https://prescott.ca/government/agendas-minutes/
+PRINCE EDWARD,PRINCE EDWARD,2026-04-09,error,"HTTPSConnectionPool(host='pub-pec.escribemeetings.com', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002036EED8A90>: Failed to resolve 'pub-pec.escribemeetings.com' ([Errno 11001] getaddrinfo failed)""))",https://pub-pec.escribemeetings.com/
+PRINCE TP,PRINCE,2026-04-09,error,"HTTPSConnectionPool(host='pub-pec.escribemeetings.com', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002036EEDA3D0>: Failed to resolve 'pub-pec.escribemeetings.com' ([Errno 11001] getaddrinfo failed)""))",https://pub-pec.escribemeetings.com/
+PUSLINCH TP,PUSLINCH,2026-04-09,error,403 Client Error: Forbidden for url: https://puslinch.ca/culture-recreation/festivals-events/,https://puslinch.ca/culture-recreation/festivals-events/
+QUINTE WEST C,QUINTE WEST,2026-04-09,scanned_html,,https://quintewest.civicweb.net/Portal/
+RAINY RIVER TP,RAINY RIVER,2026-04-09,error,404 Client Error: Not Found for url: https://www.rainyriver.ca/wp-content/uploads/2024/12/Minutes-Dec-11-2024.pdf,https://www.rainyriver.ca/wp-content/uploads/2024/12/Minutes-Dec-11-2024.pdf
+RAMARA TP,RAMARA,2026-04-09,scanned_html,,https://ramara.civicweb.net/Portal/
+RED LAKE M,RED LAKE,2026-04-09,error,404 Client Error: Not Found for url: https://pub-redlake.escribemeetings.com/,https://pub-redlake.escribemeetings.com/
+RED ROCK TP,RED ROCK,2026-04-09,error,404 Client Error: Not Found for url: https://redrocktownship.com/wp-content/uploads/2024/12/Minutes-December-16-2024.pdf,https://www.redrocktownship.com/wp-content/uploads/2024/12/Minutes-December-16-2024.pdf
+RENFREW TP,RENFREW,2026-04-09,error,"HTTPSConnectionPool(host='renfrew.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002036EED9F10>: Failed to resolve 'renfrew.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://renfrew.civicweb.net/Portal/
+RICHMOND HILL C,RICHMOND HILL,2026-04-09,scanned_html,,https://pub-richmondhill.escribemeetings.com/
+RIDEAU LAKES TP,RIDEAU LAKES,2026-04-09,scanned_pdf,,https://pub-rideaulakes.escribemeetings.com/FileStream.ashx?DocumentId=14404
+RUSSELL TP,RUSSELL,2026-04-09,error,"HTTPSConnectionPool(host='pub-russell.escribemeetings.com', port=443): Max retries exceeded with url: /FileStream.ashx?DocumentId=29100 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002036EEDB610>: Failed to resolve 'pub-russell.escribemeetings.com' ([Errno 11001] getaddrinfo failed)""))",https://pub-russell.escribemeetings.com/FileStream.ashx?DocumentId=29100
+RYERSON TP,RYERSON,2026-04-09,scanned_pdf,,https://www.ryersontownship.ca/content/departments/administration/permits/application-for-trailer-license-print-and-submit.pdf
+SABLES SPANISH RIVERS TP,SABLES SPANISH RIVERS,2026-04-09,scanned_pdf,,https://www.sables-spanish.ca/wp-content/uploads/2026/01/2026-Recycling-Schedule-Sable-Spanish.pdf
+SARNIA C,SARNIA,2026-04-09,scanned_html,,https://sarnia.civicweb.net/Portal/
+SAUGEEN SHORES TP,SAUGEEN SHORES,2026-04-09,scanned_html,,https://pub-saugeenshores.escribemeetings.com/
+SAULT STE MARIE C,SAULT STE MARIE,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020319086150>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+SCHREIBER TP,SCHREIBER,2026-04-09,scanned_html,,https://schreiber.civicweb.net/Portal/
+SCUGOG TP,SCUGOG,2026-04-09,error,404 Client Error: Not Found for url: https://pub-scugog.escribemeetings.com/FileStream.ashx?DocumentId=12100,https://pub-scugog.escribemeetings.com/FileStream.ashx?DocumentId=12100
+SEGUIN TP,SEGUIN,2026-04-09,scanned_pdf,,http://calendar.seguin.ca/default/Download?StartDate=04/01/2026&EndDate=04/30/2026
+SELWYN TP,SELWYN,2026-04-09,scanned_html,,https://www.selwyn.ca/school-life/parent-volunteer-association/pva-calendar
+SEVERN TP,SEVERN,2026-04-09,scanned_html,,https://severn.civicweb.net/Portal/
+SHELBURNE TP,SHELBURNE,2026-04-09,error,404 Client Error: Not Found for url: https://calendar.shelburne.ca/council/Detail/2024-12-09-1830-Regular-Council-Meeting/Minutes-2024-12-09.pdf,https://calendar.shelburne.ca/council/Detail/2024-12-09-1830-Regular-Council-Meeting/Minutes-2024-12-09.pdf
+SHUNIAH M,SHUNIAH,2026-04-09,scanned_html,,https://shuniah.civicweb.net/Portal/
+SIOUX LOOKOUT M,SIOUX LOOKOUT,2026-04-09,scanned_html,,https://www.siouxlookout.ca/community-and-recreation/events-calendar
+SIOUX NARROWS NESTOR FALLS TP,SIOUX NARROWS NESTOR FALLS,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002021A019D10>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+SMITHS FALLS TP,SMITHS FALLS,2026-04-09,scanned_pdf,,https://pub-smithsfalls.escribemeetings.com:443/FileStream.ashx?DocumentId=2675
+SMOOTH ROCK FALLS TP,SMOOTH ROCK FALLS,2026-04-09,scanned_pdf,,https://www.smoothrockfalls.ca/wp-content/uploads/2024/12/Minutes-Dec-16-2024.pdf
+SOUTH ALGONQUIN TP,SOUTH ALGONQUIN,2026-04-09,scanned_pdf,,https://www.southalgonquin.ca/wp-content/uploads/2026/04/Waste-Collection-Calendar-2026-2-2.pdf
+SOUTH BRUCE M,SOUTH BRUCE,2026-04-09,scanned_html,,https://southbruce.civicweb.net/Portal/
+SOUTH BRUCE PENINSULA TP,SOUTH BRUCE PENINSULA,2026-04-09,error,"HTTPSConnectionPool(host='pub-southbrucepeninsula.escribemeetings.com', port=443): Max retries exceeded with url: /FileStream.ashx?DocumentId=41200 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002025C477850>: Failed to resolve 'pub-southbrucepeninsula.escribemeetings.com' ([Errno 11001] getaddrinfo failed)""))",https://pub-southbrucepeninsula.escribemeetings.com/FileStream.ashx?DocumentId=41200
+SOUTH DUNDAS M,SOUTH DUNDAS,2026-04-09,scanned_html,,https://pub-southdundas.escribemeetings.com/
+SOUTH FRONTENAC TP,SOUTH FRONTENAC,2026-04-09,scanned_html,,https://southfrontenac.civicweb.net/Portal/
+SOUTH GLENGARRY TP,SOUTH GLENGARRY,2026-04-09,scanned_html,,https://pub-southglengarry.escribemeetings.com/
+SOUTH HURON M,SOUTH HURON,2026-04-09,scanned_html,,https://pub-southhuron.escribemeetings.com/
+SOUTH RIVER TP,SOUTH RIVER,2026-04-09,scanned_pdf,,https://southriver.ca/uploads/Mar-24-2026.pdf
+SOUTH STORMONT TP,SOUTH STORMONT,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020291F39DD0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+SOUTH WEST OXFORD TP,SOUTH WEST OXFORD,2026-04-09,error,"HTTPSConnectionPool(host='westgrey.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002021C596F90>: Failed to resolve 'westgrey.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://westgrey.civicweb.net/Portal/
+SOUTHGATE TP,SOUTHGATE,2026-04-09,scanned_html,,https://pub-southgate.escribemeetings.com/
+SOUTHWEST MIDDLESEX M,SOUTHWEST MIDDLESEX,2026-04-09,error,"HTTPSConnectionPool(host='westgrey.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002021C595610>: Failed to resolve 'westgrey.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://westgrey.civicweb.net/Portal/
+SOUTHWOLD TP,SOUTHWOLD,2026-04-09,scanned_pdf,,https://calendar.southwold.ca/default/Download?StartDate=04/01/2026&EndDate=04/30/2026
+SPANISH TP,SPANISH,2026-04-09,scanned_pdf,,https://www.townofspanish.com/wp-content/uploads/2026/03/7.-April-1-2026.pdf
+SPRINGWATER TP,SPRINGWATER,2026-04-09,error,404 Client Error: Not Found for url: https://www.springwater.ca/en/township-hall/resources/Documents/By-laws/2017-007-Consolidated-Procedural-By-law-rev.-2024.pdf,https://www.springwater.ca/en/township-hall/resources/Documents/By-laws/2017-007-Consolidated-Procedural-By-law-rev.-2024.pdf
+ST CATHARINES C,ST CATHARINES,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020200A0D890>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+ST CHARLES M,ST CHARLES,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202DBEF1A50>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+ST CLAIR TP,ST CLAIR,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202C4DB20D0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+ST JOSEPH TP,ST JOSEPH,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202545EEE90>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+ST MARYS T,ST MARYS,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020200A0F190>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+ST THOMAS C,ST THOMAS,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020200ACB050>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+STIRLING RAWDON TP,STIRLING RAWDON,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002021C597250>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+STONE MILLS TP,STONE MILLS,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202C4DB2B90>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+STRATFORD C,STRATFORD,2026-04-09,scanned_html,,https://stratford.civicweb.net/Portal/
+STRATHROY CARADOC M,STRATHROY CARADOC,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002031F9F9CD0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+STRONG TP,STRONG,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002025618C550>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+SUNDRIDGE TP,SUNDRIDGE,2026-04-09,error,403 Client Error: Forbidden for url: https://sundridge.ca/wp-content/uploads/2024/12/Minutes-Dec-11-2024.pdf,https://sundridge.ca/wp-content/uploads/2024/12/Minutes-Dec-11-2024.pdf
+TARBUTT AND TARBUTT ADDITIONAL TP,TARBUTT AND TARBUTT ADDITIONAL,2026-04-09,error,404 Client Error: Not Found for url: https://tarbutt.ca/wp-content/uploads/2024/12/Minutes-Dec-18-2024.pdf,https://tarbutt.ca/wp-content/uploads/2024/12/Minutes-Dec-18-2024.pdf
+TAY TP,TAY,2026-04-09,scanned_pdf,,https://tay.civicweb.net/document/19258/Tay%20Township%20-%20Delegation%20Request%20Form.pdf
+TAY VALLEY TP,TAY VALLEY,2026-04-09,error,"HTTPSConnectionPool(host='pub-tayvalleytwp.escribemeetings.com', port=443): Max retries exceeded with url: /FileStream.ashx?DocumentId=12100 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020200AC8690>: Failed to resolve 'pub-tayvalleytwp.escribemeetings.com' ([Errno 11001] getaddrinfo failed)""))",https://pub-tayvalleytwp.escribemeetings.com/FileStream.ashx?DocumentId=12100
+TECUMSEH TP,TECUMSEH,2026-04-09,error,"HTTPSConnectionPool(host='pub-tecumseh.escribemeetings.com', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002020B7782D0>: Failed to resolve 'pub-tecumseh.escribemeetings.com' ([Errno 11001] getaddrinfo failed)""))",https://pub-tecumseh.escribemeetings.com/
+TEHKUMMAH TP,TEHKUMMAH,2026-04-09,scanned_pdf,,https://tehkummah.ca/wp-content/uploads/2023/09/PROCEDURE-ByLAW-2019-011-REVISED-March-28-2019.pdf
+TEMAGAMI M,TEMAGAMI,2026-04-09,scanned_html,,https://www.temagami.ca/town/calendar
+TEMISKAMING SHORES C,TEMISKAMING SHORES,2026-04-09,scanned_html,,https://pub-temiskamingshores.escribemeetings.com/
+TERRACE BAY TP,TERRACE BAY,2026-04-09,scanned_html,,https://terracebay.civicweb.net/Portal/
+THAMES CENTRE M,THAMES CENTRE,2026-04-09,scanned_html,,https://pub-thamescentre.escribemeetings.com/
+THE ARCHIPELAGO TP,THE ARCHIPELAGO,2026-04-09,error,"HTTPSConnectionPool(host='thearchipelago.civicweb.net', port=443): Max retries exceeded with url: /document/32100 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020307A46890>: Failed to resolve 'thearchipelago.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://thearchipelago.civicweb.net/document/32100
+THE BLUE MOUNTAINS TP,THE BLUE MOUNTAINS,2026-04-09,scanned_pdf,,https://pub-bluemountains.escribemeetings.com/FileStream.ashx?DocumentId=31047
+THE NATION,THE NATION,2026-04-09,error,"HTTPSConnectionPool(host='nationmun.civicweb.net', port=443): Max retries exceeded with url: /document/55100 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020319B5AC90>: Failed to resolve 'nationmun.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://nationmun.civicweb.net/document/55100
+THE NORTH SHORE TP,THE NORTH SHORE,2026-04-09,error,"HTTPConnectionPool(host='127.0.0.1', port=80): Max retries exceeded with url: / (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000202180F0150>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",https://townshipofthenorthshore.ca/wp-content/uploads/2024/12/Minutes-Dec-11-2024.pdf
+THESSALON TP,THESSALON,2026-04-09,error,404 Client Error: Not Found for url: https://thessalon.ca/council/minutes-agendas/,https://thessalon.ca/council/minutes-agendas/
+THORNLOE TP,THORNLOE,2026-04-09,error,"HTTPSConnectionPool(host='thornloe.ca', port=443): Max retries exceeded with url: /wp-content/uploads/2024/12/Minutes-Dec-04-2024.pdf (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002037FB59E50>: Failed to resolve 'thornloe.ca' ([Errno 11001] getaddrinfo failed)""))",https://thornloe.ca/wp-content/uploads/2024/12/Minutes-Dec-04-2024.pdf
+THOROLD C,THOROLD,2026-04-09,scanned_html,,https://pub-thorold.escribemeetings.com/
+THUNDER BAY C,THUNDER BAY,2026-04-09,scanned_pdf,,https://pub-thunderbay.escribemeetings.com/FileStream.ashx?DocumentId=11462
+TILLSONBURG TP,TILLSONBURG,2026-04-09,scanned_pdf,,https://pub-tillsonburg.escribemeetings.com/FileStream.ashx?DocumentId=16728
+THAMES CENTRE M,THAMES CENTRE,2026-04-09,scanned_html,,https://pub-thamescentre.escribemeetings.com/
+TINY TP,TINY,2026-04-09,scanned_html,,https://tiny.civicweb.net/Portal/
+TORONTO C,TORONTO,2026-04-09,error,403 Client Error: Forbidden for url: https://secure.toronto.ca/council/#/home,https://secure.toronto.ca/council/#/home
+TRENT HILLS M,TRENT HILLS,2026-04-09,scanned_html,,https://trenthills.civicweb.net/Portal/
+TRENT LAKES M,TRENT LAKES,2026-04-09,scanned_html,,https://trentlakes.civicweb.net/Portal/
+TUDOR AND CASHEL TP,TUDOR AND CASHEL,2026-04-09,scanned_html,,https://tudorandcashel.civicweb.net/Portal/
+TWEED M,TWEED,2026-04-09,scanned_html,,https://tweed.civicweb.net/Portal/
+TYENDINAGA TP,TYENDINAGA,2026-04-09,error,"HTTPSConnectionPool(host='tyendinaga.civicweb.net', port=443): Max retries exceeded with url: /document/112100 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202059EC390>: Failed to resolve 'tyendinaga.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://tyendinaga.civicweb.net/document/112100
+UXBRIDGE TP,UXBRIDGE,2026-04-09,scanned_html,,https://pub-uxbridge.escribemeetings.com/
+VAL RITA HARTY TP,VAL RITA HARTY,2026-04-09,scanned_pdf,,https://valharty.ca/wp-content/uploads/2026/03/SpecialMeetingofMarch-31-2026.pdf
+VAUGHAN C,VAUGHAN,2026-04-09,scanned_pdf,,https://pub-vaughan.escribemeetings.com/FileStream.ashx?DocumentId=222716
+WAINFLEET TP,WAINFLEET,2026-04-09,scanned_html,,https://www.wainfleet.ca/community-calendar
+WARWICK TP,WARWICK,2026-04-09,scanned_html,,https://warwick.civicweb.net/Portal/
+WASAGA BEACH TP,WASAGA BEACH,2026-04-09,scanned_pdf,,https://pub-wasagabeach.escribemeetings.com/FileStream.ashx?DocumentId=15772
+WATERLOO C,WATERLOO,2026-04-09,scanned_pdf,,https://events.waterloo.ca/default/Download?StartDate=04/01/2026&EndDate=04/30/2026
+WAWA M,WAWA,2026-04-09,scanned_html,,https://wawa.civicweb.net/Portal/
+WELLAND C,WELLAND,2026-04-09,scanned_pdf,,https://pub-welland.escribemeetings.com:443/FileStream.ashx?DocumentId=5461
+WELLESLEY TP,WELLESLEY,2026-04-09,scanned_html,,https://pub-wellesley.escribemeetings.com/
+WELLINGTON NORTH TP,WELLINGTON NORTH,2026-04-09,scanned_html,,https://pub-wellington-north.escribemeetings.com/
+WEST ELGIN M,WEST ELGIN,2026-04-09,error,"HTTPSConnectionPool(host='westgrey.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002031BD76950>: Failed to resolve 'westgrey.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://westgrey.civicweb.net/Portal/
+WEST GREY M,WEST GREY,2026-04-09,error,"HTTPSConnectionPool(host='westgrey.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020226CE4690>: Failed to resolve 'westgrey.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://westgrey.civicweb.net/Portal/
+WEST LINCOLN TP,WEST LINCOLN,2026-04-09,error,"HTTPSConnectionPool(host='westgrey.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020291F3A810>: Failed to resolve 'westgrey.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://westgrey.civicweb.net/Portal/
+WEST NIPISSING M,WEST NIPISSING,2026-04-09,error,"HTTPSConnectionPool(host='westgrey.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020276F2A690>: Failed to resolve 'westgrey.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://westgrey.civicweb.net/Portal/
+WEST PERTH M,WEST PERTH,2026-04-09,error,"HTTPSConnectionPool(host='westgrey.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020226CE6350>: Failed to resolve 'westgrey.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://westgrey.civicweb.net/Portal/
+WESTPORT TP,WESTPORT,2026-04-09,error,"HTTPSConnectionPool(host='westgrey.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020226CE8410>: Failed to resolve 'westgrey.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://westgrey.civicweb.net/Portal/
+WHITBY TP,WHITBY,2026-04-09,scanned_pdf,,https://pub-whitby.escribemeetings.com/FileStream.ashx?DocumentId=41464
+WHITCHURCH STOUFFVILLE TP,WHITCHURCH STOUFFVILLE,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020222B1A7D0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+WHITE RIVER TP,WHITE RIVER,2026-04-09,error,404 Client Error: Not Found for url: https://www.whiteriver.ca/wp-content/uploads/2024/12/Minutes-Dec-11-2024.pdf,https://www.whiteriver.ca/wp-content/uploads/2024/12/Minutes-Dec-11-2024.pdf
+WHITESTONE M,WHITESTONE,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002027B46A350>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+WHITEWATER REGION TP,WHITEWATER REGION,2026-04-09,scanned_html,,https://whitewaterregion.civicweb.net/Portal/
+WILMOT TP,WILMOT,2026-04-09,scanned_pdf,,https://pub-wilmot.escribemeetings.com/FileStream.ashx?DocumentId=15222
+WINDSOR C,WINDSOR,2026-04-09,scanned_html,,https://www.windsor.ca/city-hall/city-council-meetings
+WOLLASTON TP,WOLLASTON,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002028A700FD0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+WOODSTOCK C,WOODSTOCK,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020357768390>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+WOOLWICH TP,WOOLWICH,2026-04-09,scanned_html,,https://pub-woolwich.escribemeetings.com/
+ZORRA TP,ZORRA,2026-04-09,scanned_html,,https://zorra.civicweb.net/Portal/MeetingInformation.aspx?Id=1328
+BRUCE,BRUCE,2026-04-09,error,404 Client Error: Not Found for url: https://brucecounty.escribemeetings.com/Meeting.aspx?Id=b5c0c8e2-5c8e-4a8e-9e8e-5c8e4a8e9e8e&Agenda=Agenda&lang=English,https://brucecounty.escribemeetings.com/Meeting.aspx?Id=b5c0c8e2-5c8e-4a8e-9e8e-5c8e4a8e9e8e&Agenda=Agenda&lang=English
+COCHRANE,COCHRANE,2026-04-09,scanned_pdf,,https://cdsb.care/wp-content/uploads/2024/07/CDSSAB-Virtual-Board-Meeting-Policy.pdf
+DURHAM,DURHAM,2026-04-09,scanned_pdf,,https://pub-durhamregion.escribemeetings.com/FileStream.ashx?DocumentId=9605
+ELGIN,ELGIN,2026-04-09,error,404 Client Error: Not Found for url: https://elgincounty.escribemeetings.com/Meeting.aspx?Id=e7f2f0a4-7f2f-6c2f-bf2f-7f2f6c2fbf2f&Agenda=Agenda&lang=English,https://elgincounty.escribemeetings.com/Meeting.aspx?Id=e7f2f0a4-7f2f-6c2f-bf2f-7f2f6c2fbf2f&Agenda=Agenda&lang=English
+ESSEX,ESSEX,2026-04-09,error,404 Client Error: Not Found for url: https://calendar.countyofessex.ca/Error/FileNotFound?aspxerrorpath=/council/Detail/2025-12-17-1800-Essex-County-Council-Regular-Meeting,https://calendar.countyofessex.ca/council/Detail/2025-12-17-1800-Essex-County-Council-Regular-Meeting
+FRONTENAC,County of Frontenac,2026-04-09,error,"HTTPSConnectionPool(host='frontenaccounty.civicweb.net', port=443): Max retries exceeded with url: /Portal/MeetingInformation.aspx?Id=1234 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020359A59990>: Failed to resolve 'frontenaccounty.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://frontenaccounty.civicweb.net/Portal/MeetingInformation.aspx?Id=1234
+GREY,Grey County,2026-04-09,scanned_pdf,,https://pub-grey.escribemeetings.com/filestream.ashx?DocumentId=1000
+HALTON,Halton Region,2026-04-09,scanned_html,,https://edmweb.halton.ca/OnBaseAgendaOnline/Documents/Downloadfile/REGULAR_MEETING_OF_REGIONAL_COUNCIL_05-26_4621_Agenda_2026-04-15_9_30_00_AM.pdf?documentType=1&meetingId=4621
+HASTINGS,Hastings County,2026-04-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202279BF690>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+HURON,Huron County,2026-04-09,scanned_html,,https://agendas.huroncounty.ca/agendapublic/CoverSheet.aspx?ItemID=100&MeetingID=500
+KENORA,City of Kenora,2026-04-09,scanned_pdf,,https://www.kenora.ca/media/mzsmjwzn/council-meeting-calendar.pdf
+LAMBTON,County of Lambton,2026-04-09,scanned_html,,https://calendar.lambtononline.ca/meetings/Detail/2025-12-03-0900-Council-Meeting/Minutes
+LANARK,Lanark County,2026-04-09,scanned_html,,https://lanarkcounty.civicweb.net/Portal/MeetingInformation.aspx?Id=2000
+LEEDS AND GRENVILLE,United Counties of Leeds and Grenville,2026-04-09,scanned_pdf,,https://pub-uclg.escribemeetings.com/FileStream.ashx?DocumentId=11819
+MUSKOKA,District Municipality of Muskoka,2026-04-09,scanned_html,,https://muskoka.civicweb.net/Portal/MeetingInformation.aspx?Id=3000
+NIAGARA,Niagara Region,2026-04-09,scanned_html,,https://www.niagararegion.ca/government/council/minutes/default.aspx?t=1
+NIPISSING,District of Nipissing,2026-04-09,scanned_pdf,,https://www.northbay.ca/media/qn2hjtbz/agenda-april-9-2026.pdf
+NORTHUMBERLAND,Northumberland County,2026-04-09,error,404 Client Error: Not Found for url: https://pub-northumberland.escribemeetings.com/filestream.ashx?DocumentId=1000,https://pub-northumberland.escribemeetings.com/filestream.ashx?DocumentId=1000
+OXFORD,Oxford County,2026-04-09,error,404 Client Error: Not Found for url: https://pub-oxfordcounty.escribemeetings.com/filestream.ashx?DocumentId=1000,https://pub-oxfordcounty.escribemeetings.com/filestream.ashx?DocumentId=1000
+PARRY SOUND,District of Parry Sound,2026-04-09,error,"HTTPSConnectionPool(host='parrysound.civicweb.net', port=443): Max retries exceeded with url: /Portal/MeetingInformation.aspx?Id=1000 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000202F0C92150>: Failed to resolve 'parrysound.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://parrysound.civicweb.net/Portal/MeetingInformation.aspx?Id=1000
+PEEL,Region of Peel,2026-04-09,scanned_pdf,,https://peelregion.ca/sites/default/files/2024-06/conflicts-registry.pdf
+PERTH,Perth County,2026-04-09,error,"HTTPSConnectionPool(host='pertheast.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020263A76C90>: Failed to resolve 'pertheast.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://pertheast.civicweb.net/Portal/
+PETERBOROUGH,Peterborough County,2026-04-09,error,"HTTPSConnectionPool(host='pub-ptbocounty.escribemeetings.com', port=443): Max retries exceeded with url: /filestream.ashx?DocumentId=1000 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002034DEC8F90>: Failed to resolve 'pub-ptbocounty.escribemeetings.com' ([Errno 11001] getaddrinfo failed)""))",https://pub-ptbocounty.escribemeetings.com/filestream.ashx?DocumentId=1000
+PRESCOTT AND RUSSELL,United Counties of Prescott and Russell,2026-04-09,error,404 Client Error: Not Found for url: https://www.prescott.ca/government/agendas-minutes/,https://prescott.ca/government/agendas-minutes/
+RAINY RIVER,District of Rainy River,2026-04-09,scanned_pdf,,https://rrdssab.ca/wp-content/uploads/2026/03/DRRSB_Agenda_March_2026.pdf
+RENFREW,County of Renfrew,2026-04-09,error,"HTTPSConnectionPool(host='renfrew.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x000002020EC958D0>: Failed to resolve 'renfrew.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://renfrew.civicweb.net/Portal/
+SIMCOE,County of Simcoe,2026-04-09,error,"HTTPSConnectionPool(host='pub-simcoe.escribemeetings.com', port=443): Max retries exceeded with url: /filestream.ashx?DocumentId=1000 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x00000203704273D0>: Failed to resolve 'pub-simcoe.escribemeetings.com' ([Errno 11001] getaddrinfo failed)""))",https://pub-simcoe.escribemeetings.com/filestream.ashx?DocumentId=1000
+SUDBURY,District of Sudbury,2026-04-09,scanned_pdf,,https://pub-greatersudbury.escribemeetings.com/FileStream.ashx?DocumentId=60019
+THUNDER BAY,District of Thunder Bay,2026-04-09,scanned_pdf,,https://pub-thunderbay.escribemeetings.com/FileStream.ashx?DocumentId=11462
+TIMISKAMING,District of Timiskaming,2026-04-09,error,"HTTPSConnectionPool(host='temiskamingshores.civicweb.net', port=443): Max retries exceeded with url: /Portal/MeetingInformation.aspx?Id=1000 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000020207A10410>: Failed to resolve 'temiskamingshores.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://temiskamingshores.civicweb.net/Portal/MeetingInformation.aspx?Id=1000
+WATERLOO,Region of Waterloo,2026-04-09,scanned_html,,https://pub-regionofwaterloo.escribemeetings.com/filestream.ashx?DocumentId=1000
+WELLINGTON,Wellington County,2026-04-09,error,404 Client Error: Not Found for url: https://pub-wellington.escribemeetings.com/filestream.ashx?DocumentId=1000,https://pub-wellington.escribemeetings.com/filestream.ashx?DocumentId=1000
+YORK,York Region,2026-04-09,scanned_pdf,,https://yorkpublishing.escribemeetings.com/FileStream.ashx?DocumentId=49293
