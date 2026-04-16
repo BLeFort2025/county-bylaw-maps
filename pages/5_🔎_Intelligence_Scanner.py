@@ -370,7 +370,7 @@ def _scan_single_muni(row, keywords):
     try:
         # Spider the listing page
         if listing_clean:
-            urls_to_scan = _find_recent_doc_links(listing_clean, HEADERS, max_links=4)
+            urls_to_scan = _find_recent_doc_links(listing_clean, HEADERS, max_links=3)
             if urls_to_scan:
                 found_real_docs = True
 
@@ -426,8 +426,8 @@ def _scan_single_muni(row, keywords):
 def run_live_scan(registry_subset, keywords):
     """Execute a concurrent, multi-keyword scan over a registry subset.
 
-    Uses a 20-thread pool (matching the terminal script architecture)
-    with Streamlit progress feedback via st.status().
+    Uses a 5-thread pool (reduced from 20 to stay within Streamlit Cloud's
+    ~1 GB memory limit) with Streamlit progress feedback.
     """
     results = []
     total = len(registry_subset)
@@ -437,7 +437,7 @@ def run_live_scan(registry_subset, keywords):
     status_text = st.empty()
     hit_container = st.container()
 
-    with ThreadPoolExecutor(max_workers=20) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         future_to_name = {}
         for _, row in registry_subset.iterrows():
             future = executor.submit(_scan_single_muni, row, keywords)
@@ -532,8 +532,8 @@ with tab_live:
     st.markdown(
         "Perform a **concurrent, multi-keyword** scan of municipal council portals. "
         "Select preset keyword packs and/or enter your own custom keywords. "
-        "The engine scans the **4 most recent documents** per municipality using a "
-        "20-thread pool with strict regex word-boundary matching to eliminate false positives."
+        "The engine scans the **most recent documents** per municipality using a "
+        "concurrent thread pool with strict regex word-boundary matching to eliminate false positives."
     )
 
     registry_df = load_registry()
