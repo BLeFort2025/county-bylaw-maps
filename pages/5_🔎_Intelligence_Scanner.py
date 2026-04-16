@@ -3,12 +3,16 @@ import sys
 import datetime
 import io
 import time
+import re
 import requests
 import urllib3
 import urllib.parse
+import sqlite3
 
 import streamlit as st
 import pandas as pd
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Suppress insecure request warnings for municipal sites with bad SSLs
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -27,7 +31,10 @@ ROOT_DIR = os.path.dirname(SCRIPT_DIR)
 sys.path.append(ROOT_DIR)
 
 # Import shared modules from the parent directory
-from shared_config import KEYWORD_CONFIG, extract_snippet
+from shared_config import (
+    KEYWORD_CONFIG, extract_snippet, extract_readable_snippet,
+    CUSTOM_KEYWORD_PACKS, REGION_MAPPING, get_region,
+)
 from db_utils import get_connection
 
 # --- Page Config ---
@@ -71,6 +78,13 @@ def load_registry():
         return pd.read_csv(registry_path)
     return pd.DataFrame()
 
+# --- Shared Scanner Constants ---
+
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                  'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+}
+
 # --- Live Scanner Logic ---
 
 try:
@@ -94,7 +108,6 @@ def extract_text_from_pdf(pdf_bytes):
 
 def _extract_date_from_text(text):
     """Try to extract a date from link text or URL for sorting by recency."""
-    import re
     text = text.lower()
     # Match patterns like "march 19, 2026", "2026-03-19", "march-19-2026"
     months = {
@@ -131,7 +144,7 @@ def _extract_date_from_text(text):
     return None
 
 
-def _find_recent_doc_links(listing_url, headers, max_links=3):
+def _find_recent_doc_links(listing_url, headers, max_links=4):
     """Spider a listing page to find the most recent document links.
 
     Includes special handling for CivicWeb portals which organize
@@ -149,8 +162,6 @@ def _find_recent_doc_links(listing_url, headers, max_links=3):
         links = soup.find_all("a", href=True)
 
         # ── CivicWeb special handling ──
-        # CivicWeb portals have filepro/documents/ folder trees.
-        # Strategy: find "Minutes" folder → latest year folder → grab files
         if "civicweb.net" in listing_url:
             return _spider_civicweb(listing_url, soup, headers, max_links)
 
@@ -173,13 +184,12 @@ def _find_recent_doc_links(listing_url, headers, max_links=3):
             has_doc_keyword = any(w in text.lower() for w in
                                  ["minute", "agenda", "council meeting", "regular meeting"])
 
-            # Skip self-referential loops or folder navigation that isn't a likely document
+            # Skip self-referential loops
             is_self_loop = full_url.lower().rstrip("/") == listing_url.lower().rstrip("/")
             if is_self_loop:
                 continue
 
             if (is_pdf or is_ashx or is_filestream or has_doc_keyword) and full_url not in seen_urls:
-                # Try to extract a date for sorting
                 date_hint = _extract_date_from_text(text + " " + full_url)
                 candidates.append((full_url, text[:80], date_hint))
                 seen_urls.add(full_url)
@@ -190,27 +200,17 @@ def _find_recent_doc_links(listing_url, headers, max_links=3):
         dated.sort(key=lambda x: x[2], reverse=True)
 
         sorted_candidates = dated + undated
-
-        # Return just the URLs, limited to top N
         return [url for url, _, _ in sorted_candidates[:max_links]]
 
     except Exception:
         return []
 
 
-def _spider_civicweb(base_url, soup, headers, max_links=3):
-    """Navigate CivicWeb filepro folder hierarchy to find recent documents.
-
-    CivicWeb structure:
-      /filepro/documents/{id}  (root or Portal page)
-        → Minutes folder (or Agendas)
-          → Year folders (2026, 2025, ...)
-            → FileStream download links (actual documents)
-    """
+def _spider_civicweb(base_url, soup, headers, max_links=4):
+    """Navigate CivicWeb filepro folder hierarchy to find recent documents."""
     try:
         links = soup.find_all("a", href=True)
 
-        # Step 1: If we're on a Portal page, find the documents/filepro link
         doc_folder_url = None
         for link in links:
             href = link["href"]
@@ -220,14 +220,12 @@ def _spider_civicweb(base_url, soup, headers, max_links=3):
                 doc_folder_url = full
                 break
 
-        # If we didn't find a specific minutes folder, check if we're already in filepro
         if not doc_folder_url and "filepro/documents" in base_url:
             doc_folder_url = base_url
 
         if not doc_folder_url:
             return []
 
-        # Step 2: Load the folder and look for year subfolders or files
         if doc_folder_url != base_url:
             resp2 = requests.get(doc_folder_url, headers=headers, timeout=12, verify=False)
             if resp2.status_code != 200:
@@ -236,7 +234,6 @@ def _spider_civicweb(base_url, soup, headers, max_links=3):
         else:
             soup2 = soup
 
-        # Collect files (filestream) and year folders
         files = []
         year_folders = []
         for link in soup2.find_all("a", href=True):
@@ -250,7 +247,6 @@ def _spider_civicweb(base_url, soup, headers, max_links=3):
             elif "filepro/documents" in href and text.strip().isdigit() and len(text.strip()) == 4:
                 year_folders.append((full, int(text.strip())))
 
-        # Step 3: If we found year folders, go into the most recent one
         if year_folders and not files:
             year_folders.sort(key=lambda x: x[1], reverse=True)
             latest_year_url = year_folders[0][0]
@@ -265,12 +261,10 @@ def _spider_civicweb(base_url, soup, headers, max_links=3):
                         date_hint = _extract_date_from_text(text + " " + full)
                         files.append((full, text, date_hint))
 
-        # Sort by date (newest first)
         dated = [(u, t, d) for u, t, d in files if d is not None]
         undated = [(u, t, d) for u, t, d in files if d is None]
         dated.sort(key=lambda x: x[2], reverse=True)
 
-        # For undated CivicWeb files, reverse the list (newest typically at top)
         all_sorted = dated + undated
         return [url for url, _, _ in all_sorted[:max_links]]
 
@@ -300,7 +294,6 @@ def _fetch_and_extract_text(url, headers):
             # Strip HTML to get only visible text content
             if BS4_SUPPORT:
                 soup = BeautifulSoup(response.text, "html.parser")
-                # Remove script and style elements
                 for tag in soup(["script", "style", "nav", "header", "footer"]):
                     tag.decompose()
                 text = soup.get_text(separator=" ", strip=True)
@@ -310,79 +303,165 @@ def _fetch_and_extract_text(url, headers):
         return "", False
 
 
-def run_live_scan(registry_subset, custom_keyword):
-    """Executes a live HTTP/PDF scan over a subset of municipalities.
+# ──────────────────────────────────────────────────────────────────
+# County enrichment from local SQLite (same logic as terminal script)
+# ──────────────────────────────────────────────────────────────────
+@st.cache_data(ttl=3600)
+def _load_county_dict():
+    """Build a name→county lookup from the local bylaws.db."""
+    db_path = os.path.join(ROOT_DIR, "bylaws.db")
+    county_dict = {}
+    if os.path.exists(db_path):
+        try:
+            conn = sqlite3.connect(db_path)
+            db_df = pd.read_sql_query(
+                "SELECT name, geographic_area FROM municipalities", conn
+            )
+            for _, r in db_df.iterrows():
+                if pd.notna(r['name']) and pd.notna(r['geographic_area']):
+                    county_dict[str(r['name']).upper().strip()] = r['geographic_area']
+            conn.close()
+        except Exception:
+            pass
+    return county_dict
 
-    For each municipality:
-      1. Spider the listing page to find recent documents
-      2. Scan the top 3 most recent documents for the keyword
-      3. Fall back to the hardcoded example URL if spidering finds nothing
+
+def _map_county(m_name, county_dict):
+    """Resolve a municipality name to its county/upper-tier from the lookup dict."""
+    m_upper = str(m_name).upper().strip()
+    if m_upper in county_dict:
+        return county_dict[m_upper]
+
+    # Fuzzy match — strip common suffixes
+    clean_m = re.sub(r'\s+(TP|C|M)$', '', m_upper).strip()
+    if clean_m in county_dict:
+        return county_dict[clean_m]
+
+    for db_name, area in county_dict.items():
+        if clean_m in db_name or db_name in clean_m:
+            return area
+    return m_name
+
+
+# ──────────────────────────────────────────────────────────────────
+# Core scan function — scans ONE municipality for a LIST of keywords
+# ──────────────────────────────────────────────────────────────────
+def _scan_single_muni(row, keywords):
+    """Scan a single municipality's recent documents for multiple keywords.
+
+    This is the function submitted to the thread pool. It:
+      1. Spiders the listing page for up to 4 recent documents
+      2. Downloads and extracts text from each document
+      3. Tests ALL keywords with regex word boundaries
+      4. Returns a list of match dicts, or None if nothing found
     """
-    results = []
+    name = row.get('municipality_name', 'Unknown')
+    county = row.get('county', 'Unknown')
+    region = row.get('region', 'Unknown')
+    listing_url = row.get('minutes_listing_url', None)
+    fallback_url = row.get('example_recent_minutes_url', None)
 
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                      'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
+    listing_clean = str(listing_url).strip().rstrip("/") if listing_url and not pd.isna(listing_url) else ""
+    fallback_clean = str(fallback_url).strip().rstrip("/") if fallback_url and not pd.isna(fallback_url) else ""
 
-    progress_bar = st.progress(0)
-    status_text = st.empty()
+    urls_to_scan = []
+    found_real_docs = False
 
-    total = len(registry_subset)
-    kw_lower = custom_keyword.lower()
-
-    for i, row in registry_subset.reset_index(drop=True).iterrows():
-        name = row.get('municipality_name', 'Unknown')
-        listing_url = row.get('minutes_listing_url', None)
-        fallback_url = row.get('example_recent_minutes_url', None)
-
-        status_text.text(f"Scanning {name} ({i+1}/{total})...")
-        progress_bar.progress((i + 1) / total)
-
-        # Normalize URLs for comparison
-        listing_clean = str(listing_url).strip().rstrip("/") if listing_url and not pd.isna(listing_url) else ""
-        fallback_clean = str(fallback_url).strip().rstrip("/") if fallback_url and not pd.isna(fallback_url) else ""
-
-        # Step 1: Spider the listing page for recent document links
-        urls_to_scan = []
-        found_real_docs = False
+    try:
+        # Spider the listing page
         if listing_clean:
-            urls_to_scan = _find_recent_doc_links(listing_clean, headers, max_links=3)
+            urls_to_scan = _find_recent_doc_links(listing_clean, HEADERS, max_links=4)
             if urls_to_scan:
                 found_real_docs = True
 
-        # Step 2: Fall back to the hardcoded example URL if spidering found nothing
+        # Fallback if spidering fails
         if not urls_to_scan and fallback_clean:
             urls_to_scan = [fallback_clean]
 
         if not urls_to_scan:
-            continue
+            return None
 
-        # Step 3: Scan each document for the keyword
+        matches = []
         for url in urls_to_scan:
-            text_content, is_pdf = _fetch_and_extract_text(url, headers)
+            text_content, is_pdf = _fetch_and_extract_text(url, HEADERS)
 
-            # Skip HTML portal/listing pages — they produce false positives.
-            # Only trust keyword matches from actual documents (PDFs) or
-            # from document-specific pages found by the spider.
+            # Skip HTML portal/listing pages to avoid false positives from menus
             if not is_pdf and not found_real_docs:
-                # This URL is likely just a portal landing page, skip it
                 continue
 
-            if kw_lower in text_content.lower():
-                snippet = extract_snippet(text_content, custom_keyword, window=200)
-                results.append({
-                    "Municipality": name,
-                    "Date Scanned": datetime.date.today().isoformat(),
-                    "Keyword Found": custom_keyword,
-                    "Context Snippet": snippet,
-                    "Source URL": url
-                })
-                break  # One hit per municipality is enough
+            content_lower = text_content.lower()
 
-    status_text.text("Scan Complete!")
+            for keyword in keywords:
+                # Use REGEX word boundary to prevent false matches
+                pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
+                if re.search(pattern, content_lower):
+                    snippet = extract_readable_snippet(text_content, keyword, window=300)
+                    matches.append({
+                        "Municipality": name,
+                        "County / Upper Tier": county,
+                        "Region": region,
+                        "Date Scanned": datetime.date.today().isoformat(),
+                        "Keyword Found": keyword,
+                        "Context Snippet": snippet,
+                        "Source URL": url,
+                    })
+
+        # De-duplicate across URLs
+        if matches:
+            unique_matches = []
+            seen = set()
+            for m in matches:
+                key = (m["Keyword Found"], m["Source URL"])
+                if key not in seen:
+                    unique_matches.append(m)
+                    seen.add(key)
+            return unique_matches
+
+    except Exception:
+        pass
+
+    return None
+
+
+def run_live_scan(registry_subset, keywords):
+    """Execute a concurrent, multi-keyword scan over a registry subset.
+
+    Uses a 20-thread pool (matching the terminal script architecture)
+    with Streamlit progress feedback via st.status().
+    """
+    results = []
+    total = len(registry_subset)
+    completed = 0
+
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    hit_container = st.container()
+
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        future_to_name = {}
+        for _, row in registry_subset.iterrows():
+            future = executor.submit(_scan_single_muni, row, keywords)
+            future_to_name[future] = row.get('municipality_name', 'Unknown')
+
+        for future in as_completed(future_to_name):
+            completed += 1
+            muni_name = future_to_name[future]
+
+            # Update progress
+            progress_bar.progress(completed / total)
+            status_text.text(f"Scanning... {completed} / {total} municipalities processed")
+
+            res_list = future.result()
+            if res_list:
+                results.extend(res_list)
+                found_kws = ", ".join(list(set([r['Keyword Found'] for r in res_list])))
+                hit_container.success(f"🎯 **HIT:** {muni_name} — *{found_kws}*")
+
+    status_text.text(f"✅ Scan complete — {total} municipalities processed.")
     progress_bar.empty()
+
     return pd.DataFrame(results)
+
 
 # --- UI Layout ---
 
@@ -446,65 +525,163 @@ with tab_health:
         )
 
 # ──────────────────────────────────────────────────────────────────
-# TAB 1: LIVE TARGET SCANNER
+# TAB 1: LIVE TARGET SCANNER  (Fast Scanner Engine)
 # ──────────────────────────────────────────────────────────────────
 with tab_live:
     st.header("Live Target Scanner")
-    st.markdown("Perform an immediate web scan of municipal council portals for a custom keyword. "
-                "*Note: Selecting a large number of municipalities will take a few minutes.*")
-    
+    st.markdown(
+        "Perform a **concurrent, multi-keyword** scan of municipal council portals. "
+        "Select preset keyword packs and/or enter your own custom keywords. "
+        "The engine scans the **4 most recent documents** per municipality using a "
+        "20-thread pool with strict regex word-boundary matching to eliminate false positives."
+    )
+
     registry_df = load_registry()
-    
+
     if registry_df.empty:
         st.warning("Portal Registry not found. Live scanning is unavailable.")
     else:
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
+        # ── Keyword Selection ──
+        st.subheader("🔑 Keywords")
+
+        kw_col1, kw_col2 = st.columns([1, 1])
+
+        with kw_col1:
+            st.markdown("**Preset Keyword Packs**")
+            selected_packs = []
+            for pack_name, pack_keywords in CUSTOM_KEYWORD_PACKS.items():
+                if st.checkbox(
+                    f"{pack_name}",
+                    help=f"Keywords: {', '.join(pack_keywords)}",
+                    key=f"pack_{pack_name}"
+                ):
+                    selected_packs.append(pack_name)
+
+        with kw_col2:
+            st.markdown("**Custom Keywords** *(one per line)*")
+            custom_kw_text = st.text_area(
+                "Enter additional keywords",
+                placeholder="e.g.\nSolar Farm\nGreenhouses\nAgri-Tourism",
+                height=120,
+                label_visibility="collapsed",
+            )
+
+        # Build the final keyword list
+        all_keywords = []
+        for pack_name in selected_packs:
+            all_keywords.extend(CUSTOM_KEYWORD_PACKS[pack_name])
+        if custom_kw_text.strip():
+            custom_kws = [kw.strip() for kw in custom_kw_text.strip().split("\n") if kw.strip()]
+            all_keywords.extend(custom_kws)
+        # De-duplicate while preserving order
+        seen_kw = set()
+        unique_keywords = []
+        for kw in all_keywords:
+            if kw.lower() not in seen_kw:
+                unique_keywords.append(kw)
+                seen_kw.add(kw.lower())
+
+        if unique_keywords:
+            st.info(f"**{len(unique_keywords)} keywords selected:** {', '.join(unique_keywords)}")
+
+        st.divider()
+
+        # ── Municipality Selection ──
+        st.subheader("🏛️ Target Municipalities")
+
+        select_all = st.checkbox(
+            "**Select All — Province-Wide Scan** *(444 municipalities, ~3-5 minutes)*",
+            value=False,
+            key="select_all_munis"
+        )
+
+        if not select_all:
             muni_options = registry_df['municipality_name'].sort_values().tolist()
             selected_munis = st.multiselect(
-                "Select Municipalities to Scan",
+                "Select specific municipalities",
                 options=muni_options,
                 default=[],
-                help="Leave blank to scan ALL (Warning: Will take several minutes)"
+                help="Choose individual municipalities or use the 'Select All' toggle above."
             )
-            
-        with col2:
-            custom_kw = st.text_input("Custom Keyword", placeholder="e.g. Solar Farm, Greenhouses")
-            
-        if st.button("Run Live Scan", type="primary"):
-            if not custom_kw.strip():
-                st.error("Please enter a custom keyword.")
+        else:
+            selected_munis = []  # Empty means ALL when select_all is checked
+
+        st.divider()
+
+        # ── Run Button ──
+        if st.button("🚀 Launch Scan", type="primary", use_container_width=True):
+            if not unique_keywords:
+                st.error("⚠️ Please select at least one keyword pack or enter a custom keyword.")
+            elif not select_all and not selected_munis:
+                st.error("⚠️ Please select municipalities or enable 'Select All' for a province-wide scan.")
             else:
-                target_df = registry_df
-                if selected_munis:
-                    target_df = registry_df[registry_df['municipality_name'].isin(selected_munis)]
-                
-                with st.spinner(f"Initiating scan for '{custom_kw}'..."):
-                    live_results = run_live_scan(target_df, custom_kw.strip())
-                    
+                # Resolve target set
+                target_df = registry_df.copy()
+                if not select_all and selected_munis:
+                    target_df = target_df[target_df['municipality_name'].isin(selected_munis)]
+
+                # Enrich with county/region
+                county_dict = _load_county_dict()
+                target_df['county'] = target_df['municipality_name'].apply(
+                    lambda n: _map_county(n, county_dict)
+                )
+                target_df['region'] = target_df.apply(
+                    lambda row: get_region(row['county'], row['municipality_name']), axis=1
+                )
+
+                st.markdown(f"**Scanning {len(target_df)} municipalities for {len(unique_keywords)} keywords...**")
+
+                live_results = run_live_scan(target_df, unique_keywords)
+
                 if live_results.empty:
-                    st.info("No matches found for the specified keyword in the selected municipalities.")
+                    st.info("No matches found for the specified keywords in the selected municipalities.")
                 else:
-                    st.success(f"Found {len(live_results)} matches!")
+                    # ── Summary Metrics ──
+                    st.markdown("---")
+                    m1, m2, m3, m4 = st.columns(4)
+                    m1.metric("Total Hits", len(live_results))
+                    m2.metric("Unique Municipalities", live_results["Municipality"].nunique())
+                    m3.metric("Keywords Matched", live_results["Keyword Found"].nunique())
+                    m4.metric("Regions Covered", live_results["Region"].nunique())
+
+                    # ── Region filter for results ──
+                    regions_found = sorted(live_results["Region"].unique().tolist())
+                    if len(regions_found) > 1:
+                        region_filter = st.multiselect(
+                            "Filter results by Region",
+                            options=regions_found,
+                            default=regions_found,
+                            key="result_region_filter"
+                        )
+                        display_results = live_results[live_results["Region"].isin(region_filter)]
+                    else:
+                        display_results = live_results
+
+                    # ── Results Table ──
                     st.dataframe(
-                        live_results,
+                        display_results,
                         use_container_width=True,
                         hide_index=True,
                         column_config={
                             "Source URL": st.column_config.LinkColumn(
                                 "Source URL",
                                 display_text="🔗 Open Document"
-                            )
+                            ),
+                            "Context Snippet": st.column_config.TextColumn(
+                                "Context Snippet",
+                                width="large"
+                            ),
                         }
                     )
-                    
+
+                    # ── CSV Download ──
                     csv = live_results.to_csv(index=False).encode('utf-8')
                     st.download_button(
-                        label="Download Custom Scan Report (CSV)",
+                        label="📥 Download Full Scan Report (CSV)",
                         data=csv,
-                        file_name=f"live_scan_{custom_kw}_{datetime.date.today().isoformat()}.csv",
-                        mime="text/csv"
+                        file_name=f"multi_keyword_scan_{datetime.date.today().isoformat()}.csv",
+                        mime="text/csv",
+                        use_container_width=True,
                     )
 
 # ──────────────────────────────────────────────────────────────────

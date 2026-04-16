@@ -78,6 +78,99 @@ KEYWORD_CONFIG = {
 }
 
 
+# ──────────────────────────────────────────────────────────────────
+# CUSTOM KEYWORD PACKS  (used by live scanner & fast_ad_hoc_scanner)
+# Named presets that group related policy-watch keywords.
+# ──────────────────────────────────────────────────────────────────
+CUSTOM_KEYWORD_PACKS = {
+    "🚄 ALTO Rail": [
+        "ALTO", "High Speed Rail", "High-speed rail", "Passenger Rail",
+    ],
+    "🌱 Plant-Based Treaty": [
+        "Plant Based Treaty", "Plant-Based Treaty", "Vegan Treaty",
+    ],
+    "🌾 Ontario Foodbelt": [
+        "Foodbelt", "Food Belt", "Agricultural Preserve",
+        "Golden Horseshoe Food and Farming",
+    ],
+}
+
+# ──────────────────────────────────────────────────────────────────
+# REGION MAPPING  (shared between terminal scanner & Streamlit UI)
+# Maps county / municipality name fragments to OFA advocacy regions.
+# ──────────────────────────────────────────────────────────────────
+REGION_MAPPING = {
+    'Northern': [
+        'Rainy River', 'Timiskaming', 'Manitoulin', 'Sudbury', 'Cochrane',
+        'Algoma', 'Nipissing', 'Thunder Bay', 'Kenora', 'Parry Sound',
+        'Muskoka', 'Black River', 'Burk', 'Fauquier', 'Mattice',
+        'McMurrich', 'Papineau', 'Sioux Narrows', 'St Charles', 'Val Rita',
+    ],
+    'Eastern': [
+        'Leeds and Grenville', 'Lennox and Addington', 'Renfrew',
+        'Prescott and Russell', 'Frontenac', 'Stormont', 'Dundas',
+        'Glengarry', 'Lanark', 'Hastings', 'Ottawa', 'Prince Edward',
+        'Admaston', 'Brudenell', 'Carlow', 'Clarence', 'Drummond',
+        'Edwardsburgh', 'Elizabethtown', 'Head Clara', 'McNab',
+        'Merrickville', 'Stirling',
+    ],
+    'Western': [
+        'Middlesex', 'Essex', 'Bruce', 'Huron', 'Elgin', 'Oxford',
+        'Lambton', 'Waterloo', 'Wellington', 'Chatham-Kent', 'Chatham Kent',
+        'Grey', 'Perth', 'Brant', 'Haldimand', 'Norfolk', 'Adelaide',
+        'Arran', 'Blandford', 'Brooke', 'Dutton', 'Morris', 'Plympton',
+        'Strathroy',
+    ],
+    'Central': [
+        'York', 'Simcoe', 'Durham', 'Haliburton', 'Northumberland',
+        'Dufferin', 'Peterborough', 'Peel', 'Halton', 'Niagara',
+        'Hamilton', 'Kawartha Lakes', 'Toronto', 'Adjala', 'Asphodel',
+        'Douro', 'Havelock', 'Oro Medonte', 'Otonabee', 'Whitchurch',
+    ],
+}
+
+
+def get_region(county, name):
+    """Resolve a municipality's OFA advocacy region from county/name fragments."""
+    for text in [str(county).lower(), str(name).lower()]:
+        if not text or text == "nan" or text == "unknown":
+            continue
+        for region, keywords in REGION_MAPPING.items():
+            if any(k.lower() in text for k in keywords):
+                return region
+    return "Unknown"
+
+
+def extract_readable_snippet(text, keyword, window=250):
+    """Extract a context snippet with visible keyword markers for CSV/UI output.
+
+    Preserves list formatting and injects ---> KEYWORD <--- markers for
+    instant readability in Excel and Streamlit data tables.
+    """
+    if not text or not keyword:
+        return ""
+
+    # Clean whitespace but preserve single newlines for readability
+    text = text.replace('\r', '')
+    text = re.sub(r'\n{2,}', '\n', text)
+    text = re.sub(r'[ \t]+', ' ', text)
+
+    idx = text.lower().find(keyword.lower())
+    if idx == -1:
+        return text[:window].strip()
+
+    start = max(0, idx - window)
+    end = min(len(text), idx + len(keyword) + window)
+
+    snippet = text[start:end].strip()
+
+    # Inject a highly visible marker around the keyword
+    pattern = re.compile(re.escape(keyword), re.IGNORECASE)
+    snippet = pattern.sub(f"\n\n ---> {keyword.upper()} <--- \n\n", snippet)
+
+    return f"... {snippet} ..."
+
+
 def canon_name(x: str) -> str:
     """Canonical municipality name for consistent matching across data sources."""
     if x is None:
