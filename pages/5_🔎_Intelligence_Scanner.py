@@ -602,6 +602,7 @@ def run_live_scan(registry_subset, keywords):
             future = executor.submit(_scan_single_muni, row, keywords)
             future_to_name[future] = row.get('municipality_name', 'Unknown')
 
+        stage1_with_docs = set()
         for future in as_completed(future_to_name):
             completed += 1
             muni_name = future_to_name[future]
@@ -625,6 +626,7 @@ def run_live_scan(registry_subset, keywords):
                         scan_stats["munis_no_portal"] += 1
                     elif muni_stats.get("docs_scanned", 0) > 0:
                         scan_stats["munis_with_docs"] += 1
+                        stage1_with_docs.add(muni_name)
 
                     # Collect keyword matches
                     res_list = result.get("matches", [])
@@ -664,37 +666,12 @@ def run_live_scan(registry_subset, keywords):
     cache_stats = {"munis_from_cache": 0, "cache_docs_searched": 0, "cache_hits": 0}
 
     if not cached_df.empty:
-        # Determine which municipalities Stage 1 successfully scanned
-        stage1_scanned = set()
-        for future_name_val in future_to_name.values():
-            stage1_scanned.add(future_name_val)
-        # Only count municipalities where we actually read documents
-        stage1_with_docs = set()
-        # We track this via scan_stats — munis that had docs_scanned > 0
-        # For simplicity, use the results to identify covered municipalities
-        if results:
-            stage1_with_docs = set(r["Municipality"] for r in results)
-        # Also include munis where we scanned but found no hits (they're still covered)
-        # We'll use a broader approach: all munis attempted minus no_portal minus errored
-        # The simplest accurate approach: check all names that had docs
-        # For Stage 2, we want to check munis that Stage 1 COULDN'T read
-        # so we pass the set of munis that DID have docs
         status_text.text(f"Stage 2: Searching cached portal data ({len(cached_df)} cached docs)...")
 
         cache_matches, cache_stats = _scan_cached_docs(
             cached_df, registry_subset, keywords,
-            stage1_scanned  # Pass all attempted — Stage 2 only checks munis with no Stage 1 coverage
+            stage1_with_docs  # Stage 2 checks any muni that Stage 1 failed to find docs for
         )
-
-        # Wait, we need to be smarter. Pass only munis that Stage 1 actually read (had docs).
-        # Munis where Stage 1 found NO docs should get the Stage 2 cache check.
-        # We can determine this from scan_stats tracking.
-        # Actually the simplest and most correct approach: for Stage 2, skip any muni
-        # that appeared in Stage 1 results OR that Stage 1 scanned docs from.
-        # Since we don't track per-muni doc counts outside the thread pool, 
-        # the safest fallback is: Stage 2 searches ALL cached munis, and the
-        # _scan_cached_docs function deduplicates by checking stage1_scanned_munis.
-        # We pass ALL attempted muni names so that Stage 2 only adds NEW coverage.
 
         if cache_matches:
             results.extend(cache_matches)
