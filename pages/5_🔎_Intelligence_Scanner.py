@@ -350,10 +350,10 @@ def _scan_single_muni(row, keywords):
     """Scan a single municipality's recent documents for multiple keywords.
 
     This is the function submitted to the thread pool. It:
-      1. Spiders the listing page for up to 4 recent documents
+      1. Spiders the listing page for up to 3 recent documents
       2. Downloads and extracts text from each document
       3. Tests ALL keywords with regex word boundaries
-      4. Returns a list of match dicts, or None if nothing found
+      4. Returns a dict with 'matches' (list) and 'stats' (document counts)
     """
     name = row.get('municipality_name', 'Unknown')
     county = row.get('county', 'Unknown')
@@ -363,6 +363,15 @@ def _scan_single_muni(row, keywords):
 
     listing_clean = str(listing_url).strip().rstrip("/") if listing_url and not pd.isna(listing_url) else ""
     fallback_clean = str(fallback_url).strip().rstrip("/") if fallback_url and not pd.isna(fallback_url) else ""
+
+    # Track document-level statistics for this municipality
+    stats = {
+        "docs_found": 0,       # URLs discovered by spidering
+        "docs_scanned": 0,     # Documents successfully read
+        "pdfs_read": 0,        # PDF documents read
+        "html_read": 0,        # HTML documents read
+        "no_portal": False,    # True if no listing URL or no docs found
+    }
 
     urls_to_scan = []
     found_real_docs = False
@@ -379,7 +388,10 @@ def _scan_single_muni(row, keywords):
             urls_to_scan = [fallback_clean]
 
         if not urls_to_scan:
-            return None
+            stats["no_portal"] = True
+            return {"matches": [], "stats": stats}
+
+        stats["docs_found"] = len(urls_to_scan)
 
         matches = []
         for url in urls_to_scan:
@@ -388,6 +400,14 @@ def _scan_single_muni(row, keywords):
             # Skip HTML portal/listing pages to avoid false positives from menus
             if not is_pdf and not found_real_docs:
                 continue
+
+            # Only count as "scanned" if we got meaningful text content
+            if text_content and len(text_content.strip()) > 50:
+                stats["docs_scanned"] += 1
+                if is_pdf:
+                    stats["pdfs_read"] += 1
+                else:
+                    stats["html_read"] += 1
 
             content_lower = text_content.lower()
 
@@ -415,12 +435,12 @@ def _scan_single_muni(row, keywords):
                 if key not in seen:
                     unique_matches.append(m)
                     seen.add(key)
-            return unique_matches
+            return {"matches": unique_matches, "stats": stats}
 
     except Exception:
         pass
 
-    return None
+    return {"matches": [], "stats": stats}
 
 
 def run_live_scan(registry_subset, keywords):
@@ -428,10 +448,37 @@ def run_live_scan(registry_subset, keywords):
 
     Uses a 5-thread pool (reduced from 20 to stay within Streamlit Cloud's
     ~1 GB memory limit) with Streamlit progress feedback.
+
+    Crash-resilient design:
+    - Each future.result() is wrapped in try/except with a 60-second timeout
+      so a single hung municipal site cannot kill the entire scan.
+    - Partial results are saved to st.session_state after every hit so that
+      even if a late failure or Streamlit rerun occurs, earlier results survive.
+    - A summary of timed-out/errored municipalities is displayed at the end.
+
+    Returns:
+        (pd.DataFrame, dict): Results DataFrame and aggregated scan statistics.
     """
     results = []
+    errors = []
     total = len(registry_subset)
     completed = 0
+
+    # Aggregate document-level statistics across all municipalities
+    scan_stats = {
+        "munis_attempted": total,
+        "munis_with_docs": 0,      # Municipalities where ≥1 document was read
+        "munis_no_portal": 0,      # Municipalities with no portal or no documents found
+        "total_docs_found": 0,     # Total document URLs discovered by spidering
+        "total_docs_scanned": 0,   # Total documents successfully read
+        "total_pdfs_read": 0,      # PDF documents read
+        "total_html_read": 0,      # HTML pages read
+        "munis_errored": 0,        # Municipalities that timed out or threw exceptions
+    }
+
+    # Initialise session state for crash-safe partial results
+    st.session_state["_scan_results_partial"] = []
+    st.session_state["_scan_errors"] = []
 
     progress_bar = st.progress(0)
     status_text = st.empty()
@@ -451,16 +498,55 @@ def run_live_scan(registry_subset, keywords):
             progress_bar.progress(completed / total)
             status_text.text(f"Scanning... {completed} / {total} municipalities processed")
 
-            res_list = future.result()
-            if res_list:
-                results.extend(res_list)
-                found_kws = ", ".join(list(set([r['Keyword Found'] for r in res_list])))
-                hit_container.success(f"🎯 **HIT:** {muni_name} — *{found_kws}*")
+            try:
+                result = future.result(timeout=60)
 
-    status_text.text(f"✅ Scan complete — {total} municipalities processed.")
+                # Aggregate document stats
+                if result and isinstance(result, dict):
+                    muni_stats = result.get("stats", {})
+                    scan_stats["total_docs_found"] += muni_stats.get("docs_found", 0)
+                    scan_stats["total_docs_scanned"] += muni_stats.get("docs_scanned", 0)
+                    scan_stats["total_pdfs_read"] += muni_stats.get("pdfs_read", 0)
+                    scan_stats["total_html_read"] += muni_stats.get("html_read", 0)
+
+                    if muni_stats.get("no_portal"):
+                        scan_stats["munis_no_portal"] += 1
+                    elif muni_stats.get("docs_scanned", 0) > 0:
+                        scan_stats["munis_with_docs"] += 1
+
+                    # Collect keyword matches
+                    res_list = result.get("matches", [])
+                    if res_list:
+                        results.extend(res_list)
+                        # Save partial results so they survive a crash
+                        st.session_state["_scan_results_partial"] = list(results)
+                        found_kws = ", ".join(list(set([r['Keyword Found'] for r in res_list])))
+                        hit_container.success(f"🎯 **HIT:** {muni_name} — *{found_kws}*")
+
+            except TimeoutError:
+                errors.append(f"⏳ {muni_name} — timed out (site unresponsive)")
+                scan_stats["munis_errored"] += 1
+            except Exception as e:
+                errors.append(f"❌ {muni_name} — {str(e)[:100]}")
+                scan_stats["munis_errored"] += 1
+
+    # Final status
+    error_note = f"  ({len(errors)} failed)" if errors else ""
+    status_text.text(f"✅ Scan complete — {total} municipalities processed.{error_note}")
     progress_bar.empty()
 
-    return pd.DataFrame(results)
+    # Show errors in a collapsed section so they don't clutter the results
+    if errors:
+        st.session_state["_scan_errors"] = errors
+        with st.expander(f"⚠️ {len(errors)} municipality scan(s) failed — click to see details", expanded=False):
+            for err in errors:
+                st.caption(err)
+
+    # Persist final results and stats in session state for recovery after reruns
+    st.session_state["_scan_results_final"] = results
+    st.session_state["_scan_stats"] = scan_stats
+
+    return pd.DataFrame(results), scan_stats
 
 
 # --- UI Layout ---
@@ -536,6 +622,29 @@ with tab_live:
         "concurrent thread pool with strict regex word-boundary matching to eliminate false positives."
     )
 
+    # ── Crash recovery: offer partial results from interrupted scans ──
+    _partial = st.session_state.get("_scan_results_partial", [])
+    _final = st.session_state.get("_scan_results_final", [])
+    if _partial and not _final:
+        # We have partial but no final → scan was interrupted
+        st.warning(
+            f"⚠️ **A previous scan was interrupted.** {len(_partial)} hit(s) were saved before the interruption."
+        )
+        col_recover, col_discard = st.columns(2)
+        with col_recover:
+            recover_csv = pd.DataFrame(_partial).to_csv(index=False).encode('utf-8')
+            st.download_button(
+                "📥 Download recovered partial results",
+                data=recover_csv,
+                file_name=f"recovered_scan_{datetime.date.today().isoformat()}.csv",
+                mime="text/csv",
+                use_container_width=True,
+            )
+        with col_discard:
+            if st.button("🗑️ Dismiss", use_container_width=True):
+                st.session_state["_scan_results_partial"] = []
+                st.rerun()
+
     registry_df = load_registry()
 
     if registry_df.empty:
@@ -565,6 +674,7 @@ with tab_live:
                 height=120,
                 label_visibility="collapsed",
             )
+            st.caption("💡 *Click outside the text box or press Ctrl+Enter after typing to register your keywords.*")
 
         # Build the final keyword list
         all_keywords = []
@@ -573,16 +683,27 @@ with tab_live:
         if custom_kw_text.strip():
             custom_kws = [kw.strip() for kw in custom_kw_text.strip().split("\n") if kw.strip()]
             all_keywords.extend(custom_kws)
-        # De-duplicate while preserving order
+
+        # De-duplicate (case-insensitive) while preserving order.
+        # Scanning is case-insensitive, so "Greenhouses" and "greenhouses"
+        # would produce identical results — we keep the first occurrence.
         seen_kw = set()
         unique_keywords = []
+        removed_dupes = []
         for kw in all_keywords:
             if kw.lower() not in seen_kw:
                 unique_keywords.append(kw)
                 seen_kw.add(kw.lower())
+            else:
+                removed_dupes.append(kw)
 
         if unique_keywords:
-            st.info(f"**{len(unique_keywords)} keywords selected:** {', '.join(unique_keywords)}")
+            st.info(f"**{len(unique_keywords)} keyword(s) selected:** {', '.join(unique_keywords)}")
+            if removed_dupes:
+                st.caption(
+                    f"ℹ️ {len(removed_dupes)} duplicate(s) removed (matching is case-insensitive): "
+                    f"*{', '.join(removed_dupes)}*"
+                )
 
         st.divider()
 
@@ -631,13 +752,53 @@ with tab_live:
 
                 st.markdown(f"**Scanning {len(target_df)} municipalities for {len(unique_keywords)} keywords...**")
 
-                live_results = run_live_scan(target_df, unique_keywords)
+                live_results, scan_stats = run_live_scan(target_df, unique_keywords)
+
+                # ── Scan Coverage Report (always shown) ──
+                st.markdown("---")
+                st.subheader("📡 Scan Coverage Report")
+
+                sc1, sc2, sc3, sc4, sc5, sc6 = st.columns(6)
+                sc1.metric("Municipalities Attempted", scan_stats["munis_attempted"])
+                sc2.metric("Portals With Documents", scan_stats["munis_with_docs"])
+                sc3.metric("Total Documents Read", scan_stats["total_docs_scanned"])
+                sc4.metric("📄 PDFs Read", scan_stats["total_pdfs_read"])
+                sc5.metric("🌐 HTML Pages Read", scan_stats["total_html_read"])
+                sc6.metric("❌ Errors / Timeouts", scan_stats["munis_errored"])
+
+                # Coverage percentage
+                coverage_pct = (
+                    round(scan_stats["munis_with_docs"] / scan_stats["munis_attempted"] * 100)
+                    if scan_stats["munis_attempted"] > 0 else 0
+                )
+                st.progress(coverage_pct / 100)
+                st.caption(
+                    f"**{coverage_pct}% coverage** — "
+                    f"{scan_stats['munis_with_docs']} municipalities had readable documents, "
+                    f"{scan_stats['munis_no_portal']} had no portal or no documents found, "
+                    f"{scan_stats['munis_errored']} timed out or errored."
+                )
+
+                with st.expander("📊 Detailed scan breakdown", expanded=False):
+                    st.markdown(f"""
+| Metric | Count |
+|---|---|
+| Municipalities attempted | **{scan_stats['munis_attempted']}** |
+| Municipalities with ≥1 document read | **{scan_stats['munis_with_docs']}** |
+| Municipalities with no portal / no docs | **{scan_stats['munis_no_portal']}** |
+| Municipalities that errored / timed out | **{scan_stats['munis_errored']}** |
+| Total document URLs discovered | **{scan_stats['total_docs_found']}** |
+| Total documents successfully read | **{scan_stats['total_docs_scanned']}** |
+| — PDF documents | **{scan_stats['total_pdfs_read']}** |
+| — HTML pages | **{scan_stats['total_html_read']}** |
+                    """)
 
                 if live_results.empty:
                     st.info("No matches found for the specified keywords in the selected municipalities.")
                 else:
-                    # ── Summary Metrics ──
+                    # ── Hit Metrics ──
                     st.markdown("---")
+                    st.subheader("🎯 Keyword Hits")
                     m1, m2, m3, m4 = st.columns(4)
                     m1.metric("Total Hits", len(live_results))
                     m2.metric("Unique Municipalities", live_results["Municipality"].nunique())
