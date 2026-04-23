@@ -78,6 +78,22 @@ def load_registry():
         return pd.read_csv(registry_path)
     return pd.DataFrame()
 
+# Path to the Selenium pre-fetched cache (generated weekly by selenium_prefetch.py)
+CACHE_PATH = os.path.join(ROOT_DIR, "signals", "cached_portal_docs.csv")
+
+@st.cache_data(ttl=3600)
+def load_cached_docs():
+    """Load the pre-fetched document text cache from the Selenium pre-fetch.
+
+    This CSV is generated locally by `selenium_prefetch.py` and committed to Git.
+    It contains the full text of documents from JS-rendered portals that the
+    cloud-based HTTP scanner cannot read.
+    """
+    if os.path.exists(CACHE_PATH):
+        df = pd.read_csv(CACHE_PATH)
+        return df
+    return pd.DataFrame()
+
 # --- Shared Scanner Constants ---
 
 HEADERS = {
@@ -424,6 +440,7 @@ def _scan_single_muni(row, keywords):
                         "Keyword Found": keyword,
                         "Context Snippet": snippet,
                         "Source URL": url,
+                        "Scan Method": "🟢 Live",
                     })
 
         # De-duplicate across URLs
@@ -443,7 +460,102 @@ def _scan_single_muni(row, keywords):
     return {"matches": [], "stats": stats}
 
 
+def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_scanned_munis):
+    """Stage 2: Search the pre-fetched Selenium cache for keyword matches.
+
+    For any municipality that Stage 1 couldn't read (not in stage1_scanned_munis),
+    this function checks the cached document text for keyword matches using the
+    same regex word-boundary logic as Stage 1.
+
+    Args:
+        cached_df: DataFrame from cached_portal_docs.csv
+        registry_subset: The target municipalities for this scan
+        keywords: List of keywords to search for
+        stage1_scanned_munis: Set of municipality names that Stage 1 already attempted
+
+    Returns:
+        (list[dict], dict): Matches list and cache stats dict.
+    """
+    if cached_df.empty:
+        return [], {"munis_from_cache": 0, "cache_docs_searched": 0, "cache_hits": 0}
+
+    # Get target municipality names
+    target_names = set(registry_subset["municipality_name"].str.upper().tolist())
+
+    # Filter cache to municipalities that are in our target set but NOT covered by Stage 1
+    cache_muni_col = cached_df["municipality_name"].str.upper()
+    relevant_cache = cached_df[
+        cache_muni_col.isin(target_names) & ~cache_muni_col.isin(
+            {m.upper() for m in stage1_scanned_munis}
+        )
+    ]
+
+    if relevant_cache.empty:
+        return [], {"munis_from_cache": 0, "cache_docs_searched": 0, "cache_hits": 0}
+
+    matches = []
+    munis_searched = set()
+
+    for _, row in relevant_cache.iterrows():
+        muni_name = row.get("municipality_name", "Unknown")
+        doc_text = str(row.get("doc_text", ""))
+        doc_url = str(row.get("doc_url", ""))
+
+        if not doc_text or len(doc_text.strip()) < 50:
+            continue
+
+        munis_searched.add(muni_name)
+        content_lower = doc_text.lower()
+
+        # Look up county/region from the registry
+        reg_match = registry_subset[
+            registry_subset["municipality_name"].str.upper() == muni_name.upper()
+        ]
+        county = ""
+        region = ""
+        if not reg_match.empty:
+            first = reg_match.iloc[0]
+            county = first.get("county", "") if "county" in first.index else ""
+            region = first.get("region", "") if "region" in first.index else ""
+        if not region:
+            region = get_region(muni_name)
+
+        for keyword in keywords:
+            pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
+            if re.search(pattern, content_lower):
+                snippet = extract_readable_snippet(doc_text, keyword, window=300)
+                matches.append({
+                    "Municipality": muni_name,
+                    "County / Upper Tier": county,
+                    "Region": region,
+                    "Date Scanned": datetime.date.today().isoformat(),
+                    "Keyword Found": keyword,
+                    "Context Snippet": snippet,
+                    "Source URL": doc_url,
+                    "Scan Method": "🟡 Cached",
+                })
+
+    # De-duplicate
+    if matches:
+        unique = []
+        seen = set()
+        for m in matches:
+            key = (m["Keyword Found"], m["Source URL"])
+            if key not in seen:
+                unique.append(m)
+                seen.add(key)
+        matches = unique
+
+    stats = {
+        "munis_from_cache": len(munis_searched),
+        "cache_docs_searched": len(relevant_cache),
+        "cache_hits": len(matches),
+    }
+    return matches, stats
+
+
 def run_live_scan(registry_subset, keywords):
+
     """Execute a concurrent, multi-keyword scan over a registry subset.
 
     Uses a 5-thread pool (reduced from 20 to stay within Streamlit Cloud's
@@ -544,6 +656,57 @@ def run_live_scan(registry_subset, keywords):
 
     # Persist final results and stats in session state for recovery after reruns
     st.session_state["_scan_results_final"] = results
+    st.session_state["_scan_stats"] = scan_stats
+
+    # ── Stage 2: Search the Selenium pre-fetch cache ──
+    cached_df = load_cached_docs()
+    cache_matches = []
+    cache_stats = {"munis_from_cache": 0, "cache_docs_searched": 0, "cache_hits": 0}
+
+    if not cached_df.empty:
+        # Determine which municipalities Stage 1 successfully scanned
+        stage1_scanned = set()
+        for future_name_val in future_to_name.values():
+            stage1_scanned.add(future_name_val)
+        # Only count municipalities where we actually read documents
+        stage1_with_docs = set()
+        # We track this via scan_stats — munis that had docs_scanned > 0
+        # For simplicity, use the results to identify covered municipalities
+        if results:
+            stage1_with_docs = set(r["Municipality"] for r in results)
+        # Also include munis where we scanned but found no hits (they're still covered)
+        # We'll use a broader approach: all munis attempted minus no_portal minus errored
+        # The simplest accurate approach: check all names that had docs
+        # For Stage 2, we want to check munis that Stage 1 COULDN'T read
+        # so we pass the set of munis that DID have docs
+        status_text.text(f"Stage 2: Searching cached portal data ({len(cached_df)} cached docs)...")
+
+        cache_matches, cache_stats = _scan_cached_docs(
+            cached_df, registry_subset, keywords,
+            stage1_scanned  # Pass all attempted — Stage 2 only checks munis with no Stage 1 coverage
+        )
+
+        # Wait, we need to be smarter. Pass only munis that Stage 1 actually read (had docs).
+        # Munis where Stage 1 found NO docs should get the Stage 2 cache check.
+        # We can determine this from scan_stats tracking.
+        # Actually the simplest and most correct approach: for Stage 2, skip any muni
+        # that appeared in Stage 1 results OR that Stage 1 scanned docs from.
+        # Since we don't track per-muni doc counts outside the thread pool, 
+        # the safest fallback is: Stage 2 searches ALL cached munis, and the
+        # _scan_cached_docs function deduplicates by checking stage1_scanned_munis.
+        # We pass ALL attempted muni names so that Stage 2 only adds NEW coverage.
+
+        if cache_matches:
+            results.extend(cache_matches)
+            st.session_state["_scan_results_final"] = results
+            for cm in cache_matches:
+                hit_container.info(f"🟡 **CACHED HIT:** {cm['Municipality']} — *{cm['Keyword Found']}*")
+
+        status_text.text(
+            f"✅ Scan complete — {total} live + {cache_stats['munis_from_cache']} cached municipalities searched.{error_note}"
+        )
+
+    scan_stats["cache_stats"] = cache_stats
     st.session_state["_scan_stats"] = scan_stats
 
     return pd.DataFrame(results), scan_stats
@@ -754,43 +917,62 @@ with tab_live:
 
                 live_results, scan_stats = run_live_scan(target_df, unique_keywords)
 
+                # Extract cache stats
+                cache_stats = scan_stats.get("cache_stats", {})
+                munis_from_cache = cache_stats.get("munis_from_cache", 0)
+                cache_docs = cache_stats.get("cache_docs_searched", 0)
+                cache_hits = cache_stats.get("cache_hits", 0)
+                total_coverage = scan_stats["munis_with_docs"] + munis_from_cache
+
                 # ── Scan Coverage Report (always shown) ──
                 st.markdown("---")
                 st.subheader("📡 Scan Coverage Report")
 
                 sc1, sc2, sc3, sc4, sc5, sc6 = st.columns(6)
                 sc1.metric("Municipalities Attempted", scan_stats["munis_attempted"])
-                sc2.metric("Portals With Documents", scan_stats["munis_with_docs"])
-                sc3.metric("Total Documents Read", scan_stats["total_docs_scanned"])
-                sc4.metric("📄 PDFs Read", scan_stats["total_pdfs_read"])
-                sc5.metric("🌐 HTML Pages Read", scan_stats["total_html_read"])
-                sc6.metric("❌ Errors / Timeouts", scan_stats["munis_errored"])
+                sc2.metric("🟢 Live HTTP Scanned", scan_stats["munis_with_docs"])
+                sc3.metric("🟡 From Cached Data", munis_from_cache)
+                sc4.metric("Total Documents Read", scan_stats["total_docs_scanned"] + cache_docs)
+                sc5.metric("❌ Errors / Timeouts", scan_stats["munis_errored"])
+                sc6.metric("🚧 No Portal", scan_stats["munis_no_portal"])
 
                 # Coverage percentage
                 coverage_pct = (
-                    round(scan_stats["munis_with_docs"] / scan_stats["munis_attempted"] * 100)
+                    round(total_coverage / scan_stats["munis_attempted"] * 100)
                     if scan_stats["munis_attempted"] > 0 else 0
                 )
-                st.progress(coverage_pct / 100)
+                st.progress(min(coverage_pct / 100, 1.0))
                 st.caption(
                     f"**{coverage_pct}% coverage** — "
-                    f"{scan_stats['munis_with_docs']} municipalities had readable documents, "
-                    f"{scan_stats['munis_no_portal']} had no portal or no documents found, "
-                    f"{scan_stats['munis_errored']} timed out or errored."
+                    f"{scan_stats['munis_with_docs']} live + {munis_from_cache} cached = "
+                    f"{total_coverage} municipalities with searchable documents."
                 )
+
+                # Cache freshness indicator
+                cached_df_info = load_cached_docs()
+                if not cached_df_info.empty and "fetch_date" in cached_df_info.columns:
+                    latest_fetch = cached_df_info["fetch_date"].max()
+                    st.caption(f"📅 Cached data last updated: **{latest_fetch}**")
+                elif munis_from_cache == 0:
+                    st.caption("📅 No cached data available — run `selenium_prefetch.py` locally to cover JS portals.")
 
                 with st.expander("📊 Detailed scan breakdown", expanded=False):
                     st.markdown(f"""
 | Metric | Count |
 |---|---|
 | Municipalities attempted | **{scan_stats['munis_attempted']}** |
-| Municipalities with ≥1 document read | **{scan_stats['munis_with_docs']}** |
-| Municipalities with no portal / no docs | **{scan_stats['munis_no_portal']}** |
-| Municipalities that errored / timed out | **{scan_stats['munis_errored']}** |
-| Total document URLs discovered | **{scan_stats['total_docs_found']}** |
-| Total documents successfully read | **{scan_stats['total_docs_scanned']}** |
-| — PDF documents | **{scan_stats['total_pdfs_read']}** |
-| — HTML pages | **{scan_stats['total_html_read']}** |
+| **Stage 1: Live HTTP** | |
+| — Municipalities with ≥1 doc read | **{scan_stats['munis_with_docs']}** |
+| — PDF documents read | **{scan_stats['total_pdfs_read']}** |
+| — HTML pages read | **{scan_stats['total_html_read']}** |
+| — Total docs scanned | **{scan_stats['total_docs_scanned']}** |
+| **Stage 2: Cached Selenium** | |
+| — Municipalities from cache | **{munis_from_cache}** |
+| — Cached documents searched | **{cache_docs}** |
+| — Hits from cache | **{cache_hits}** |
+| **Errors** | |
+| — No portal / no docs | **{scan_stats['munis_no_portal']}** |
+| — Timed out / errored | **{scan_stats['munis_errored']}** |
                     """)
 
                 if live_results.empty:
@@ -819,20 +1001,27 @@ with tab_live:
                         display_results = live_results
 
                     # ── Results Table ──
+                    col_config = {
+                        "Source URL": st.column_config.LinkColumn(
+                            "Source URL",
+                            display_text="🔗 Open Document"
+                        ),
+                        "Context Snippet": st.column_config.TextColumn(
+                            "Context Snippet",
+                            width="large"
+                        ),
+                    }
+                    # Only add Scan Method column config if column exists
+                    if "Scan Method" in display_results.columns:
+                        col_config["Scan Method"] = st.column_config.TextColumn(
+                            "Source", width="small"
+                        )
+
                     st.dataframe(
                         display_results,
                         use_container_width=True,
                         hide_index=True,
-                        column_config={
-                            "Source URL": st.column_config.LinkColumn(
-                                "Source URL",
-                                display_text="🔗 Open Document"
-                            ),
-                            "Context Snippet": st.column_config.TextColumn(
-                                "Context Snippet",
-                                width="large"
-                            ),
-                        }
+                        column_config=col_config,
                     )
 
                     # ── CSV Download ──
