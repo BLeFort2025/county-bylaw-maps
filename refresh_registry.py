@@ -359,7 +359,21 @@ def _pick_most_recent(pdf_links):
 
 
 def _auto_heal_url(driver, muni_name):
-    """Uses DuckDuckGo via Selenium to find the latest portal URL."""
+    """Uses DuckDuckGo via Selenium to find the latest portal URL.
+    
+    Validates that search results actually belong to the target municipality
+    by checking the domain/URL against the municipality name. This prevents
+    false matches (e.g., stclair.civicweb.net being saved for Kingston).
+    """
+    # Build a set of name tokens for validation (e.g., "NORTH BAY" -> {"north", "bay"})
+    name_tokens = set(muni_name.lower().replace("-", " ").split())
+    # Remove common suffixes that won't appear in URLs
+    name_tokens -= {"tp", "m", "c", "township", "municipality", "city", "town", "of", "and", "the"}
+    # Build a slug for direct URL guessing (e.g., "North Bay" -> "northbay")
+    name_slug = re.sub(r'[^a-z]', '', muni_name.lower().replace(" ", ""))
+    # Also try hyphenated version (e.g., "north-bay")
+    name_hyphen = re.sub(r'[^a-z-]', '', muni_name.lower().replace(" ", "-"))
+
     search_query = f"{muni_name} Ontario municipal council minutes agendas"
     search_url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(search_query)}"
     candidates = []
@@ -372,23 +386,54 @@ def _auto_heal_url(driver, muni_name):
             if "uddg=" in href:
                 decoded = urllib.parse.unquote(href.split("uddg=")[1].split("&")[0])
                 candidates.append(decoded)
-    except Exception as e:
+    except Exception:
         pass  # Silent fail for the search itself
-        
-    # Prioritize known portal types (civicweb, escribe)
-    prioritized = []
+
+    def _url_matches_muni(url):
+        """Check if the URL plausibly belongs to this municipality."""
+        url_lower = url.lower()
+        # Check if the slug appears in the domain/path
+        if name_slug in url_lower:
+            return True
+        if name_hyphen in url_lower:
+            return True
+        # Check if at least one significant name token appears in the URL
+        for token in name_tokens:
+            if len(token) >= 4 and token in url_lower:
+                return True
+        return False
+
+    # Filter and prioritize: only keep URLs that match the municipality name
+    validated = []
+    fallback = []
     for c in candidates:
-        if "civicweb.net" in c.lower() or "escribemeetings.com" in c.lower() or "pub-" in c.lower():
-            prioritized.insert(0, c)
+        if _url_matches_muni(c):
+            if "civicweb.net" in c.lower() or "escribemeetings.com" in c.lower() or "pub-" in c.lower():
+                validated.insert(0, c)
+            else:
+                validated.append(c)
         else:
-            prioritized.append(c)
-            
-    # Return top 3 unique candidates
+            fallback.append(c)
+
+    # If no validated matches, try common portal URL patterns directly
+    if not validated:
+        guesses = [
+            f"https://pub-{name_slug}.escribemeetings.com/",
+            f"https://{name_slug}.civicweb.net/Portal/",
+        ]
+        validated.extend(guesses)
+
+    # Add non-portal fallbacks (municipal websites) that match the name
+    for f in fallback:
+        if _url_matches_muni(f):
+            validated.append(f)
+
+    # Return top 5 unique candidates
     unique = []
-    for p in prioritized:
+    for p in validated:
         if p not in unique:
             unique.append(p)
-    return unique[:3]
+    return unique[:5]
 
 
 

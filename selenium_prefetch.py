@@ -73,7 +73,7 @@ def setup_driver():
     driver = webdriver.Chrome(
         service=Service(ChromeDriverManager().install()), options=options
     )
-    driver.set_page_load_timeout(30)
+    driver.set_page_load_timeout(45)
     return driver
 
 
@@ -283,6 +283,11 @@ def main():
             print(f"[{count}/{total}] {name} ({portal})...", end=" ", flush=True)
 
             docs = prefetch_single_muni(driver, row)
+
+            # Retry once if the first attempt failed
+            if not docs:
+                time.sleep(5)
+                docs = prefetch_single_muni(driver, row)
 
             if docs:
                 all_results.extend(docs)
