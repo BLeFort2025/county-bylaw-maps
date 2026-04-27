@@ -116,7 +116,7 @@ def find_latest_document(driver, listing_url):
         return None
 
     except Exception as e:
-        # Silencing error print out so it doesn't clutter the Auto-Healing logs
+        print(f"Error: {e}")
         return None
 
 
@@ -358,40 +358,6 @@ def _pick_most_recent(pdf_links):
     return pdf_links[0][0]
 
 
-def _auto_heal_url(driver, muni_name):
-    """Uses DuckDuckGo via Selenium to find the latest portal URL."""
-    search_query = f"{muni_name} Ontario municipal council minutes agendas"
-    search_url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(search_query)}"
-    candidates = []
-    try:
-        driver.get(search_url)
-        time.sleep(3)
-        soup = BeautifulSoup(driver.page_source, "html.parser")
-        for a in soup.find_all("a", class_="result__url", href=True):
-            href = a["href"]
-            if "uddg=" in href:
-                decoded = urllib.parse.unquote(href.split("uddg=")[1].split("&")[0])
-                candidates.append(decoded)
-    except Exception as e:
-        pass  # Silent fail for the search itself
-        
-    # Prioritize known portal types (civicweb, escribe)
-    prioritized = []
-    for c in candidates:
-        if "civicweb.net" in c.lower() or "escribemeetings.com" in c.lower() or "pub-" in c.lower():
-            prioritized.insert(0, c)
-        else:
-            prioritized.append(c)
-            
-    # Return top 3 unique candidates
-    unique = []
-    for p in prioritized:
-        if p not in unique:
-            unique.append(p)
-    return unique[:3]
-
-
-
 def main():
     parser = argparse.ArgumentParser(description="Refresh portal registry with latest document URLs.")
     parser.add_argument("--portal", choices=["escribe", "legistar", "all"], default="all",
@@ -463,24 +429,8 @@ def main():
                 updated += 1
                 print("OK")
             else:
-                print("failed. Auto-healing...", end=" ", flush=True)
-                candidates = _auto_heal_url(driver, name)
-                healed = False
-                for cand_url in candidates:
-                    try_url = find_latest_document(driver, cand_url)
-                    if try_url:
-                        # Found a working URL! Update the base listing url too
-                        df.at[idx, "minutes_listing_url"] = cand_url
-                        df.at[idx, "example_recent_minutes_url"] = try_url
-                        df.at[idx, "example_recent_minutes_date"] = datetime.date.today().isoformat()
-                        updated += 1
-                        healed = True
-                        print("HEALED!")
-                        break
-                
-                if not healed:
-                    failed += 1
-                    print("still failed")
+                failed += 1
+                print("-- no doc found")
 
     except KeyboardInterrupt:
         print("\nInterrupted by user.")
