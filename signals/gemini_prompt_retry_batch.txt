@@ -1,0 +1,105 @@
+# TASK: Extract Livestock Guardian Dog (LGD) Bylaw Data — URL Retry Batch
+
+## Context
+I am a policy analyst at the Ontario Federation of Agriculture (OFA). We maintain a database tracking how all 444 Ontario municipalities regulate Livestock Guardian Dogs (LGDs) in their animal control bylaws. In a previous batch, these 17 municipalities had URLs that were not accessible. I need you to **search the web for each municipality's current animal control bylaw**, find the correct document, read it, and extract the data fields below.
+
+## What to Look For
+"Livestock Guardian Dogs" (LGDs) are dogs used by farmers to protect livestock from predators. Related terms include:
+- **Livestock Guardian Dog** / **Guardian Dog** / **LGD**
+- **Working Dog** / **Farm Dog**
+- **Herding Dog**
+- **Kennel exemptions for agricultural properties**
+
+## Municipalities to Process
+
+For each municipality below, I've included the original URL that didn't work. Please try the URL first, and if it fails, search the municipality's official website for their animal control or dog licensing bylaw.
+
+1. Bradford West Gwillimbury (Simcoe)
+   Original URL: https://www.townofbwg.com/en/town-hall/animal-control-by-law.aspx
+
+2. Barrie (Simcoe)
+   Original URL: https://www.barrie.ca/media/3941
+
+3. Brantford (Brant)
+   Original URL: https://www.brantford.ca/Modules/Bylaws/Bylaw/Download/03bf4867-02bb-4f61-8499-4be0634bacca
+
+4. Clearview (Simcoe)
+   Original URL: https://www.clearview.ca/media/50342
+
+5. Caledon (Peel)
+   Original URL: https://www.caledon.ca/uploads/14/Doc_637203090570046185.pdf?ts=638422935375591806
+
+6. Cochrane (Cochrane)
+   Original URL: https://www.cochrane.ca/media/356
+
+7. Drummond-North Elmsley (Lanark)
+   Original URL: https://www.dnetownship.ca/component/edocman/?task=document.viewdocument&id=8
+
+8. Grey Highlands (Grey)
+   Original URL: https://greyhighlands.civicweb.net/document/292927/
+
+9. Gravenhurst (Muskoka)
+   Original URL: https://gravenhurst.civicweb.net/document/34965/
+
+10. Halton Hills (Halton)
+    Original URL: https://haltonhills.ic12.esolg.ca/en/your-government/By-Laws/BY-LAW%20NO.%201994-077.pdf
+
+11. Fort Erie (Niagara)
+    Original URL: https://www2.forterie.ca/bylaws/2021-073/$FILE/73-2021%20Animal%20By-law.pdf
+
+12. Innisfil (Simcoe)
+    Original URL: https://innisfil.ca/en/living-here/resources/Documents/2022.08.15-Animal-Control-By-Law-Consolidation.pdf
+
+13. Kenora (Kenora)
+    Original URL: https://listview.kenora.ca/Files/ByLaws/2000%20to%202015/2010/150-2010%20Keeping%20of%20Animals-Animal%20Control.pdf
+
+14. King (York)
+    Original URL: https://king.civicweb.net/document/53164/
+
+15. Loyalist (Lennox and Addington)
+    Original URL: https://loyalist.civicweb.net/filepro/documents/29087/?preview=40167
+
+16. Huron Shores (Algoma)
+    Original URL: https://huronshores.ca/wp-content/uploads/2023/03/22-76-Animal-Control-By-law-legal-size-paper.pdf
+
+17. McDougall (Parry Sound)
+    Original URL: https://mcdougall2022.municipalwebsites.ca/Editor/images/By-laws/Dog%20Licensing%20By-law.pdf
+
+
+## Instructions
+For EACH municipality above:
+1. **Try the original URL first**. If it works, read the document.
+2. **If the URL doesn't work**, search the municipality's official website (e.g. "[municipality name] animal control bylaw" or "[municipality name] dog bylaw") to find their current animal control bylaw document.
+3. **Read the full bylaw** and extract ALL of the following fields into the JSON format specified below.
+4. If you truly cannot find the bylaw despite searching, note "BYLAW NOT FOUND" in the notes field and still fill in as many fields as possible from any information you can find.
+
+## Required Fields (extract for each municipality)
+
+```
+{
+  "municipality": "Name of municipality",
+  "county": "County/Region name",
+  "bylaw_name": "The official bylaw name/number exactly as written in the document (e.g. 'BY-LAW NUMBER 2024-045')",
+  "date_enacted": "Date the bylaw was enacted in YYYY-MM-DD format, or null if not found",
+  "has_lgd_definition": "Yes or No - does the bylaw explicitly define 'livestock guardian dog', 'working dog', or 'farm dog'?",
+  "lgd_definition": "The EXACT quoted text of the LGD/working dog/farm dog definition from the bylaw, or null if none exists",
+  "has_herding_def": "Yes or No - does the bylaw explicitly define 'herding dog'?",
+  "herding_definition": "The EXACT quoted text of the herding dog definition, or null",
+  "exempt_license_fees": "Yes if LGDs/working dogs are exempt from license fees, No if they must pay, N/A if license fees aren't mentioned",
+  "collar_tag_req": "Description of any collar/tag requirements for dogs, or null",
+  "barking_restrictions": "Yes or No - does the bylaw have sections restricting excessive barking or noise from dogs?",
+  "exempt_barking": "Yes if LGDs/working dogs are specifically exempt from barking/noise restrictions, No if not exempt, N/A if no barking restrictions exist",
+  "dog_limit": "The general dog limit per household AND any exemptions for farms or agricultural properties",
+  "progress_label": "COMPLETE - FARM FRIENDLY if the bylaw contains specific provisions that are favourable to LGDs/working dogs/farm dogs (definitions, exemptions, agricultural provisions), or COMPLETE if it's a standard animal control bylaw with no farm-friendly LGD provisions",
+  "notes": "Any important observations about the bylaw's treatment of LGDs, recent amendments, or farm-relevant sections. Also note the URL where you found the bylaw if different from the original."
+}
+```
+
+## Output Format
+Return your results as a JSON array containing one object per municipality.
+
+## Important Rules
+- **Quote definitions EXACTLY** as written in the bylaw — do not paraphrase
+- **Be thorough** — look through the ENTIRE document including schedules and appendices
+- If you find the bylaw at a different URL than the original, note the working URL in the notes field
+- Return ONLY the JSON array, no other commentary

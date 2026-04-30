@@ -1,0 +1,99 @@
+# TASK: Extract Livestock Guardian Dog (LGD) Bylaw Data — Batch 5 of 7
+
+## Context
+I am a policy analyst at the Ontario Federation of Agriculture (OFA). We maintain a database tracking how all 444 Ontario municipalities regulate Livestock Guardian Dogs (LGDs) in their animal control bylaws. I need you to visit each municipality's animal control bylaw document linked below, read it, and extract specific data fields about LGD provisions.
+
+## What to Look For
+"Livestock Guardian Dogs" (LGDs) are dogs used by farmers to protect livestock (sheep, goats, cattle) from predators. Many Ontario municipalities have been updating their animal control bylaws to include specific definitions and exemptions for these dogs. Related terms include:
+- **Livestock Guardian Dog** / **Guardian Dog** / **LGD**
+- **Working Dog** / **Farm Dog**
+- **Herding Dog**
+- **Kennel exemptions for agricultural properties**
+
+## Municipalities to Process (Batch 5)
+
+1. New Tecumseth (Simcoe)
+   URL: https://www.newtecumseth.ca/en/town-hall/resources/Documents/bylaws/Canine-Control-By-law-No.-2017-077-Consolidation-Accessible.doc.pdf
+
+2. Minto (Wellington)
+   URL: https://minto.nyc3.cdn.digitaloceanspaces.com/By-Laws/Animal-By-Laws/Dog-Licensing-By-Law-2019-39.pdf
+
+3. Milton (Halton)
+   URL: https://www.milton.ca/en/town-hall/resources/Accessible_Bylaws/090-2004-Animal-Control--Consolidated.pdf
+
+4. Mulmur (Dufferin)
+   URL: https://mulmur.ca/content/town-hall/bylaws/animal-care-and-control-by-law-53-2019.pdf
+
+5. Meaford (Grey)
+   URL: https://www.meaford.ca/en/our-government/resources/Documents/By-Laws/78-2013-Control-Dogs-and-Govern-the-Care-of-Animals.pdf
+
+6. Niagara-on-the-Lake (Niagara)
+   URL: https://www.notl.com/sites/default/files/2024-04/5543-23%20-%20Animal%20Control%20By-law%201.pdf#:~:text=95.%20By,law%20shall
+
+7. Mono (Dufferin)
+   URL: https://mono.civicweb.net/document/34102/
+
+8. Lincoln (Niagara)
+   URL: https://www.lincoln.ca/media/337
+
+9. North Dundas (Stormont, Dundas and Glengarry)
+   URL: https://www.northdundas.com/sites/1/files/2023-12/Bylaw%202023-100%20To%20regulate%20the%20keeping%20and%20licensing%20of%20dogs.pdf
+
+10. Oakville (Halton)
+   URL: https://www.oakville.ca/getmedia/d4b6bdbf-689a-406a-9cfa-0ed30631fdb5/bylaw-2018-006-animal-control-consolidated.pdf?ext=.pdf
+
+
+
+## Instructions
+For EACH municipality above:
+1. **Visit the URL** and read the full animal control bylaw document
+2. **Search the entire document** for any mention of livestock guardian dogs, working dogs, farm dogs, herding dogs, or agricultural exemptions to dog limits
+3. **Extract ALL of the following fields** into the JSON format specified below
+4. If the URL doesn't work, note "URL NOT ACCESSIBLE" in the notes field
+
+## Required Fields (extract for each municipality)
+
+```
+{
+  "municipality": "Name of municipality",
+  "county": "County/Region name",
+  "bylaw_name": "The official bylaw name/number exactly as written in the document (e.g. 'BY-LAW NUMBER 2024-045')",
+  "date_enacted": "Date the bylaw was enacted in YYYY-MM-DD format, or null if not found",
+  "has_lgd_definition": "Yes or No - does the bylaw explicitly define 'livestock guardian dog', 'working dog', or 'farm dog'?",
+  "lgd_definition": "The EXACT quoted text of the LGD/working dog/farm dog definition from the bylaw, or null if none exists",
+  "has_herding_def": "Yes or No - does the bylaw explicitly define 'herding dog'?",
+  "herding_definition": "The EXACT quoted text of the herding dog definition, or null",
+  "exempt_license_fees": "Yes if LGDs/working dogs are exempt from license fees, No if they must pay, N/A if license fees aren't mentioned",
+  "collar_tag_req": "Description of any collar/tag requirements for dogs, or null",
+  "barking_restrictions": "Yes or No - does the bylaw have sections restricting excessive barking or noise from dogs?",
+  "exempt_barking": "Yes if LGDs/working dogs are specifically exempt from barking/noise restrictions, No if not exempt, N/A if no barking restrictions exist",
+  "dog_limit": "The general dog limit per household AND any exemptions for farms or agricultural properties (e.g. '3 dogs per household, but LGDs on agricultural land are exempt from the limit')",
+  "progress_label": "COMPLETE - FARM FRIENDLY if the bylaw contains specific provisions that are favourable to LGDs/working dogs/farm dogs (definitions, exemptions, agricultural provisions), or COMPLETE if it's a standard animal control bylaw with no farm-friendly LGD provisions",
+  "notes": "Any important observations about the bylaw's treatment of LGDs, recent amendments, or farm-relevant sections"
+}
+```
+
+## Output Format
+Return your results as a JSON array containing one object per municipality. Example:
+
+```json
+[
+  {
+    "municipality": "Example Township",
+    "county": "Example County",
+    "bylaw_name": "BY-LAW 2024-001",
+    ...all other fields...
+  },
+  {
+    "municipality": "Another Township",
+    ...
+  }
+]
+```
+
+## Important Rules
+- **Quote definitions EXACTLY** as written in the bylaw — do not paraphrase
+- **Be thorough** — look through the ENTIRE document including schedules and appendices
+- If a bylaw is a PDF, read the full text
+- If you cannot access a URL, still include the municipality in your output with a note explaining the issue
+- Return ONLY the JSON array, no other commentary

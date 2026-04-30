@@ -1,0 +1,471 @@
+[
+  {
+    "municipality": "Armour",
+    "county": "Parry Sound",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://irp.cdn-website.com/20e551fd/files/uploaded/Animal%20Control%20Bylaw.pdf",
+    "old_bylaw_name": "BY-LAW #18-2023"
+  },
+  {
+    "municipality": "Bluewater",
+    "county": "Huron",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.municipalityofbluewater.ca/municipal-office/by-laws/animal-control-by-law/",
+    "old_bylaw_name": "By-law 34-2015"
+  },
+  {
+    "municipality": "Arnprior",
+    "county": "Renfrew",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.arnprior.ca/en/town-hall/resources/Documents/By-Laws/Animal-control-By-law-(Accessible-ms).pdf",
+    "old_bylaw_name": "By-law Number 5991-11, \r\nas amended by Bylaw 6149-12"
+  },
+  {
+    "municipality": "Aylmer",
+    "county": "Elgin",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://aylmer.ca/wp-content/uploads/2021/01/By-Law09-06-Animals.pdf",
+    "old_bylaw_name": "BY-LAW NO. 09-06"
+  },
+  {
+    "municipality": "Bradford West Gwillimbury",
+    "county": "Simcoe",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.townofbwg.com/en/town-hall/animal-control-by-law.aspx",
+    "old_bylaw_name": "By-Law Number 2019-109"
+  },
+  {
+    "municipality": "Brighton",
+    "county": "Northumberland",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.brighton.ca/en/municipal-services/resources/By-law-052-2020-Regulate-Dog-Control.pdf",
+    "old_bylaw_name": "By-Law No. 052-2020"
+  },
+  {
+    "municipality": "Barrie",
+    "county": "Simcoe",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.barrie.ca/media/3941",
+    "old_bylaw_name": "By-law 2010-035"
+  },
+  {
+    "municipality": "Brooke-Alvinston",
+    "county": "Lambton",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://brookealvinston.com/wp-content/uploads/2019/09/Animal-Licencing-.pdf",
+    "old_bylaw_name": "By-law Number 5 of 2017"
+  },
+  {
+    "municipality": "Brantford",
+    "county": "Brant",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.brantford.ca/Modules/Bylaws/Bylaw/Download/03bf4867-02bb-4f61-8499-4be0634bacca",
+    "old_bylaw_name": "By-law 29-2018"
+  },
+  {
+    "municipality": "Central Huron",
+    "county": "Huron",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.centralhuron.ca/en/your-municipal-government/resources/By-Law-28-2017.pdf",
+    "old_bylaw_name": "BY-LAW 16-2012"
+  },
+  {
+    "municipality": "Brampton",
+    "county": "Peel",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www1.brampton.ca/EN/City-Hall/Bylaws/All%20Bylaws/Animal%20Services%20By-law%20201-2023.pdf",
+    "old_bylaw_name": "By-law 201-2023"
+  },
+  {
+    "municipality": "Centre Hastings",
+    "county": "Hastings",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.centrehastings.com/media/3pae3znu/enf-001-animal-control-policy-1.pdf",
+    "old_bylaw_name": "By-Law 2017-039"
+  },
+  {
+    "municipality": "Clearview",
+    "county": "Simcoe",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.clearview.ca/media/50342",
+    "old_bylaw_name": "By-law Number 21-84\r\nCanine Control By-law"
+  },
+  {
+    "municipality": "Clarington",
+    "county": "Durham",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://weblink.clarington.net/WebLink/0/edoc/108125/2013-024%20-%20Consolidated.pdf",
+    "old_bylaw_name": "By-Law 2013-024"
+  },
+  {
+    "municipality": "Central Manitoulin",
+    "county": "Manitoulin",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.centralmanitoulin.ca/media/mdmhhtmu/2022-12_animal_control_by-law.pdf",
+    "old_bylaw_name": "BY-LAW #2022-12"
+  },
+  {
+    "municipality": "Caledon",
+    "county": "Peel",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.caledon.ca/uploads/14/Doc_637203090570046185.pdf?ts=638422935375591806",
+    "old_bylaw_name": "BY-LAW NO. 2019-43"
+  },
+  {
+    "municipality": "Cochrane",
+    "county": "Cochrane",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.cochrane.ca/media/356",
+    "old_bylaw_name": "BYLAW 04/2016"
+  },
+  {
+    "municipality": "Armstrong",
+    "county": "Timiskaming",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.armstrongtownship.com/uploads/documents/by-laws/By-Law%202022-47%20Animal%20Control%20-%20Second%20and%20Final%20Reading%20and%20repeal%202006-18.pdf",
+    "old_bylaw_name": "BY-LAW NO. 2022-47"
+  },
+  {
+    "municipality": "Enniskillen",
+    "county": "Lambton",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.enniskillen.ca/services/animals/",
+    "old_bylaw_name": "BY-LAW 24 of 2011"
+  },
+  {
+    "municipality": "Drummond-North Elmsley",
+    "county": "Lanark",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.dnetownship.ca/component/edocman/?task=document.viewdocument&id=8",
+    "old_bylaw_name": "BY-LAW NO. 2019-024"
+  },
+  {
+    "municipality": "Cobalt",
+    "county": "Timiskaming",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://cobalt.ca/wp-content/uploads/2019/09/2013-037-Bylaw-for-Animal-Control.pdf",
+    "old_bylaw_name": "BY-LAW NO. 2013-037"
+  },
+  {
+    "municipality": "Essa",
+    "county": "Simcoe",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.essatownship.on.ca/media/mxajvcmw/06-18-consolidated-canine-control.pdf",
+    "old_bylaw_name": "BY-LAW NO. 2006 - 18\r\namended 2023-09"
+  },
+  {
+    "municipality": "Grey Highlands",
+    "county": "Grey",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://greyhighlands.civicweb.net/document/292927/",
+    "old_bylaw_name": "By-law No. 2021-071"
+  },
+  {
+    "municipality": "Gravenhurst",
+    "county": "Muskoka",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://gravenhurst.civicweb.net/document/34965/",
+    "old_bylaw_name": "BY-LAW NO. 2018-26"
+  },
+  {
+    "municipality": "Greater Napanee",
+    "county": "Lennox and Addington",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.greaternapanee.com/media/g2lpd1p0/by-law-no-2024-0055-provide-for-the-licensing-registration-and-regulation-of-the-keeping-and-controlling-of-dogs.pdf#:~:text=,be%20utilized%2C%20provided%20it",
+    "old_bylaw_name": "By-law No. 2024-0055"
+  },
+  {
+    "municipality": "Halton Hills",
+    "county": "Halton",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://haltonhills.ic12.esolg.ca/en/your-government/By-Laws/BY-LAW%20NO.%201994-077.pdf",
+    "old_bylaw_name": "BY-LAW NO. 94-077 \u2013 CONSOLIDATED"
+  },
+  {
+    "municipality": "Guelph-Eramosa",
+    "county": "Wellington",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.get.on.ca/uploads/userfiles/files/By-laws/Consolidations/080-2016%20Dog%20Control%20By-law%20(Consolidated%2008_09_2021).pdf",
+    "old_bylaw_name": "By-law Number 80/2016\r\nDog by-Law"
+  },
+  {
+    "municipality": "Fort Erie",
+    "county": "Niagara",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www2.forterie.ca/bylaws/2021-073/$FILE/73-2021%20Animal%20By-law.pdf",
+    "old_bylaw_name": "By-law No. 73-2021"
+  },
+  {
+    "municipality": "Innisfil",
+    "county": "Simcoe",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://innisfil.ca/en/living-here/resources/Documents/2022.08.15-Animal-Control-By-Law-Consolidation.pdf",
+    "old_bylaw_name": "By-Law 069-22"
+  },
+  {
+    "municipality": "Kenora",
+    "county": "Kenora",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://listview.kenora.ca/Files/ByLaws/2000%20to%202015/2010/150-2010%20Keeping%20of%20Animals-Animal%20Control.pdf#navpanes=0&view=FitH",
+    "old_bylaw_name": "By-Law Number 150-2010"
+  },
+  {
+    "municipality": "London",
+    "county": "Middlesex",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://london.ca/by-laws/dog-licensing-control-law-ph-4",
+    "old_bylaw_name": "By-law PH-4"
+  },
+  {
+    "municipality": "King",
+    "county": "York",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://king.civicweb.net/document/53164/",
+    "old_bylaw_name": "BY-LAW NUMBER 2016-85"
+  },
+  {
+    "municipality": "Loyalist",
+    "county": "Lennox and Addington",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://loyalist.civicweb.net/filepro/documents/29087/?preview=40167",
+    "old_bylaw_name": "BY-LAW 2011-069"
+  },
+  {
+    "municipality": "Kincardine",
+    "county": "Bruce",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.kincardine.ca/media/n1kjtiar/24-159-dog-control-by-law.pdf?id=238402&dbid=0&repo=KINCARDINE#:~:text=Read%20a%20First%2C%20Second%20and,Mayor%20Clerk",
+    "old_bylaw_name": "BY-LAW NO. 2024 \u2013 159"
+  },
+  {
+    "municipality": "Greater Sudbury",
+    "county": "Sudbury",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.greatersudbury.ca/live/animal-services-and-wildlife/pdfs/animal-control-bylaw/",
+    "old_bylaw_name": "By-law 2017-22"
+  },
+  {
+    "municipality": "Huron Shores",
+    "county": "Algoma",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://huronshores.ca/wp-content/uploads/2023/03/22-76-Animal-Control-By-law-legal-size-paper.pdf",
+    "old_bylaw_name": "BY-LAW #22-76"
+  },
+  {
+    "municipality": "McDougall",
+    "county": "Parry Sound",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://mcdougall2022.municipalwebsites.ca/Editor/images/By-laws/Dog%20Licensing%20By-law.pdf",
+    "old_bylaw_name": "BY-LAW NO. 2013-33"
+  },
+  {
+    "municipality": "Ashfield-Colborne-Wawanosh",
+    "county": "Huron",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://acwtownship.ca/content/government/by-laws/animal-control/30-2022-animal-control.pdf",
+    "old_bylaw_name": "BY-LAW NUMBER 30-2022"
+  },
+  {
+    "municipality": "Middlesex Centre",
+    "county": "Middlesex",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.middlesexcentre.on.ca/sites/default/files/2019-12/2012-030%20Animal%20Control%20By-Law%20with%20amending%202017-014%202019-111.pdf",
+    "old_bylaw_name": "BY-LAW NUMBER 2012-030\r\nAnimal Control By-Law (Ammended 2017)"
+  },
+  {
+    "municipality": "Laurentian Valley",
+    "county": "Renfrew",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.lvtownship.ca/en/lv-government-services/resources/Documents/2017-09-036-Animal-Control-Bylaw-2006-01-271-UA-FINAL.pdf",
+    "old_bylaw_name": "BY-LAW NUMBER 2017-09-036"
+  },
+  {
+    "municipality": "New Tecumseth",
+    "county": "Simcoe",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.newtecumseth.ca/en/town-hall/resources/Documents/bylaws/Canine-Control-By-law-No.-2017-077-Consolidation-Accessible.doc.pdf",
+    "old_bylaw_name": "By-law 2017-077"
+  },
+  {
+    "municipality": "Minto",
+    "county": "Wellington",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://minto.nyc3.cdn.digitaloceanspaces.com/By-Laws/Animal-By-Laws/Dog-Licensing-By-Law-2019-39.pdf",
+    "old_bylaw_name": "By-Law 2019-39"
+  },
+  {
+    "municipality": "Milton",
+    "county": "Halton",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.milton.ca/en/town-hall/resources/Accessible_Bylaws/090-2004-Animal-Control--Consolidated.pdf",
+    "old_bylaw_name": "BY-LAW 90-2004"
+  },
+  {
+    "municipality": "Mulmur",
+    "county": "Dufferin",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://mulmur.ca/content/town-hall/bylaws/animal-care-and-control-by-law-53-2019.pdf",
+    "old_bylaw_name": "BY-LAW NO. 53.19"
+  },
+  {
+    "municipality": "Meaford",
+    "county": "Grey",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.meaford.ca/en/our-government/resources/Documents/By-Laws/78-2013-Control-Dogs-and-Govern-the-Care-of-Animals.pdf",
+    "old_bylaw_name": "BY-LAW NUMBER 078-2013"
+  },
+  {
+    "municipality": "Niagara-on-the-Lake",
+    "county": "Niagara",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.notl.com/sites/default/files/2024-04/5543-23%20-%20Animal%20Control%20By-law%201.pdf#:~:text=95.%20By,law%20shall",
+    "old_bylaw_name": "BY-LAW NO. 5543-23"
+  },
+  {
+    "municipality": "Mono",
+    "county": "Dufferin",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://mono.civicweb.net/document/34102/",
+    "old_bylaw_name": "BY-LAW NUMBER NO. 2002-62\r\namended up to 2019"
+  },
+  {
+    "municipality": "Lincoln",
+    "county": "Niagara",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.lincoln.ca/media/337",
+    "old_bylaw_name": "BY-LAW NO. 2019-18"
+  },
+  {
+    "municipality": "North Dundas",
+    "county": "Stormont, Dundas and Glengarry",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.northdundas.com/sites/1/files/2023-12/Bylaw%202023-100%20To%20regulate%20the%20keeping%20and%20licensing%20of%20dogs.pdf",
+    "old_bylaw_name": "BYLAW No. 2023-100"
+  },
+  {
+    "municipality": "Oakville",
+    "county": "Halton",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.oakville.ca/getmedia/d4b6bdbf-689a-406a-9cfa-0ed30631fdb5/bylaw-2018-006-animal-control-consolidated.pdf?ext=.pdf",
+    "old_bylaw_name": "BY-LAW NUMBER 2018-006"
+  },
+  {
+    "municipality": "Northern Bruce Peninsula",
+    "county": "Bruce",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.northbrucepeninsula.ca/media/nvxdp0fg/by-law-2019-08-dog-regulations.pdf",
+    "old_bylaw_name": "BY-LAW NO. 2019-08"
+  },
+  {
+    "municipality": "Russell",
+    "county": "Prescott and Russell",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.russell.ca/en/your-township/animal-care-and-control-by-law.aspx",
+    "old_bylaw_name": "BY-LAW 2018-062"
+  },
+  {
+    "municipality": "North Middlesex",
+    "county": "Middlesex",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.northmiddlesex.on.ca/sites/default/files/2023-01/Animal%20Control%20By-law%20090%20of%202022%20with%20set%20fine%20order_1.pdf",
+    "old_bylaw_name": "By-Law No. 090 of 2022"
+  },
+  {
+    "municipality": "Port Hope",
+    "county": "Northumberland",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.porthope.ca/en/your-municipal-government/resources/By-Laws/By-Laws/_Frequently-Requested-By-Laws/By-law%2060-2022%20-%20Animal%20Control%20By-law.pdf",
+    "old_bylaw_name": "BY-LAW NO. 60/2022"
+  },
+  {
+    "municipality": "Orangeville",
+    "county": "Dufferin",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.orangeville.ca/Modules/Bylaws/Bylaw/Download/63caeeda-cfa0-42e9-8041-ce037fec7ff6",
+    "old_bylaw_name": "BY-LAW NUMBER 2024-026"
+  },
+  {
+    "municipality": "Quinte West",
+    "county": "Hastings",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://quintewest.ca/wp-content/uploads/2021/02/By-law-16-139-Animal-Regulation-By-law.pdf",
+    "old_bylaw_name": "ByJaw Number l6-139"
+  },
+  {
+    "municipality": "Scugog",
+    "county": "Durham",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.scugog.ca/media/jptpc11e/animal_control_by-law_85-08.pdf",
+    "old_bylaw_name": "BY-LAW NUMBER 85-08\r\namended 2012"
+  },
+  {
+    "municipality": "Southwold",
+    "county": "Elgin",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.southwold.ca/en/municipal-office/2013-30-dog-by-law.aspx",
+    "old_bylaw_name": "BY-LAW NO. 2013-30\r\namended 2021"
+  },
+  {
+    "municipality": "Rideau Lakes",
+    "county": "Leeds and Grenville",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.rideaulakes.ca/component/edocman/?task=document.viewdocument&id=297",
+    "old_bylaw_name": "BY-LAW 2012-3"
+  },
+  {
+    "municipality": "Richmond Hill",
+    "county": "York",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.richmondhill.ca/en/shared-content/resources/documents/Community-Standards-By-laws/Responsbile-Pet-Ownership-and-Animal-Regulation-By-law-No.-22-25.pdf#:~:text=The%20Corporation%20of%20the%20City,the%20City%20of%20Richmond%20Hill",
+    "old_bylaw_name": "By-Law 22-25"
+  },
+  {
+    "municipality": "Tay",
+    "county": "Simcoe",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.tay.ca/media/ctgdalit/canine-control-dog-licensing-by-law.pdf",
+    "old_bylaw_name": "BY-LAW NO. 2017-43"
+  },
+  {
+    "municipality": "The Blue Mountains",
+    "county": "Grey",
+    "audit_result": "OUTDATED",
+    "bylaw_url": "https://www.thebluemountains.ca/sites/default/files/2021-09/2006-32-By-law-to-Control-and-Regulate-Dogs-within-The-Blue-Mountains-Consolidated.pdf",
+    "old_bylaw_name": "BY-LAW NO. 2006-32"
+  },
+  {
+    "municipality": "dawn",
+    "county": "Lennox and Addington",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://addingtonhighlands.ca/residents/by-laws/dog-cat/",
+    "old_bylaw_name": "BY-LAW NO. 0143/2004"
+  },
+  {
+    "municipality": "Wilmot",
+    "county": "Waterloo",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.wilmot.ca/media/dbpdwpjx/consolidated-version-2023-11-repeal-and-replace-dog-kennel-by-law.pdf",
+    "old_bylaw_name": "BY-LAW NO. 2023-11"
+  },
+  {
+    "municipality": "Whitewater Region",
+    "county": "Renfrew",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.whitewaterregion.ca/userfiles/file/20-07-1308%20Animal%20Control.pdf",
+    "old_bylaw_name": "By-law Number 20-07-1308"
+  },
+  {
+    "municipality": "West Nipissing",
+    "county": "Nipissing",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://www.westnipissing.ca/wp-content/uploads/2020/12/2020-67-Animal-Control-By-law-dogs-cats-Final-_-Nov-17-2020-003.pdf",
+    "old_bylaw_name": "BY-LAW 2020/67"
+  },
+  {
+    "municipality": "Morris-Turnberry",
+    "county": "Huron",
+    "audit_result": "NEW LGD PROVISIONS",
+    "bylaw_url": "https://morristurnberry.ca/content/government/bylaws/animal-control-by-law-8.pdf",
+    "old_bylaw_name": "BY-LAW NO. 109-2019"
+  }
+]
