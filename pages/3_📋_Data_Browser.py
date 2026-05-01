@@ -97,16 +97,24 @@ if status_filter != "All":
 # ── Metrics row ──
 col1, col2, col3, col4, col5 = st.columns(5)
 total = len(df)
-yes_count = len(df[df["exemption_status"] == "Yes"])
-no_count = len(df[df["exemption_status"] == "No"])
-na_count = len(df[df["exemption_status"].isin(["N/A", "NOT KNOWN"])])
 has_expiry = len(df[df["expiry_date"].notna() & (df["expiry_date"] != "")])
 
-# Category-specific metric labels
+# Category-specific metric labels and counts
 if selected_cat == "LGD":
     yes_label, no_label = "✅ Defines Farm Dogs", "❌ No Definition"
+    # Count from combined LGD + HD definition columns (matches map logic)
+    _resolve_yn = lambda v: str(v).strip().upper() in ("1", "YES", "Y", "TRUE")
+    lgd_yes = df["has_lgd_definition"].apply(_resolve_yn) if "has_lgd_definition" in df.columns else pd.Series(False, index=df.index)
+    hd_yes = df["has_herding_def"].apply(_resolve_yn) if "has_herding_def" in df.columns else pd.Series(False, index=df.index)
+    combined = lgd_yes | hd_yes
+    yes_count = int(combined.sum())
+    no_count = total - yes_count
+    na_count = 0
 else:
     yes_label, no_label = "✅ Yes (Exemption)", "❌ No (Exemption)"
+    yes_count = len(df[df["exemption_status"] == "Yes"])
+    no_count = len(df[df["exemption_status"] == "No"])
+    na_count = len(df[df["exemption_status"].isin(["N/A", "NOT KNOWN"])])
 
 col1.metric("Total Shown", total)
 col2.metric(yes_label, yes_count)
