@@ -102,9 +102,15 @@ no_count = len(df[df["exemption_status"] == "No"])
 na_count = len(df[df["exemption_status"].isin(["N/A", "NOT KNOWN"])])
 has_expiry = len(df[df["expiry_date"].notna() & (df["expiry_date"] != "")])
 
+# Category-specific metric labels
+if selected_cat == "LGD":
+    yes_label, no_label = "✅ Defines Farm Dogs", "❌ No Definition"
+else:
+    yes_label, no_label = "✅ Yes (Exemption)", "❌ No (Exemption)"
+
 col1.metric("Total Shown", total)
-col2.metric("✅ Yes (Exemption)", yes_count)
-col3.metric("❌ No (Exemption)", no_count)
+col2.metric(yes_label, yes_count)
+col3.metric(no_label, no_count)
 col4.metric("❓ N/A / Unknown", na_count)
 col5.metric("📅 Has Expiry Date", has_expiry)
 
@@ -113,9 +119,8 @@ st.divider()
 # ── Category-specific detail columns to show in the table ──
 CATEGORY_DETAIL_COLS = {
     "LGD": {
-        "has_lgd_definition":   "LGD Definition",
+        "_lgd_hd_combined":     "LGD/HD Working Dog Def.",
         "lgd_definition":       "LGD Definition Text",
-        "has_herding_def":      "Herding Dog Def.",
         "herding_definition":   "Herding Definition Text",
         "exempt_license_fees":  "Exempt License Fees",
         "collar_tag_req":       "Collar/Tag Required",
@@ -165,6 +170,7 @@ CATEGORY_DETAIL_COLS = {
 YES_NO_DETAIL_FIELDS = {
     "has_lgd_definition", "has_herding_def", "exempt_license_fees",
     "collar_tag_req", "barking_restrictions", "exempt_barking",
+    "_lgd_hd_combined",
     "has_fence_bylaw", "applies_all_lands", "replaces_lfa",
     "security_fencing_exemption", "electrified_fencing_exemption",
     "equal_apportionment", "has_dc", "farm_exemption", "can_keep",
@@ -200,6 +206,20 @@ def _resolve_detail_value(val):
 for raw_col in detail_map.keys():
     if raw_col in df.columns and raw_col in YES_NO_DETAIL_FIELDS:
         df[raw_col] = df[raw_col].apply(_resolve_detail_value)
+
+# Compute combined LGD/HD Working Dog Definition column for LGD category
+if selected_cat == "LGD":
+    if "has_lgd_definition" in df.columns and "has_herding_def" in df.columns:
+        # Resolve the raw columns first
+        lgd_resolved = df["has_lgd_definition"].apply(_resolve_detail_value)
+        hd_resolved = df["has_herding_def"].apply(_resolve_detail_value)
+        df["_lgd_hd_combined"] = lgd_resolved.where(
+            lgd_resolved.eq("Yes"), hd_resolved
+        )
+    elif "has_lgd_definition" in df.columns:
+        df["_lgd_hd_combined"] = df["has_lgd_definition"].apply(_resolve_detail_value)
+    else:
+        df["_lgd_hd_combined"] = "N/A"
 
 display_cols = [c for c in base_cols if c in df.columns]
 
