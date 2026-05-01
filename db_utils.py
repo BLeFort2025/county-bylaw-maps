@@ -51,6 +51,20 @@ class PgWrapper:
         return self.conn.cursor(*args, **kwargs)
 
 def get_connection(db_path: str = None):
+    if db_path is not None and os.path.exists(db_path):
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        class SqliteWrapper:
+            def __init__(self, c): self.conn = c
+            def execute(self, q, p=tuple()):
+                cur = self.conn.cursor()
+                cur.execute(q, p)
+                return cur
+            def commit(self): self.conn.commit()
+            def close(self): self.conn.close()
+            def cursor(self, *a, **k): return self.conn.cursor(*a, **k)
+        return SqliteWrapper(conn)
+
     url = st.secrets.get("DATABASE_URL", "postgresql://neondb_owner:npg_gjmiS41HEeXB@ep-fancy-resonance-amthrghm.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require")
     return PgWrapper(url)
 
@@ -327,36 +341,31 @@ def get_report_data(conn, scope='provincial', scope_value=None):
     }
 
 
-def export_map_dataframe(conn):
-    """Reconstruct the original wide-table CSV column layout from SQLite.
+def export_map_dataframe(conn) -> pd.DataFrame:
+    """Export the entire database into the wide flat structure expected by the map builder."""
+    # Determine the parameter placeholder based on connection type
+    is_sqlite = type(conn.conn).__name__ == "Connection" and hasattr(conn.conn, "execute")
+    p = "?" if is_sqlite else "%s"
 
-    Returns a DataFrame with the EXACT same column names that
-    build_maps_v2_rollup_metadata.py expects from the CSV.
-    This lets the map build pipeline work from SQLite without
-    changing any of the 15 status-column computation logic.
-    """
-    # Build one wide row per municipality — mirroring the Access layout
-    rows = []
     munis = pd.read_sql_query("SELECT * FROM municipalities", conn.conn)
+    rows = []
 
     for _, m in munis.iterrows():
         mid = m["id"]
         row = {
-            "LOOKUP":              m["lookup_key"],
             "Municipality":        m["name"],
-            "Municipal status":    m["municipal_status"],
-            "Geographic Area ":    m["geographic_area"],   # trailing space matches Access
-            "ZONE":                m["zone"],
+            "Municipal Status":    m["municipal_status"],
+            "Geographic Area":     m["geographic_area"],
             "Website":             m["website"],
         }
 
         # ── DC ──
-        dc = pd.read_sql_query("""
+        dc = pd.read_sql_query(f"""
             SELECT b.*, be.exemption_status, be.exemption_wording, d.*
             FROM bylaws b
             LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
             LEFT JOIN details_dc d ON d.bylaw_id = b.id
-            WHERE b.municipality_id = %s AND b.category = 'DC'
+            WHERE b.municipality_id = {p} AND b.category = 'DC'
         """, conn.conn, params=[mid])
         if not dc.empty:
             d = dc.iloc[0]
@@ -368,108 +377,100 @@ def export_map_dataframe(conn):
             row["Expiry Date"]                = d["expiry_date"]
             row["Municipality Has Development Charges?"] = d.get("has_dc", "")
 
-        # ── Stormwater ──
-        sw = pd.read_sql_query("""
+        # ── STORMWATER ──
+        sw = pd.read_sql_query(f"""
             SELECT b.*, be.exemption_status, be.exemption_wording, d.*
             FROM bylaws b
             LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
             LEFT JOIN details_stormwater d ON d.bylaw_id = b.id
-            WHERE b.municipality_id = %s AND b.category = 'STORMWATER'
+            WHERE b.municipality_id = {p} AND b.category = 'STORMWATER'
         """, conn.conn, params=[mid])
         if not sw.empty:
             d = sw.iloc[0]
             row["Farm Exemption for Stormwater Charges"] = d["exemption_status"]
-            row["Bylaw Name Stormwater"]      = d["bylaw_name"]
-            row["Bylaw Name Storm Water"]     = d["bylaw_name"]  # alias
-            row["Link to Storm Water bylaw"]  = d["bylaw_link"]
-            row["Date Bylaw Enacted2 (Regional)"] = d["date_enacted"]
-            row["Expiry date2"]               = d["expiry_date"]
-            row["Type Of Charge"]             = d.get("charge_type", "")
+            row["Bylaw Name Stormwater"]                 = d["bylaw_name"]
+            row["Link to Stormwater Bylaw"]              = d["bylaw_link"]
+            row["Expiry Date_1"]                         = d["expiry_date"]
 
-        # ── Site Alteration ──
-        sa = pd.read_sql_query("""
+        # ── SITE_ALT ──
+        sa = pd.read_sql_query(f"""
             SELECT b.*, be.exemption_status, be.exemption_wording, d.*
             FROM bylaws b
             LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
             LEFT JOIN details_site_alt d ON d.bylaw_id = b.id
-            WHERE b.municipality_id = %s AND b.category = 'SITE_ALT'
+            WHERE b.municipality_id = {p} AND b.category = 'SITE_ALT'
         """, conn.conn, params=[mid])
         if not sa.empty:
             d = sa.iloc[0]
             row["Farm Exemption for SA"]      = d["exemption_status"]
-            row["Bylaw Name Sute Alteration"] = d["bylaw_name"]  # matches typo in original
-            row["Bylaw Name Site Alteration"]  = d["bylaw_name"]
-            row["Link to site alteration & fill bylaw"] = d["bylaw_link"]
-            row["Date Bylaw Enacted4 (Regional)"] = d["date_enacted"]
-            row["Expiry date 4"]              = d["expiry_date"]
-            row["Special Provision for Farm Land?"] = d.get("special_provision", "")
+            row["Exception Wording"]          = d["exemption_wording"]
+            row["Bylaw Name Site Alteration"] = d["bylaw_name"]
+            row["Link to SA Bylaw"]           = d["bylaw_link"]
+            row["Expiry Date_2"]              = d["expiry_date"]
+            row["SA Special Provision"]       = d.get("special_provision", "")
 
         # ── LGD ──
-        lgd = pd.read_sql_query("""
+        lgd = pd.read_sql_query(f"""
             SELECT b.*, be.exemption_status, be.exemption_wording, d.*
             FROM bylaws b
             LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
             LEFT JOIN details_lgd d ON d.bylaw_id = b.id
-            WHERE b.municipality_id = %s AND b.category = 'LGD'
+            WHERE b.municipality_id = {p} AND b.category = 'LGD'
         """, conn.conn, params=[mid])
         if not lgd.empty:
             d = lgd.iloc[0]
             row["Has Livestock Guardian dog Definition"] = d.get("has_lgd_definition", "")
-            row["LDG - Definition"]           = d.get("lgd_definition", "")
-            row["Herding Dog Definition Exists"] = d.get("has_herding_def", "")
-            row["Herding Dog - Definition"]   = d.get("herding_definition", "")
-            row["LDG and HD exempt from license fees"] = d.get("exempt_license_fees", "")
+            row["Herding Dog Definition Exists"]         = d.get("has_herding_def", "")
+            row["LDG and HD exempt from license fees"]   = d.get("exempt_license_fees", "")
             row["LDG and HD Collar and tag requirements"] = d.get("collar_tag_req", "")
-            row["Municipal barking restrictions"] = d.get("barking_restrictions", "")
             row["LDG and HD Exempt from barking restrictions"] = d.get("exempt_barking", "")
-            row["Bylaw Name LGD"]             = d["bylaw_name"]
-            row["Livestock Guardian Dog bylaw link"] = d["bylaw_link"]
-            row["Date Bylaw Enacted 5 (Regional)"] = d["date_enacted"]
-            row["Expiry Date 5"]              = d["expiry_date"]
+            row["Bylaw Name LGD"]      = d["bylaw_name"]
+            row["Link to LGD Bylaw"]   = d["bylaw_link"]
+            row["Expiry Date_3"]       = d["expiry_date"]
+            row["Dog limit details"]   = d.get("dog_limit", "")
 
-        # ── Trees ──
-        trees = pd.read_sql_query("""
+        # ── TREES ──
+        trees = pd.read_sql_query(f"""
             SELECT b.*, be.exemption_status, be.exemption_wording, d.*
             FROM bylaws b
             LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
             LEFT JOIN details_trees d ON d.bylaw_id = b.id
-            WHERE b.municipality_id = %s AND b.category = 'TREES'
+            WHERE b.municipality_id = {p} AND b.category = 'TREES'
         """, conn.conn, params=[mid])
         if not trees.empty:
             d = trees.iloc[0]
-            row["Farm Exemption - Tree Cutting Bylaw"] = d["exemption_status"]
-            row["Tree Cutting Bylaw Wording"] = d.get("bylaw_wording", "")
-            row["Bylaw Name Forest Conservation"] = d["bylaw_name"]
-            row["Tree Cutting Bylaw Link"]    = d["bylaw_link"]
-            row["Date Bylaw Enacted 6 (Regional)"] = d["date_enacted"]
-            row["Expiry Date 6"]              = d["expiry_date"]
+            row["Farm Exemption - Tree Cutting Bylaw"]  = d["exemption_status"]
+            row["Exception Wording_1"]                  = d["exemption_wording"]
+            row["Bylaw Name Forest Conservation"]       = d["bylaw_name"]
+            row["Link to Forest Conservation Bylaw"]    = d["bylaw_link"]
+            row["Expiry Date_4"]                        = d["expiry_date"]
 
-        # ── Chickens ──
-        chk = pd.read_sql_query("""
+        # ── CHICKENS ──
+        chk = pd.read_sql_query(f"""
             SELECT b.*, be.exemption_status, be.exemption_wording, d.*
             FROM bylaws b
             LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
             LEFT JOIN details_chickens d ON d.bylaw_id = b.id
-            WHERE b.municipality_id = %s AND b.category = 'CHICKENS'
+            WHERE b.municipality_id = {p} AND b.category = 'CHICKENS'
         """, conn.conn, params=[mid])
         if not chk.empty:
             d = chk.iloc[0]
             row["Can you Keep Backyard Chickens"] = d.get("can_keep", "")
-            row["Licence Required"]           = d.get("licence_required", "")
-            row["Welfare Requirements"]       = d.get("welfare_requirements", "")
-            row["Bylaw Name Backyard Chicken"] = d["bylaw_name"]
-            row["Bylaw Name Backyard Chickens"] = d["bylaw_name"]  # alias
-            row["Backyard Chicken Bylaw Link"] = d["bylaw_link"]
-            row["Date Bylaw Enacted 7 (Regional)"] = d["date_enacted"]
-            row["Expiry Date 7"]              = d["expiry_date"]
+            row["Licence Required"]               = d.get("licence_required", "")
+            row["Welfare Requirements"]           = d.get("welfare_requirements", "")
+            row["Bylaw Name Backyard Chicken"]    = d["bylaw_name"]
+            row["Link to BYC Bylaw"]              = d["bylaw_link"]
+            row["Expiry Date_5"]                  = d["expiry_date"]
+            row["Limit on # of chickens"]         = d.get("chicken_limit", "")
+            row["Are roosters allowed"]           = d.get("roosters_allowed", "")
 
-        # ── Fences ──
-        fen = pd.read_sql_query("""
+        # ── FENCES ──
+        fen = pd.read_sql_query(f"""
             SELECT b.*, be.exemption_status, be.exemption_wording, d.*
             FROM bylaws b
             LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
             LEFT JOIN details_fences d ON d.bylaw_id = b.id
-            WHERE b.municipality_id = %s AND b.category = 'FENCES'
+            WHERE b.municipality_id = {p} AND b.category = 'FENCES'
         """, conn.conn, params=[mid])
         if not fen.empty:
             d = fen.iloc[0]
