@@ -225,6 +225,10 @@ rename_map.update(detail_map)
 
 display_df = df[display_cols].rename(columns=rename_map).reset_index(drop=True)
 
+# Clean up NaN/None values to display as "—" instead of "nan"
+display_df = display_df.fillna("—")
+display_df = display_df.replace({"nan": "—", "None": "—", "none": "—", "": "—"})
+
 # ── Data table ──
 st.subheader(f"📊 {selected_label} — {total} Municipalities")
 
