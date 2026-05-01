@@ -143,13 +143,13 @@ CATEGORY_DETAIL_COLS = {
         "fee_calculation":  "Fee Calculation",
     },
     "SITE_ALT": {
-        "farm_exemption":       "Farm Exemption",
+        "farm_exemption":       "Farm Exempt. (Detail)",
         "special_provision":    "Special Provision",
         "guidelines_wording":   "Guidelines Wording",
         "exception_wording":    "Exception Wording",
     },
     "TREES": {
-        "farm_exemption":               "Farm Exemption",
+        "farm_exemption":               "Farm Exempt. (Detail)",
         "farming_exception_wording":    "Exception Wording",
     },
     "CHICKENS": {
@@ -180,9 +180,26 @@ base_cols = ["name", "municipal_status", "geographic_area",
 detail_map = CATEGORY_DETAIL_COLS.get(selected_cat, {})
 
 # Resolve Yes/No codes in detail columns
+def _resolve_detail_value(val):
+    """Resolve integer codes AND text Yes/No/TRUE/FALSE to consistent labels."""
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return "N/A"
+    s = str(val).strip().upper()
+    if s in ("1", "YES", "Y", "TRUE"):
+        return "Yes"
+    if s in ("2", "NO", "N", "FALSE"):
+        return "No"
+    if s in ("3", "NOT KNOWN", "UNKNOWN", "TBD"):
+        return "NOT KNOWN"
+    if s in ("4", "N/A", "NA", "", "NONE"):
+        return "N/A"
+    if s in ("5",):
+        return "No explicit exemption found"
+    return str(val)  # Keep original text for free-text fields
+
 for raw_col in detail_map.keys():
     if raw_col in df.columns and raw_col in YES_NO_DETAIL_FIELDS:
-        df[raw_col] = df[raw_col].apply(resolve_yes_no)
+        df[raw_col] = df[raw_col].apply(_resolve_detail_value)
 
 display_cols = [c for c in base_cols if c in df.columns]
 
