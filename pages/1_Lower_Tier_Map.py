@@ -159,38 +159,26 @@ META_BY_LABEL: dict[str, dict[str, str]] = {
         "enacted": "Date Bylaw Enacted4 (Regional)",
         "expiry": "Expiry date 4",
     },
-    # Livestock Guardian Dogs (multiple map labels, same bylaw metadata)
-    "Has Livestock Guardian dog Definition": {
+    # Livestock Guardian Dogs — combined LGD + HD definition, plus individual provisions
+    "LGD/HD Working Dog Definition": {
         "bylaw_name": "Bylaw Name LGD",
         "bylaw_link": "Livestock Guardian Dog bylaw link",
         "enacted": "Date Bylaw Enacted 5 (Regional)",
         "expiry": "Expiry Date 5",
     },
-    "LDG - Definition": {
+    "LGD and HD Exempt from License Fees": {
         "bylaw_name": "Bylaw Name LGD",
         "bylaw_link": "Livestock Guardian Dog bylaw link",
         "enacted": "Date Bylaw Enacted 5 (Regional)",
         "expiry": "Expiry Date 5",
     },
-    "Herding Dog Definition Exists": {
+    "LGD and HD Collar and Tag Requirements": {
         "bylaw_name": "Bylaw Name LGD",
         "bylaw_link": "Livestock Guardian Dog bylaw link",
         "enacted": "Date Bylaw Enacted 5 (Regional)",
         "expiry": "Expiry Date 5",
     },
-    "LDG and HD exempt from license fees": {
-        "bylaw_name": "Bylaw Name LGD",
-        "bylaw_link": "Livestock Guardian Dog bylaw link",
-        "enacted": "Date Bylaw Enacted 5 (Regional)",
-        "expiry": "Expiry Date 5",
-    },
-    "LDG and HD Collar and tag requirements": {
-        "bylaw_name": "Bylaw Name LGD",
-        "bylaw_link": "Livestock Guardian Dog bylaw link",
-        "enacted": "Date Bylaw Enacted 5 (Regional)",
-        "expiry": "Expiry Date 5",
-    },
-    "LDG and HD Exempt from barking restrictions": {
+    "LGD and HD Exempt from Barking Restrictions": {
         "bylaw_name": "Bylaw Name LGD",
         "bylaw_link": "Livestock Guardian Dog bylaw link",
         "enacted": "Date Bylaw Enacted 5 (Regional)",
@@ -246,12 +234,10 @@ LAYER_TO_CATEGORY = {
     "Can you Keep Backyard Chickens": "CHICKENS",
     "Licence Required": "CHICKENS",
     "Welfare Requirements": "CHICKENS",
-    "Has Livestock Guardian dog Definition": "LGD",
-    "LDG - Definition": "LGD",
-    "Herding Dog Definition Exists": "LGD",
-    "LDG and HD exempt from license fees": "LGD",
-    "LDG and HD Collar and tag requirements": "LGD",
-    "LDG and HD Exempt from barking restrictions": "LGD",
+    "LGD/HD Working Dog Definition": "LGD",
+    "LGD and HD Exempt from License Fees": "LGD",
+    "LGD and HD Collar and Tag Requirements": "LGD",
+    "LGD and HD Exempt from Barking Restrictions": "LGD",
     "Farm Exemption for Security fencing prohibitions": "FENCES",
     "Farm Exemption for Electrified fencing prohibitions": "FENCES",
 }

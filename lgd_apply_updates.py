@@ -211,6 +211,14 @@ def main():
     print(f"  date_last_updated set:  {munis_updated} records")
     print("=" * 70)
 
+    if not args.dry_run and total_updates > 0:
+        print()
+        print("⚠" * 35)
+        print("  ⚠️  CLOUD SYNC REQUIRED")
+        print("  The live Streamlit app will NOT reflect these changes until you sync.")
+        print("  Run:  python sync_to_cloud.py --push")
+        print("⚠" * 35)
+
 
 if __name__ == "__main__":
     main()

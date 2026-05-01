@@ -24,6 +24,11 @@ BYLAW_GROUP_FOR_LABEL: Dict[str, str] = {
     # All LGD-related sidebar entries share the same OFA content and letter.
     "Has Livestock Guardian dog Definition": "Livestock Guardian Dogs",
     "Herding Dog Definition Exists": "Livestock Guardian Dogs",
+    "LGD/HD Working Dog Definition": "Livestock Guardian Dogs",
+    "LGD and HD Exempt from License Fees": "Livestock Guardian Dogs",
+    "LGD and HD Exempt from Barking Restrictions": "Livestock Guardian Dogs",
+    "LGD and HD Collar and Tag Requirements": "Livestock Guardian Dogs",
+    # Legacy labels (keep for backward compatibility)
     "LDG - Definition": "Livestock Guardian Dogs",
     "LDG and HD exempt from license fees": "Livestock Guardian Dogs",
     "LDG and HD Exempt from barking restrictions": "Livestock Guardian Dogs",

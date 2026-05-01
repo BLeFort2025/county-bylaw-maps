@@ -97,12 +97,10 @@ def compute_status_columns(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
         ("Farm Exemption for Development Charges", ["Farm Exemption for Development Charges"], ["Bylaw Name Development Charges"], False),
         ("Farm Exemption for Stormwater Charges",  ["Farm Exemption for Stormwater Charges"],  ["Bylaw Name Stormwater","Bylaw Name Storm Water"], False),
         ("Farm Exemption for SA",                  ["Farm Exemption for SA"],                  ["Bylaw Name Sute Alteration","Bylaw Name Site Alteration","Bylaw Name Site Alternation"], False),
-        ("Has Livestock Guardian dog Definition",  ["Has Livestock Guardian dog Definition"],   ["Bylaw Name LGD","Bylaw Name LDG"], False),
-        ("LDG - Definition",                       ["LDG - Definition"],                        ["Bylaw Name LGD","Bylaw Name LDG"], True),
-        ("Herding Dog Definition Exists",          ["Herding Dog Definition Exists"],           ["Bylaw Name LGD","Bylaw Name LDG"], False),
-        ("LDG and HD exempt from license fees",    ["LDG and HD exempt from license fees"],     ["Bylaw Name LGD","Bylaw Name LDG"], False),
-        ("LDG and HD Collar and tag requirements", ["LDG and HD Collar and tag requirements"],  ["Bylaw Name LGD","Bylaw Name LDG"], False),
-        ("LDG and HD Exempt from barking restrictions", ["LDG and HD Exempt from barking restrictions"], ["Bylaw Name LGD","Bylaw Name LDG"], False),
+        ("LGD/HD Working Dog Definition",          ["Has Livestock Guardian dog Definition", "Herding Dog Definition Exists"], ["Bylaw Name LGD"], False),
+        ("LGD and HD Exempt from License Fees",    ["LDG and HD exempt from license fees"],     ["Bylaw Name LGD"], False),
+        ("LGD and HD Collar and Tag Requirements", ["LDG and HD Collar and tag requirements"],  ["Bylaw Name LGD"], False),
+        ("LGD and HD Exempt from Barking Restrictions", ["LDG and HD Exempt from barking restrictions"], ["Bylaw Name LGD"], False),
         ("Can you Keep Backyard Chickens",         ["Can you Keep Backyard Chickens"],          ["Bylaw Name Backyard Chicken","Bylaw Name Backyard Chickens"], False),
         ("Licence Required",                       ["Licence Required"],                        ["Bylaw Name Backyard Chicken","Bylaw Name Backyard Chickens"], False),
         ("Welfare Requirements",                   ["Welfare Requirements"],                    ["Bylaw Name Backyard Chicken","Bylaw Name Backyard Chickens"], False),
@@ -113,7 +111,8 @@ def compute_status_columns(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
 
     for label, value_cols, name_cols, treat_text in rules:
         status_col = f"{label} Status"
-        vcol = next((v for v in value_cols if v in df.columns), None)
+        # Find which value columns exist in the DataFrame
+        available_vcols = [v for v in value_cols if v in df.columns]
         if "fenc" in label.lower():
             fcol = "Municipality Has Fence Bylaw" if "Municipality Has Fence Bylaw" in df.columns else None
             exists = df[fcol].map(lambda x: status_val(x) == "YES") if fcol else pd.Series(False, index=df.index)
@@ -121,12 +120,22 @@ def compute_status_columns(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
             ncol = next((n for n in name_cols if n in df.columns), None)
             exists = df[ncol].astype(str).str.strip().ne("") if ncol else pd.Series(False, index=df.index)
         
-        if vcol is None:
+        if not available_vcols:
             df[status_col] = "NOT KNOWN"
-        else:
+        elif len(available_vcols) == 1:
+            # Standard single-column logic
             st = pd.Series("NOT KNOWN", index=df.index)
             m = exists.fillna(False)
-            st.loc[m] = df.loc[m, vcol].map(lambda x: status_val(x, treat_text_as_yes=treat_text))
+            st.loc[m] = df.loc[m, available_vcols[0]].map(lambda x: status_val(x, treat_text_as_yes=treat_text))
+            df[status_col] = st
+        else:
+            # Multi-column OR: YES if ANY column is YES (for combined LGD/HD definition)
+            st = pd.Series("NOT KNOWN", index=df.index)
+            m = exists.fillna(False)
+            for vc in available_vcols:
+                col_status = df.loc[m, vc].map(lambda x: status_val(x, treat_text_as_yes=treat_text))
+                # OR logic: upgrade to YES if any column says YES
+                st.loc[m] = st.loc[m].where(st.loc[m].eq("YES"), col_status)
             df[status_col] = st
         created.append(status_col)
     return df, created
@@ -223,10 +232,10 @@ def main():
         for c in status_cols:
             if c in upper.columns: upper[c] = upper[c].fillna("NOT KNOWN")
         upper.to_parquet(UPPER_PARQUET, index=False)
-        print(f"✅ Wrote {UPPER_PARQUET}")
+        print(f"Wrote {UPPER_PARQUET}")
 
     lower.to_parquet(LOWER_PARQUET, index=False)
-    print(f"✅ Wrote {LOWER_PARQUET}")
+    print(f"Wrote {LOWER_PARQUET}")
 
 if __name__ == "__main__":
     main()

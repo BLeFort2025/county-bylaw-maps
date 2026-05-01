@@ -190,6 +190,8 @@ def main():
     print(f"    COMPLETE - FARM FRIENDLY: {farm_friendly}")
     print(f"    COMPLETE (no LGD provisions): {complete}")
     print(f"    Total: {len(rows)}")
+    print(f"\n  ℹ️  After applying updates with lgd_apply_updates.py,")
+    print(f"      remember to sync to cloud:  python sync_to_cloud.py --push")
 
 
 if __name__ == "__main__":
