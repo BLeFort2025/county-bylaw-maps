@@ -1,198 +1,150 @@
-"""
-lgd_import_gemini_results.py — Import Gemini Chat Extraction Results
-
-Takes the JSON output from Gemini Pro chat sessions and converts it
-into the review CSV format that lgd_apply_updates.py expects.
-
-Usage:
-  python lgd_import_gemini_results.py                    # Interactive: paste JSON
-  python lgd_import_gemini_results.py --file results.json  # From file
-  python lgd_import_gemini_results.py --dir signals/       # Merge all batch_results_*.json files
-"""
-
-import pandas as pd
-import os
-import sys
 import sqlite3
+import pandas as pd
+import requests
+import urllib3
+import io
+import re
+import os
 import json
-import datetime
-import argparse
 import glob
+import pdfplumber
 
-if sys.platform == "win32":
-    os.environ['PYTHONUNBUFFERED'] = '1'
+urllib3.disable_warnings()
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(SCRIPT_DIR, "bylaws.db")
-SIGNALS_DIR = os.path.join(SCRIPT_DIR, "signals")
+DB_PATH = 'bylaws.db'
+SIGNALS_DIR = 'signals'
+REVIEW_FILE = 'Needs_Review_LGD.csv'
 
+TIER_1_KEYWORDS = ['farm dog', 'herding dog', 'herding animals', 'livestock guardian']
+TIER_2_KEYWORDS = ['protect livestock', 'repelling predators', 'cattle', 'sheep']
 
-def load_db_values():
-    """Load current LGD data from SQLite for comparison."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    rows = conn.execute("""
-        SELECT m.name, m.geographic_area,
-               b.id as bylaw_id, b.progress_label, b.bylaw_name, b.bylaw_link,
-               b.date_enacted,
-               d.has_lgd_definition, d.lgd_definition,
-               d.has_herding_def, d.herding_definition,
-               d.exempt_license_fees, d.collar_tag_req,
-               d.barking_restrictions, d.exempt_barking, d.dog_limit
-        FROM municipalities m
-        JOIN bylaws b ON b.municipality_id = m.id AND b.category = 'LGD'
-        LEFT JOIN details_lgd d ON d.bylaw_id = b.id
-        ORDER BY m.name
-    """).fetchall()
-    result = {}
-    for r in rows:
-        result[r["name"]] = dict(r)
-    conn.close()
-    return result
+def is_link_working(link):
+    if not link or str(link).lower() in ['none', 'nan', 'n/a', 'missing', '']: return False
+    if not link.startswith('http'): return False
+    try:
+        r = requests.head(link, timeout=5, verify=False, allow_redirects=True, headers={'User-Agent': 'Mozilla/5.0'})
+        if r.status_code in [405, 403]:
+            r = requests.get(link, timeout=5, verify=False, stream=True, headers={'User-Agent': 'Mozilla/5.0'})
+        return r.status_code < 400
+    except:
+        return False
 
+def download_and_extract_text(url):
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    try:
+        r = requests.get(url, headers=headers, timeout=15, verify=False)
+        if r.status_code == 200 and 'application/pdf' in r.headers.get('Content-Type', '').lower():
+            with pdfplumber.open(io.BytesIO(r.content)) as pdf:
+                text = ""
+                for page in pdf.pages[:15]:
+                    page_text = page.extract_text()
+                    if page_text: text += page_text + " "
+                return text.lower()
+    except Exception as e:
+        pass
+    return None
 
-def parse_gemini_json(text):
-    """Parse JSON from Gemini's response, handling markdown code fences."""
-    text = text.strip()
-    
-    # Remove markdown code fences
-    if text.startswith('```'):
-        lines = text.split('\n')
-        lines = [l for l in lines if not l.strip().startswith('```')]
-        text = '\n'.join(lines).strip()
-    
-    return json.loads(text)
-
-
-def build_review_rows(gemini_results, db_values):
-    """Convert Gemini extraction results into review CSV rows."""
-    rows = []
-    for item in gemini_results:
-        muni_name = item.get("municipality", "")
-        db_rec = db_values.get(muni_name, {})
-        
-        row = {
-            "Municipality": muni_name,
-            "County": item.get("county", ""),
-            "Extraction Status": "SUCCESS",
-            "Source URL": "",
-            # New values from Gemini
-            "NEW_bylaw_name": item.get("bylaw_name", ""),
-            "NEW_date_enacted": item.get("date_enacted", ""),
-            "NEW_progress_label": item.get("progress_label", ""),
-            "NEW_has_lgd_definition": item.get("has_lgd_definition", ""),
-            "NEW_lgd_definition": item.get("lgd_definition", ""),
-            "NEW_has_herding_def": item.get("has_herding_def", ""),
-            "NEW_herding_definition": item.get("herding_definition", ""),
-            "NEW_exempt_license_fees": item.get("exempt_license_fees", ""),
-            "NEW_collar_tag_req": item.get("collar_tag_req", ""),
-            "NEW_barking_restrictions": item.get("barking_restrictions", ""),
-            "NEW_exempt_barking": item.get("exempt_barking", ""),
-            "NEW_dog_limit": item.get("dog_limit", ""),
-            "NEW_notes": item.get("notes", ""),
-            # Old values from DB
-            "OLD_bylaw_name": db_rec.get("bylaw_name", ""),
-            "OLD_date_enacted": db_rec.get("date_enacted", ""),
-            "OLD_progress_label": db_rec.get("progress_label", ""),
-            "OLD_has_lgd_definition": db_rec.get("has_lgd_definition", ""),
-            "OLD_lgd_definition": db_rec.get("lgd_definition", ""),
-            "OLD_has_herding_def": db_rec.get("has_herding_def", ""),
-            "OLD_herding_definition": db_rec.get("herding_definition", ""),
-            "OLD_exempt_license_fees": db_rec.get("exempt_license_fees", ""),
-            "OLD_collar_tag_req": db_rec.get("collar_tag_req", ""),
-            "OLD_barking_restrictions": db_rec.get("barking_restrictions", ""),
-            "OLD_exempt_barking": db_rec.get("exempt_barking", ""),
-            "OLD_dog_limit": db_rec.get("dog_limit", ""),
-            "DB_bylaw_id": db_rec.get("bylaw_id", ""),
-        }
-        rows.append(row)
-    
-    return rows
-
+def extract_snippet(text, keyword):
+    idx = text.find(keyword)
+    if idx == -1: return ""
+    start = max(0, idx - 100)
+    end = min(len(text), idx + 100)
+    return text[start:end].replace('\n', ' ').strip() + "..."
 
 def main():
-    parser = argparse.ArgumentParser(description="Import Gemini LGD Extraction Results")
-    parser.add_argument("--file", type=str, help="Path to a JSON file with Gemini results")
-    parser.add_argument("--dir", type=str, help="Directory containing batch_results_*.json files")
-    args = parser.parse_args()
-
-    print("=" * 60)
-    print("  IMPORT GEMINI LGD EXTRACTION RESULTS")
-    print("=" * 60)
-
-    db_values = load_db_values()
-    print(f"  Loaded {len(db_values)} DB records for comparison")
-
-    all_results = {}
-
-    if args.file:
-        # Load from a single file
-        with open(args.file, 'r', encoding='utf-8') as f:
-            data = parse_gemini_json(f.read())
-        for item in data:
-            all_results[item.get("municipality", "")] = item
-        print(f"  Loaded {len(data)} municipalities from {args.file}")
-
-    elif args.dir:
-        # Merge all batch result files
-        pattern = os.path.join(args.dir, "gemini_batch_results_*.json")
-        files = sorted(glob.glob(pattern))
-        if not files:
-            print(f"  No files matching {pattern}")
-            print("  Save Gemini's JSON output as gemini_batch_results_1.json, _2.json, etc.")
-            return
-        for f_path in files:
-            with open(f_path, 'r', encoding='utf-8') as f:
-                data = parse_gemini_json(f.read())
-            for item in data:
-                all_results[item.get("municipality", "")] = item
-            print(f"  Loaded {len(data)} municipalities from {os.path.basename(f_path)}")
-
-    else:
-        # Interactive: paste JSON
-        print("\n  Paste the JSON array from Gemini below.")
-        print("  When done, type END on a new line and press Enter.\n")
-        lines = []
-        while True:
-            try:
-                line = input()
-                if line.strip() == "END":
-                    break
-                lines.append(line)
-            except EOFError:
-                break
-        
-        text = '\n'.join(lines)
-        data = parse_gemini_json(text)
-        for item in data:
-            all_results[item.get("municipality", "")] = item
-        print(f"\n  Parsed {len(data)} municipalities from pasted JSON")
-
-    if not all_results:
-        print("  No results to process.")
+    json_files = glob.glob(os.path.join(SIGNALS_DIR, 'lgd_healed_links_*.json'))
+    if not json_files:
+        print("No JSON files found in signals/ directory.")
         return
-
-    # Build review rows
-    rows = build_review_rows(list(all_results.values()), db_values)
+        
+    print(f"Found {len(json_files)} JSON files. Importing...")
     
-    # Save
-    output_file = os.path.join(SIGNALS_DIR, f"lgd_extraction_review_{datetime.date.today().isoformat()}.csv")
-    df = pd.DataFrame(rows)
-    df.to_csv(output_file, index=False, encoding="utf-8-sig")
+    conn = sqlite3.connect(DB_PATH)
+    
+    healed_count = 0
+    tier_1_count = 0
+    tier_2_count = 0
+    tier_2_rows = []
+    
+    for jfile in json_files:
+        with open(jfile, 'r', encoding='utf-8') as f:
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                print(f"Error parsing {jfile}. Skipping.")
+                continue
+                
+        for row in data:
+            bylaw_id = row.get('id')
+            muni = row.get('municipality')
+            url = row.get('healed_url')
+            
+            if not bylaw_id or not url:
+                continue
+                
+            print(f"Checking {muni}... ", end="", flush=True)
+            if is_link_working(url):
+                healed_count += 1
+                conn.execute('UPDATE bylaws SET bylaw_link = ? WHERE id = ?', (url, bylaw_id))
+                
+                text = download_and_extract_text(url)
+                if not text:
+                    print("Healed! (Not a PDF or unreadable)")
+                    continue
+                    
+                status = 'No Keywords'
+                for kw in TIER_1_KEYWORDS:
+                    if kw in text:
+                        snip = extract_snippet(text, kw)
+                        tier_1_count += 1
+                        conn.execute("UPDATE details_lgd SET has_lgd_definition = 'Yes', lgd_definition = ? WHERE bylaw_id = ?", 
+                                     (f"[GEMINI TIER 1: {kw}] {snip}", bylaw_id))
+                        status = f'TIER 1 ({kw})'
+                        break
+                        
+                if status == 'No Keywords':
+                    for kw in TIER_2_KEYWORDS:
+                        if re.search(rf'\b{kw}\b', text):
+                            snip = extract_snippet(text, kw)
+                            tier_2_count += 1
+                            tier_2_rows.append({
+                                'Municipality': muni,
+                                'Keyword Found': kw,
+                                'Snippet Context': snip,
+                                'Bylaw Link': url
+                            })
+                            status = f'TIER 2 ({kw})'
+                            break
+                            
+                if status.startswith('TIER 1'):
+                    with open('scratch/last_batch_extracted.md', 'a', encoding='utf-8') as f:
+                        f.write(f'# {muni} (ID: {bylaw_id})\n')
+                        sents = text.split('.')
+                        bark = [s.strip().replace('\n', ' ') for s in sents if 'bark' in s or 'noise' in s]
+                        lic = [s.strip().replace('\n', ' ') for s in sents if 'license' in s or 'licence' in s or 'fee' in s]
+                        tag = [s.strip().replace('\n', ' ') for s in sents if 'tag' in s]
+                        limit = [s.strip().replace('\n', ' ') for s in sents if 'limit' in s or 'maximum' in s or 'more than' in s]
+                        f.write('## Barking/Noise\n' + '\n'.join('- ' + x for x in bark) + '\n\n')
+                        f.write('## License/Fee\n' + '\n'.join('- ' + x for x in lic[:5]) + '\n\n')
+                        f.write('## Tags\n' + '\n'.join('- ' + x for x in tag[:5]) + '\n\n')
+                        f.write('## Limits\n' + '\n'.join('- ' + x for x in limit) + '\n\n')
 
-    print(f"\n  Saved {len(rows)} rows to: {output_file}")
-    print(f"  Next: review in Excel, then run lgd_apply_updates.py")
+                print(f"Healed! -> {status}")
+            else:
+                print("Failed (Dead Link)")
+                
+    conn.commit()
+    conn.close()
+    
+    if tier_2_rows:
+        header = not os.path.exists(REVIEW_FILE)
+        pd.DataFrame(tier_2_rows).to_csv(REVIEW_FILE, mode='a', header=header, index=False)
+        print(f"Appended {tier_2_count} new Tier 2 hits to {REVIEW_FILE}")
+        
+    print(f"\nFinal Summary:")
+    print(f"- Total Links Healed & Saved: {healed_count}")
+    print(f"- New Tier 1 Flips (Auto-Yes): {tier_1_count}")
+    print(f"- New Tier 2 Flags (Follow-up): {tier_2_count}")
 
-    # Quick summary
-    farm_friendly = sum(1 for r in rows if r.get("NEW_progress_label") == "COMPLETE - FARM FRIENDLY")
-    complete = sum(1 for r in rows if r.get("NEW_progress_label") == "COMPLETE")
-    print(f"\n  Summary:")
-    print(f"    COMPLETE - FARM FRIENDLY: {farm_friendly}")
-    print(f"    COMPLETE (no LGD provisions): {complete}")
-    print(f"    Total: {len(rows)}")
-    print(f"\n  ℹ️  After applying updates with lgd_apply_updates.py,")
-    print(f"      remember to sync to cloud:  python sync_to_cloud.py --push")
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
