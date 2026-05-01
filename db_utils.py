@@ -51,20 +51,6 @@ class PgWrapper:
         return self.conn.cursor(*args, **kwargs)
 
 def get_connection(db_path: str = None):
-    if db_path is not None and os.path.exists(db_path):
-        import sqlite3
-        conn = sqlite3.connect(db_path)
-        class SqliteWrapper:
-            def __init__(self, c): self.conn = c
-            def execute(self, q, p=tuple()):
-                cur = self.conn.cursor()
-                cur.execute(q, p)
-                return cur
-            def commit(self): self.conn.commit()
-            def close(self): self.conn.close()
-            def cursor(self, *a, **k): return self.conn.cursor(*a, **k)
-        return SqliteWrapper(conn)
-
     url = st.secrets.get("DATABASE_URL", "postgresql://neondb_owner:npg_gjmiS41HEeXB@ep-fancy-resonance-amthrghm.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require")
     return PgWrapper(url)
 
