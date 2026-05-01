@@ -146,19 +146,54 @@ def get_signals(conn, municipality_id=None, days=90):
 
 
 def get_category_summary(conn, category):
-    """Return a summary DataFrame for one category across all municipalities."""
-    sql = """
-        SELECT m.id, m.name, m.municipal_status, m.geographic_area,
-               b.bylaw_name, b.date_enacted, b.expiry_date, b.expiry_notes,
-               b.progress_label,
-               be.exemption_status, be.exemption_wording
-        FROM municipalities m
-        JOIN bylaws b ON b.municipality_id = m.id
-        JOIN bylaw_exemptions be ON be.bylaw_id = b.id
-        WHERE b.category = %s
-        ORDER BY m.name
+    """Return a summary DataFrame for one category across all municipalities.
+    
+    Joins the category-specific detail table to include all tracked fields.
     """
+    detail_table = {
+        'DC': 'details_dc',
+        'STORMWATER': 'details_stormwater',
+        'SITE_ALT': 'details_site_alt',
+        'LGD': 'details_lgd',
+        'TREES': 'details_trees',
+        'CHICKENS': 'details_chickens',
+        'FENCES': 'details_fences',
+    }.get(category)
+
+    if detail_table:
+        sql = f"""
+            SELECT m.id, m.name, m.municipal_status, m.geographic_area,
+                   b.bylaw_name, b.date_enacted, b.expiry_date, b.expiry_notes,
+                   b.progress_label, b.bylaw_link,
+                   be.exemption_status, be.exemption_wording,
+                   d.*
+            FROM municipalities m
+            JOIN bylaws b ON b.municipality_id = m.id
+            JOIN bylaw_exemptions be ON be.bylaw_id = b.id
+            LEFT JOIN {detail_table} d ON d.bylaw_id = b.id
+            WHERE b.category = %s
+            ORDER BY m.name
+        """
+    else:
+        sql = """
+            SELECT m.id, m.name, m.municipal_status, m.geographic_area,
+                   b.bylaw_name, b.date_enacted, b.expiry_date, b.expiry_notes,
+                   b.progress_label, b.bylaw_link,
+                   be.exemption_status, be.exemption_wording
+            FROM municipalities m
+            JOIN bylaws b ON b.municipality_id = m.id
+            JOIN bylaw_exemptions be ON be.bylaw_id = b.id
+            WHERE b.category = %s
+            ORDER BY m.name
+        """
     df = pd.read_sql_query(sql, conn.conn, params=(category,))
+    # Drop duplicate columns from detail table join (id, bylaw_id)
+    # PostgreSQL returns them as separate columns; keep only the first 'id' (municipality)
+    if df.columns.duplicated().any():
+        df = df.loc[:, ~df.columns.duplicated()]
+    # Drop bylaw_id if present (internal FK, not useful for display)
+    if 'bylaw_id' in df.columns:
+        df = df.drop(columns=['bylaw_id'])
     # Resolve integer codes to labels
     df['exemption_status'] = df['exemption_status'].apply(resolve_yes_no)
     return df

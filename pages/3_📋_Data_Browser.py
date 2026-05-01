@@ -110,13 +110,87 @@ col5.metric("📅 Has Expiry Date", has_expiry)
 
 st.divider()
 
-# ── Display columns (clean up for display) ──
-display_cols = ["name", "municipal_status", "geographic_area",
-                "exemption_status", "bylaw_name", "date_enacted",
-                "expiry_date", "expiry_notes", "progress_label"]
+# ── Category-specific detail columns to show in the table ──
+CATEGORY_DETAIL_COLS = {
+    "LGD": {
+        "has_lgd_definition":   "LGD Definition",
+        "lgd_definition":       "LGD Definition Text",
+        "has_herding_def":      "Herding Dog Def.",
+        "herding_definition":   "Herding Definition Text",
+        "exempt_license_fees":  "Exempt License Fees",
+        "collar_tag_req":       "Collar/Tag Required",
+        "barking_restrictions": "Barking Restrictions",
+        "exempt_barking":       "Exempt from Barking",
+        "dog_limit":            "Dog Limit",
+    },
+    "FENCES": {
+        "has_fence_bylaw":              "Has Fence Bylaw",
+        "applies_all_lands":            "Applies to All Lands",
+        "replaces_lfa":                 "Replaces Line Fences Act",
+        "security_fencing_exemption":   "Security Fencing Exemption",
+        "electrified_fencing_exemption":"Electrified Fencing Exemption",
+        "equal_apportionment":          "Equal Apportionment",
+        "fence_notes":                  "Notes",
+    },
+    "DC": {
+        "has_dc":           "Has DC Bylaw",
+        "fees_bylaw_name":  "Fees Bylaw",
+        "fees_enacted":     "Fees Enacted",
+        "fees_expiry":      "Fees Expiry",
+    },
+    "STORMWATER": {
+        "charge_type":      "Charge Type",
+        "fee_calculation":  "Fee Calculation",
+    },
+    "SITE_ALT": {
+        "farm_exemption":       "Farm Exemption",
+        "special_provision":    "Special Provision",
+        "guidelines_wording":   "Guidelines Wording",
+        "exception_wording":    "Exception Wording",
+    },
+    "TREES": {
+        "farm_exemption":               "Farm Exemption",
+        "farming_exception_wording":    "Exception Wording",
+    },
+    "CHICKENS": {
+        "can_keep":             "Can Keep Chickens",
+        "chicken_limit":        "Chicken Limit",
+        "roosters_allowed":     "Roosters Allowed",
+        "licence_required":     "Licence Required",
+        "welfare_requirements": "Welfare Requirements",
+    },
+}
 
-# Filter to only existing columns
-display_cols = [c for c in display_cols if c in df.columns]
+# Fields that should be resolved from integer codes to Yes/No labels
+YES_NO_DETAIL_FIELDS = {
+    "has_lgd_definition", "has_herding_def", "exempt_license_fees",
+    "collar_tag_req", "barking_restrictions", "exempt_barking",
+    "has_fence_bylaw", "applies_all_lands", "replaces_lfa",
+    "security_fencing_exemption", "electrified_fencing_exemption",
+    "equal_apportionment", "has_dc", "farm_exemption", "can_keep",
+    "roosters_allowed", "licence_required", "welfare_requirements",
+    "special_provision",
+}
+
+# ── Build display columns ──
+base_cols = ["name", "municipal_status", "geographic_area",
+             "exemption_status", "bylaw_name", "date_enacted",
+             "expiry_date", "expiry_notes", "progress_label"]
+
+detail_map = CATEGORY_DETAIL_COLS.get(selected_cat, {})
+
+# Resolve Yes/No codes in detail columns
+for raw_col in detail_map.keys():
+    if raw_col in df.columns and raw_col in YES_NO_DETAIL_FIELDS:
+        df[raw_col] = df[raw_col].apply(resolve_yes_no)
+
+display_cols = [c for c in base_cols if c in df.columns]
+
+# Insert detail columns after exemption_status (position 4)
+detail_cols_to_show = [c for c in detail_map.keys() if c in df.columns]
+insert_pos = display_cols.index("bylaw_name") if "bylaw_name" in display_cols else len(display_cols)
+for i, dc in enumerate(detail_cols_to_show):
+    display_cols.insert(insert_pos + i, dc)
 
 rename_map = {
     "name": "Municipality",
@@ -129,23 +203,32 @@ rename_map = {
     "expiry_notes": "Expiry Notes",
     "progress_label": "Progress",
 }
+# Add detail column renames
+rename_map.update(detail_map)
 
 display_df = df[display_cols].rename(columns=rename_map).reset_index(drop=True)
 
 # ── Data table ──
 st.subheader(f"📊 {selected_label} — {total} Municipalities")
 
-# Highlight function for exemption status
+# Highlight function for exemption status and Yes/No fields
 def highlight_status(val):
-    if val == "Yes":
+    v = str(val).strip()
+    if v == "Yes":
         return "background-color: #d4edda; color: #155724"
-    elif val == "No":
+    elif v == "No":
         return "background-color: #f8d7da; color: #721c24"
-    elif val in ("N/A", "NOT KNOWN"):
+    elif v in ("N/A", "NOT KNOWN"):
         return "background-color: #fff3cd; color: #856404"
     return ""
 
-subset = ["Farm Exemption"] if "Farm Exemption" in display_df.columns else []
+# Apply highlighting to Farm Exemption and all Yes/No detail columns
+highlight_cols = ["Farm Exemption"]
+for raw_col, nice_name in detail_map.items():
+    if raw_col in YES_NO_DETAIL_FIELDS and nice_name in display_df.columns:
+        highlight_cols.append(nice_name)
+subset = [c for c in highlight_cols if c in display_df.columns]
+
 if hasattr(display_df.style, "map"):
     styled = display_df.style.map(highlight_status, subset=subset)
 else:
