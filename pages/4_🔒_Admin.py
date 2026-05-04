@@ -196,6 +196,19 @@ admin_mode = st.sidebar.radio(
     index=0,
 )
 
+st.sidebar.markdown("---")
+st.sidebar.caption("🔧 **System Maintenance**")
+if st.sidebar.button("🔄 Sync Edits to Maps"):
+    with st.spinner("Rebuilding map files from database... This may take a minute."):
+        import subprocess
+        try:
+            # Call the build script
+            subprocess.run([sys.executable, "build_maps_v2_rollup_metadata.py"], 
+                           cwd=HERE, capture_output=True, text=True, check=True)
+            st.sidebar.success("✅ Maps rebuilt successfully! Refresh the map pages to see changes.")
+        except subprocess.CalledProcessError as e:
+            st.sidebar.error("❌ Map build failed.")
+            st.sidebar.code(e.stderr, language="text")
 
 # ═══════════════════════════════════════════════════════════════
 # MODE: Edit Municipality
