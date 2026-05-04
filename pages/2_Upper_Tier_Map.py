@@ -13,7 +13,14 @@ import geopandas as gpd
 import pydeck as pdk
 import pandas as pd
 
-from ofa_content import get_content_for_label
+from ofa_content import get_content_for_label, BYLAW_GROUP_FOR_LABEL
+from letter_engine import (
+    resolve_municipality_id, get_recipient_email,
+    fill_letter_template, letter_to_plain_text,
+    generate_mailto_link, build_email_subject, build_fields,
+    log_advocacy_action, get_advocacy_stats, build_cover_email_body
+)
+from db_utils import get_connection
 
 st.set_page_config(page_title="Upper Tier Bylaw Exemptions Map", layout="wide")
 
@@ -566,7 +573,7 @@ if len(detail_row) == 1:
             if url:
                 st.sidebar.markdown(f"[View Source Document]({url})")
 
-# ---------- OFA position + template letter ----------
+# ---------- OFA position + template letter + advocacy panel ----------
 content = get_content_for_label(selected_label)
 
 if content is not None:
@@ -578,11 +585,247 @@ if content is not None:
         if os.path.exists(template_path):
             with open(template_path, "rb") as f:
                 st.download_button(
-                    label="Download template letter for this bylaw (.docx)",
+                    label="📄 Download blank template letter (.docx)",
                     data=f,
                     file_name=os.path.basename(template_path),
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 )
+
+            # ── Advocacy Letter Panel (only for municipalities WITHOUT an exemption) ──
+            upper_muni_status = ""
+            if len(detail_row) == 1:
+                upper_muni_status = str(detail_row.iloc[0].get("__STATUS__", "") or "").strip().upper()
+
+            if upper_muni_status == "YES":
+                st.success(
+                    f"✅ **{selected_muni}** already has a farm exemption for this bylaw. "
+                    "No advocacy letter needed!"
+                )
+            elif upper_muni_status in ("NO", "NOT KNOWN", ""):
+                with st.expander("✉️ Send Personalized Advocacy Letter", expanded=False):
+                    st.markdown(
+                        "Fill in your details below to generate a **personalized advocacy letter** "
+                        "addressed to this municipality's clerk office. You can preview, download the "
+                        "editable Word document, and open it directly in your email client."
+                    )
+
+                    # Persist user details in session state across municipality changes
+                    for _key in ["advocacy_name", "advocacy_title", "advocacy_federation",
+                                 "advocacy_email", "advocacy_phone"]:
+                        if _key not in st.session_state:
+                            st.session_state[_key] = ""
+
+                    col_a, col_b = st.columns(2)
+                    with col_a:
+                        adv_name = st.text_input("Your Name *", value=st.session_state["advocacy_name"],
+                                                 key="upper_adv_name", placeholder="e.g., John Smith")
+                        adv_title = st.text_input("Your Title / Position *", value=st.session_state["advocacy_title"],
+                                                  key="upper_adv_title", placeholder="e.g., President")
+                        adv_federation = st.text_input("Organization / Affiliation (e.g., County Federation, Commodity Group, OFA Member) *",
+                                                       value=st.session_state["upper_adv_federation"],
+                                                       key="upper_adv_fed_input", placeholder="e.g., Huron County Federation of Agriculture")
+                    with col_b:
+                        adv_email = st.text_input("Your Contact Email (optional)",
+                                                  value=st.session_state["advocacy_email"],
+                                                  key="upper_adv_email", placeholder="e.g., john@example.com")
+                        adv_phone = st.text_input("Your Contact Phone (optional)",
+                                                  value=st.session_state["advocacy_phone"],
+                                                  key="upper_adv_phone", placeholder="e.g., (519) 555-1234")
+
+                    # Save to session state
+                    st.session_state["advocacy_name"] = adv_name
+                    st.session_state["advocacy_title"] = adv_title
+                    st.session_state["advocacy_federation"] = adv_federation
+                    st.session_state["advocacy_email"] = adv_email
+                    st.session_state["advocacy_phone"] = adv_phone
+
+                    # Build contact info string
+                    contact_parts = []
+                    if adv_email:
+                        contact_parts.append(adv_email)
+                    if adv_phone:
+                        contact_parts.append(adv_phone)
+                    contact_info = " | ".join(contact_parts) if contact_parts else ""
+
+                    # Auto-populated municipality info
+                    st.markdown("---")
+                    muni_display = str(selected_muni)
+                    bylaw_group = BYLAW_GROUP_FOR_LABEL.get(selected_label, selected_label)
+
+                    # Resolve recipient from database
+                    recipient_info = {"email": None, "contact_name": None}
+                    muni_id = None
+                    try:
+                        db_conn = get_connection()
+                        muni_id = resolve_municipality_id(db_conn, muni_display)
+                        if muni_id:
+                            recipient_info = get_recipient_email(db_conn, muni_id, muni_display)
+                        db_conn.close()
+                    except Exception:
+                        pass
+
+                    # Show auto-populated info
+                    info_col1, info_col2 = st.columns(2)
+                    with info_col1:
+                        st.markdown(f"**Municipality:** {muni_display}")
+                        st.markdown(f"**Bylaw Topic:** {bylaw_group}")
+                    with info_col2:
+                        if recipient_info["email"]:
+                            st.markdown(f"**Recipient:** {recipient_info['email']}")
+                        else:
+                            st.warning("⚠️ No clerk email found in database for this municipality.")
+                            manual_email = st.text_input("Enter recipient email manually:",
+                                                         key="upper_manual_email",
+                                                         placeholder="e.g., clerk@municipality.ca")
+                            if manual_email:
+                                recipient_info["email"] = manual_email
+
+                    # Get the bylaw name from the sidebar detail row
+                    upper_detail_row = gdf_all[gdf_all[name_field].astype(str).eq(str(selected_muni))].head(1)
+                    detail_bylaw_name = ""
+                    if len(upper_detail_row) == 1:
+                        raw_bylaw = str(upper_detail_row.iloc[0].get("__BYLAW_NAME__", "") or "").strip()
+                        # Remove any parenthetical notes e.g. "(amended by...)" to sound more natural in letters
+                        detail_bylaw_name = re.sub(r'\s*\(.*?\)', '', raw_bylaw).strip()
+
+                    # Validation
+                    required_filled = all([adv_name.strip(), adv_title.strip(), adv_federation.strip()])
+
+                    if not required_filled:
+                        st.info("Please fill in all required fields (*) above to generate your letter.")
+                    else:
+                        # Build the template fields
+                        fields = build_fields(
+                            sender_name=adv_name,
+                            sender_title=adv_title,
+                            county_federation=adv_federation,
+                            contact_info=contact_info,
+                            municipality_name=muni_display,
+                            bylaw_name=detail_bylaw_name,
+                            address=recipient_info.get("address", ""),
+                        )
+
+                        # ── Preview ──
+                        if st.button("👁️ Preview Letter", key="upper_preview_btn"):
+                            preview_text = letter_to_plain_text(template_path, fields)
+                            st.session_state["upper_letter_preview"] = preview_text
+
+                        if st.session_state.get("upper_letter_preview"):
+                            st.markdown("---")
+                            st.markdown("**Letter Preview:**")
+                            st.text_area("Letter preview", value=st.session_state["upper_letter_preview"],
+                                         height=400, disabled=True, key="upper_preview_area",
+                                         label_visibility="collapsed")
+
+                        # ── Download personalized .docx ──
+                        st.markdown("---")
+                        personalized_doc = fill_letter_template(template_path, fields)
+                        safe_muni = re.sub(r'[^\w\s-]', '', muni_display).strip().replace(' ', '_')
+                        doc_filename = f"Advocacy_Letter_{safe_muni}_{bylaw_group.replace(' ', '_')}.docx"
+
+                        if st.download_button(
+                            label="📥 Download Personalized Letter (.docx)",
+                            data=personalized_doc,
+                            file_name=doc_filename,
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            key="upper_dl_letter",
+                        ):
+                            try:
+                                log_conn = get_connection()
+                                log_advocacy_action(
+                                    log_conn, muni_id, muni_display, bylaw_group,
+                                    recipient_info.get("email"), adv_name, adv_federation,
+                                    "letter_downloaded"
+                                )
+                                log_conn.close()
+                            except Exception:
+                                pass
+                        st.caption("This Word document is fully editable — make any customizations before sending.")
+
+                        # ── Open in Email Client (mailto:) ──
+                        if recipient_info["email"]:
+                            st.markdown("---")
+                            st.warning(
+                                "⚠️ **IMPORTANT:** Browser security prevents automatically attaching files to emails. "
+                                "When the email draft opens, you **MUST manually attach the downloaded `.docx` file** before sending.",
+                                icon="⚠️"
+                            )
+                            
+                            subject = build_email_subject(muni_display, bylaw_group)
+                            cover_body_text = build_cover_email_body(
+                                adv_name, adv_title, adv_federation, muni_display, bylaw_group
+                            )
+                            mailto_url = generate_mailto_link(recipient_info["email"], subject, cover_body_text)
+
+                            if st.download_button(
+                                label="📧 Generate Letter & Open Email Draft",
+                                data=personalized_doc,
+                                file_name=doc_filename,
+                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                key="upper_mailto_btn"
+                            ):
+                                try:
+                                    log_conn = get_connection()
+                                    log_advocacy_action(
+                                        log_conn, muni_id, muni_display, bylaw_group,
+                                        recipient_info["email"], adv_name, adv_federation,
+                                        "mailto_opened"
+                                    )
+                                    log_conn.close()
+                                except Exception:
+                                    pass
+                                st.markdown(
+                                    f'<meta http-equiv="refresh" content="0;url={mailto_url}">',
+                                    unsafe_allow_html=True,
+                                )
+                                st.success(f"Opening email to {recipient_info['email']}... Don't forget to attach the document!")
+                            
+                            st.caption(
+                                f"**Recipient:** {recipient_info['email']}  \n"
+                                "This will open your default email client (Outlook, Gmail, etc.) with the "
+                                "letter pre-filled. **Remember to attach the downloaded .docx file** for "
+                                "the clerk's records."
+                            )
+                        else:
+                            st.warning(
+                                "No recipient email available. Please download the letter and send it manually."
+                            )
+
+                    # ── Usage Stats ──
+                    st.markdown("---")
+                    st.markdown("#### 📊 Advocacy Tool Usage")
+                    try:
+                        stats_conn = get_connection()
+                        stats = get_advocacy_stats(stats_conn)
+                        stats_conn.close()
+
+                        if stats["total_actions"] == 0:
+                            st.caption("No advocacy letters have been generated yet. Be the first!")
+                        else:
+                            sc1, sc2, sc3 = st.columns(3)
+                            sc1.metric("Letters Generated", stats["total_downloads"])
+                            sc2.metric("Emails Opened", stats["total_emails"])
+                            sc3.metric("Municipalities Contacted", stats["municipalities_contacted"])
+
+                            if stats["by_municipality"]:
+                                import pandas as _pd
+                                muni_df = _pd.DataFrame(stats["by_municipality"])
+                                muni_df.columns = ["Municipality", "Letters"]
+                                st.dataframe(muni_df, use_container_width=True, hide_index=True)
+
+                            if stats["recent"]:
+                                with st.expander("Recent activity", expanded=False):
+                                    recent_df = _pd.DataFrame(stats["recent"])
+                                    st.dataframe(recent_df, use_container_width=True, hide_index=True)
+                    except Exception:
+                        st.caption("Usage tracking will appear here after your first letter.")
+
+            else:
+                st.info(
+                    f"ℹ️ **{selected_muni}** has a status of **N/A** for this bylaw category. "
+                    "This means the bylaw is not applicable to this municipality, so no advocacy letter is needed."
+                )
+
         else:
             st.info(
                 "A template letter is expected for this bylaw, but the .docx file is not present in the repository."
