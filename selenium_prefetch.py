@@ -289,6 +289,18 @@ def main():
                 time.sleep(5)
                 docs = prefetch_single_muni(driver, row)
 
+            # Detect browser crash and restart if needed
+            if not docs:
+                try:
+                    driver.title  # Quick health check
+                except Exception:
+                    print("(browser crashed, restarting)...", end=" ", flush=True)
+                    try:
+                        driver.quit()
+                    except Exception:
+                        pass
+                    driver = setup_driver()
+
             if docs:
                 all_results.extend(docs)
                 success += 1

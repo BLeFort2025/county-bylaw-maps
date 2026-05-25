@@ -1,0 +1,36 @@
+Use your live web search capabilities to find the current, live URL for the official "Animal Control By-law" for the following Ontario municipalities.
+
+CRITICAL INSTRUCTIONS:
+1. ONLY return direct links to the official municipal bylaw PDF or the official municipal bylaw page.
+2. Ensure the URL is currently active and not a 404 dead link.
+3. Your output MUST be STRICTLY formatted as a single JSON array of objects. Do not include any markdown formatting, conversational text, or explanations. 
+
+Example output format:
+[
+  {{"id": 1234, "municipality": "Example Town", "healed_url": "https://www.example.ca/bylaw.pdf"}},
+  {{"id": 5678, "municipality": "Another City", "healed_url": "https://www.anothercity.ca/animal.pdf"}}
+]
+
+Here is the list of municipalities to search:
+
+- ID: 2839 | Municipality: Timmins, Ontario
+- ID: 2867 | Municipality: Trent Lakes, Ontario
+- ID: 2895 | Municipality: Uxbridge, Ontario
+- ID: 2909 | Municipality: Vaughan, Ontario
+- ID: 2916 | Municipality: Wainfleet, Ontario
+- ID: 2923 | Municipality: Warwick, Ontario
+- ID: 2930 | Municipality: Wasaga Beach, Ontario
+- ID: 2944 | Municipality: Waterloo, R, Ontario
+- ID: 2951 | Municipality: Wawa, Ontario
+- ID: 2965 | Municipality: Wellesley, Ontario
+- ID: 2979 | Municipality: Wellington, Ontario
+- ID: 2972 | Municipality: Wellington North, Ontario
+- ID: 2993 | Municipality: West Grey, Ontario
+- ID: 3014 | Municipality: West Perth, Ontario
+- ID: 3028 | Municipality: Whitby, Ontario
+- ID: 3042 | Municipality: White River, Ontario
+- ID: 3070 | Municipality: Windsor, Ontario
+- ID: 3084 | Municipality: Woodstock, Ontario
+- ID: 3091 | Municipality: Woolwich, Ontario
+- ID: 3098 | Municipality: York, Ontario
+- ID: 3105 | Municipality: Zorra, Ontario

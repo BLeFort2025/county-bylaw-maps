@@ -1,0 +1,40 @@
+Use your live web search capabilities to find the current, live URL for the official "Animal Control By-law" for the following Ontario municipalities.
+
+CRITICAL INSTRUCTIONS:
+1. ONLY return direct links to the official municipal bylaw PDF or the official municipal bylaw page.
+2. Ensure the URL is currently active and not a 404 dead link.
+3. Your output MUST be STRICTLY formatted as a single JSON array of objects. Do not include any markdown formatting, conversational text, or explanations. 
+
+Example output format:
+[
+  {{"id": 1234, "municipality": "Example Town", "healed_url": "https://www.example.ca/bylaw.pdf"}},
+  {{"id": 5678, "municipality": "Another City", "healed_url": "https://www.anothercity.ca/animal.pdf"}}
+]
+
+Here is the list of municipalities to search:
+
+- ID: 2202 | Municipality: Perth, T, Ontario
+- ID: 2209 | Municipality: Petawawa, Ontario
+- ID: 2223 | Municipality: Peterborough, Co, Ontario
+- ID: 2237 | Municipality: Pickering, Ontario
+- ID: 2251 | Municipality: Plummer Additional, Ontario
+- ID: 2258 | Municipality: Plympton-Wyoming, Ontario
+- ID: 2265 | Municipality: Point Edward, Ontario
+- ID: 2293 | Municipality: Prescott and Russell, Ontario
+- ID: 2321 | Municipality: Puslinch, Ontario
+- ID: 2335 | Municipality: Rainy River, Ontario
+- ID: 2342 | Municipality: Ramara, Ontario
+- ID: 2356 | Municipality: Red Rock, Ontario
+- ID: 2363 | Municipality: Renfrew, Co, Ontario
+- ID: 2370 | Municipality: Renfrew, T, Ontario
+- ID: 2398 | Municipality: Ryerson, Ontario
+- ID: 2419 | Municipality: Saugeen Shores, Ontario
+- ID: 2426 | Municipality: Sault Ste Marie, Ontario
+- ID: 2433 | Municipality: Schreiber, Ontario
+- ID: 2447 | Municipality: Seguin, Ontario
+- ID: 2454 | Municipality: Selwyn, Ontario
+- ID: 2468 | Municipality: Shelburne, Ontario
+- ID: 2482 | Municipality: Simcoe, Ontario
+- ID: 2489 | Municipality: Sioux Lookout, Ontario
+- ID: 2496 | Municipality: Sioux Narrows-Nestor Falls, Ontario
+- ID: 2503 | Municipality: Smiths Falls, Ontario

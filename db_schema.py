@@ -254,6 +254,21 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 
 -- ═══════════════════════════════════════════════
+-- Advocacy log (tracks outgoing advocacy letters)
+-- ═══════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS advocacy_log (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp       TEXT NOT NULL,
+    municipality_id INTEGER REFERENCES municipalities(id),
+    municipality_name TEXT,
+    bylaw_category  TEXT,
+    recipient_email TEXT,
+    sender_name     TEXT,
+    sender_org      TEXT,
+    action          TEXT  -- 'letter_downloaded', 'mailto_opened'
+);
+
+-- ═══════════════════════════════════════════════
 -- Indexes for common queries
 -- ═══════════════════════════════════════════════
 CREATE INDEX IF NOT EXISTS idx_bylaws_muni    ON bylaws(municipality_id);
@@ -261,6 +276,8 @@ CREATE INDEX IF NOT EXISTS idx_bylaws_cat     ON bylaws(category);
 CREATE INDEX IF NOT EXISTS idx_contacts_muni  ON contacts(municipality_id);
 CREATE INDEX IF NOT EXISTS idx_signals_muni   ON scanner_signals(municipality_id);
 CREATE INDEX IF NOT EXISTS idx_audit_ts       ON audit_log(timestamp);
+CREATE INDEX IF NOT EXISTS idx_advocacy_muni  ON advocacy_log(municipality_id);
+CREATE INDEX IF NOT EXISTS idx_advocacy_ts    ON advocacy_log(timestamp);
 """
 
 

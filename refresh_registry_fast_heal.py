@@ -26,10 +26,6 @@ import datetime
 import pandas as pd
 import urllib.parse
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -407,19 +403,11 @@ def _fast_pattern_guess_url(muni_name):
 
 
 
-AI_QUOTA_EXHAUSTED = False
-
 def _ai_dom_reader_fallback(driver, base_url):
     """Uses Gemini 2.5 Flash to parse the DOM links and find the best PDF URL.
     This acts as a bulletproof fallback when the rigid HTML parser fails.
     """
-    global AI_QUOTA_EXHAUSTED
     import json
-    
-    if AI_QUOTA_EXHAUSTED:
-        print("[AI Skip: Quota Exhausted]", end=" ")
-        return None
-        
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         print("[AI Skip: No API Key]", end=" ")
@@ -470,12 +458,7 @@ def _ai_dom_reader_fallback(driver, base_url):
             return result_url
             
     except Exception as e:
-        error_msg = str(e)
-        if "Quota exceeded" in error_msg or "429" in error_msg:
-            AI_QUOTA_EXHAUSTED = True
-            print(f"[AI Error: 429 Quota Exceeded. Disabling AI for rest of run]", end=" ")
-        else:
-            print(f"[AI Error: {e}]", end=" ")
+        print(f"[AI Error: {e}]", end=" ")
         
     return None
 

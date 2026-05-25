@@ -1,0 +1,40 @@
+Use your live web search capabilities to find the current, live URL for the official "Animal Control By-law" for the following Ontario municipalities.
+
+CRITICAL INSTRUCTIONS:
+1. ONLY return direct links to the official municipal bylaw PDF or the official municipal bylaw page.
+2. Ensure the URL is currently active and not a 404 dead link.
+3. Your output MUST be STRICTLY formatted as a single JSON array of objects. Do not include any markdown formatting, conversational text, or explanations. 
+
+Example output format:
+[
+  {{"id": 1234, "municipality": "Example Town", "healed_url": "https://www.example.ca/bylaw.pdf"}},
+  {{"id": 5678, "municipality": "Another City", "healed_url": "https://www.anothercity.ca/animal.pdf"}}
+]
+
+Here is the list of municipalities to search:
+
+- ID: 2531 | Municipality: South Bruce, Ontario
+- ID: 2545 | Municipality: South Frontenac, Ontario
+- ID: 2552 | Municipality: South Glengarry, Ontario
+- ID: 2559 | Municipality: South Huron, Ontario
+- ID: 2573 | Municipality: South Stormont, Ontario
+- ID: 2594 | Municipality: South-West Oxford, Ontario
+- ID: 2580 | Municipality: Southgate, Ontario
+- ID: 2608 | Municipality: Spanish, Ontario
+- ID: 2615 | Municipality: Springwater, Ontario
+- ID: 2650 | Municipality: St Marys, Ontario
+- ID: 2664 | Municipality: Stirling-Rawdon, Ontario
+- ID: 2671 | Municipality: Stone Mills, Ontario
+- ID: 2678 | Municipality: Stormont, Dundas and Glengarry, Ontario
+- ID: 2685 | Municipality: Stratford, Ontario
+- ID: 2692 | Municipality: Strathroy-Caradoc, Ontario
+- ID: 2699 | Municipality: Strong, Ontario
+- ID: 2720 | Municipality: Tay Valley, Ontario
+- ID: 2734 | Municipality: Tecumseh, Ontario
+- ID: 2748 | Municipality: Temagami, Ontario
+- ID: 2755 | Municipality: Temiskaming Shores, Ontario
+- ID: 2762 | Municipality: Terrace Bay, Ontario
+- ID: 2769 | Municipality: Thames Centre, Ontario
+- ID: 2776 | Municipality: The Archipelago, Ontario
+- ID: 2811 | Municipality: Thornloe, Ontario
+- ID: 2818 | Municipality: Thorold, Ontario

@@ -1,0 +1,40 @@
+Use your live web search capabilities to find the current, live URL for the official "Animal Control By-law" for the following Ontario municipalities.
+
+CRITICAL INSTRUCTIONS:
+1. ONLY return direct links to the official municipal bylaw PDF or the official municipal bylaw page.
+2. Ensure the URL is currently active and not a 404 dead link.
+3. Your output MUST be STRICTLY formatted as a single JSON array of objects. Do not include any markdown formatting, conversational text, or explanations. 
+
+Example output format:
+[
+  {{"id": 1234, "municipality": "Example Town", "healed_url": "https://www.example.ca/bylaw.pdf"}},
+  {{"id": 5678, "municipality": "Another City", "healed_url": "https://www.anothercity.ca/animal.pdf"}}
+]
+
+Here is the list of municipalities to search:
+
+- ID: 32 | Municipality: Adjala-Tosorontio, Ontario
+- ID: 46 | Municipality: Ajax, Ontario
+- ID: 53 | Municipality: Alberton, Ontario
+- ID: 74 | Municipality: Alnwick-Haldimand, Ontario
+- ID: 81 | Municipality: Amaranth, Ontario
+- ID: 88 | Municipality: Amherstburg, Ontario
+- ID: 116 | Municipality: Arran-Elderslie, Ontario
+- ID: 130 | Municipality: Asphodel-Norwood, Ontario
+- ID: 137 | Municipality: Assiginack, Ontario
+- ID: 144 | Municipality: Athens, Ontario
+- ID: 165 | Municipality: Baldwin, Ontario
+- ID: 200 | Municipality: Belleville, Ontario
+- ID: 207 | Municipality: Billings, Ontario
+- ID: 214 | Municipality: Black River-Matheson, Ontario
+- ID: 221 | Municipality: Blandford-Blenheim, Ontario
+- ID: 228 | Municipality: Blind River, Ontario
+- ID: 242 | Municipality: Bonfield, Ontario
+- ID: 249 | Municipality: Bonnechere Valley, Ontario
+- ID: 277 | Municipality: Brant, Ontario
+- ID: 284 | Municipality: Brantford, Ontario
+- ID: 291 | Municipality: Brethour, Ontario
+- ID: 305 | Municipality: Brock, Ontario
+- ID: 312 | Municipality: Brockton, Ontario
+- ID: 340 | Municipality: Bruce, Ontario
+- ID: 333 | Municipality: Bruce Mines, Ontario
