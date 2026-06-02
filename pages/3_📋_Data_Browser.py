@@ -189,7 +189,7 @@ YES_NO_DETAIL_FIELDS = {
 # ── Build display columns ──
 base_cols = ["name", "municipal_status", "geographic_area",
              "exemption_status", "bylaw_name", "date_enacted",
-             "expiry_date", "expiry_notes", "progress_label"]
+             "expiry_date", "expiry_notes", "progress_label", "bylaw_link"]
 
 detail_map = CATEGORY_DETAIL_COLS.get(selected_cat, {})
 
@@ -247,6 +247,7 @@ rename_map = {
     "expiry_date": "Expires",
     "expiry_notes": "Expiry Notes",
     "progress_label": "Progress",
+    "bylaw_link": "Bylaw Link",
 }
 # Add detail column renames
 rename_map.update(detail_map)
@@ -282,7 +283,15 @@ if hasattr(display_df.style, "map"):
     styled = display_df.style.map(highlight_status, subset=subset)
 else:
     styled = display_df.style.applymap(highlight_status, subset=subset)
-st.dataframe(styled, use_container_width=True, height=500)
+
+st.dataframe(
+    styled, 
+    use_container_width=True, 
+    height=500,
+    column_config={
+        "Bylaw Link": st.column_config.LinkColumn("Bylaw Link")
+    }
+)
 
 # ── Export ──
 st.sidebar.divider()
