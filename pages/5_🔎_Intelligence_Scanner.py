@@ -867,27 +867,44 @@ with tab_live:
                     f"*{', '.join(removed_dupes)}*"
                 )
 
+        # Enrich registry_df with county for filtering
+        county_dict = _load_county_dict()
+        registry_df['county'] = registry_df['municipality_name'].apply(
+            lambda n: _map_county(n, county_dict)
+        )
+        unique_counties = sorted([str(c) for c in registry_df['county'].unique() if c and str(c).strip()])
+
         st.divider()
 
         # ── Municipality Selection ──
         st.subheader("🏛️ Target Municipalities")
 
-        select_all = st.checkbox(
-            "**Select All — Province-Wide Scan** *(444 municipalities, ~3-5 minutes)*",
-            value=False,
-            key="select_all_munis"
+        scan_mode = st.radio(
+            "Select scan scope:",
+            options=["Select All — Province-Wide Scan", "Select by Region/County", "Select Specific Municipalities"],
+            label_visibility="collapsed"
         )
 
-        if not select_all:
+        selected_munis = []
+        if scan_mode == "Select by Region/County":
+            selected_regions = st.multiselect(
+                "Select Region(s) / County(s)",
+                options=unique_counties,
+                help="Select one or more regions to scan all municipalities within them."
+            )
+            if selected_regions:
+                selected_munis = registry_df[registry_df['county'].isin(selected_regions)]['municipality_name'].tolist()
+                st.caption(f"Selecting {len(selected_munis)} municipalities from {len(selected_regions)} region(s).")
+        elif scan_mode == "Select Specific Municipalities":
             muni_options = registry_df['municipality_name'].sort_values().tolist()
             selected_munis = st.multiselect(
                 "Select specific municipalities",
                 options=muni_options,
                 default=[],
-                help="Choose individual municipalities or use the 'Select All' toggle above."
+                help="Choose individual municipalities."
             )
-        else:
-            selected_munis = []  # Empty means ALL when select_all is checked
+
+        select_all = (scan_mode == "Select All — Province-Wide Scan")
 
         st.divider()
 
@@ -896,18 +913,13 @@ with tab_live:
             if not unique_keywords:
                 st.error("⚠️ Please select at least one keyword pack or enter a custom keyword.")
             elif not select_all and not selected_munis:
-                st.error("⚠️ Please select municipalities or enable 'Select All' for a province-wide scan.")
+                st.error("⚠️ Please select municipalities or enable a Province-Wide scan.")
             else:
                 # Resolve target set
                 target_df = registry_df.copy()
                 if not select_all and selected_munis:
                     target_df = target_df[target_df['municipality_name'].isin(selected_munis)]
 
-                # Enrich with county/region
-                county_dict = _load_county_dict()
-                target_df['county'] = target_df['municipality_name'].apply(
-                    lambda n: _map_county(n, county_dict)
-                )
                 target_df['region'] = target_df.apply(
                     lambda row: get_region(row['county'], row['municipality_name']), axis=1
                 )
