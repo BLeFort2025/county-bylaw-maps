@@ -362,7 +362,7 @@ def _map_county(m_name, county_dict):
 # ──────────────────────────────────────────────────────────────────
 # Core scan function — scans ONE municipality for a LIST of keywords
 # ──────────────────────────────────────────────────────────────────
-def _scan_single_muni(row, keywords):
+def _scan_single_muni(row, keywords, negative_keywords=None):
     """Scan a single municipality's recent documents for multiple keywords.
 
     This is the function submitted to the thread pool. It:
@@ -425,6 +425,12 @@ def _scan_single_muni(row, keywords):
                 else:
                     stats["html_read"] += 1
 
+            if negative_keywords:
+                for n_kw in negative_keywords:
+                    if n_kw.strip():
+                        pattern = re.compile(re.escape(n_kw.strip()), re.IGNORECASE)
+                        text_content = pattern.sub(" [IGNORED] ", text_content)
+
             content_lower = text_content.lower()
 
             for keyword in keywords:
@@ -460,7 +466,7 @@ def _scan_single_muni(row, keywords):
     return {"matches": [], "stats": stats}
 
 
-def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_scanned_munis):
+def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_scanned_munis, negative_keywords=None):
     """Stage 2: Search the pre-fetched Selenium cache for keyword matches.
 
     For any municipality that Stage 1 couldn't read (not in stage1_scanned_munis),
@@ -503,6 +509,12 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_scanned_munis
 
         if not doc_text or len(doc_text.strip()) < 50:
             continue
+
+        if negative_keywords:
+            for n_kw in negative_keywords:
+                if n_kw.strip():
+                    pattern = re.compile(re.escape(n_kw.strip()), re.IGNORECASE)
+                    doc_text = pattern.sub(" [IGNORED] ", doc_text)
 
         munis_searched.add(muni_name)
         content_lower = doc_text.lower()
@@ -554,7 +566,7 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_scanned_munis
     return matches, stats
 
 
-def run_live_scan(registry_subset, keywords):
+def run_live_scan(registry_subset, keywords, negative_keywords=None):
 
     """Execute a concurrent, multi-keyword scan over a registry subset.
 
@@ -599,7 +611,7 @@ def run_live_scan(registry_subset, keywords):
     with ThreadPoolExecutor(max_workers=5) as executor:
         future_to_name = {}
         for _, row in registry_subset.iterrows():
-            future = executor.submit(_scan_single_muni, row, keywords)
+            future = executor.submit(_scan_single_muni, row, keywords, negative_keywords)
             future_to_name[future] = row.get('municipality_name', 'Unknown')
 
         stage1_with_docs = set()
@@ -670,7 +682,7 @@ def run_live_scan(registry_subset, keywords):
 
         cache_matches, cache_stats = _scan_cached_docs(
             cached_df, registry_subset, keywords,
-            stage1_with_docs  # Stage 2 checks any muni that Stage 1 failed to find docs for
+            stage1_with_docs, negative_keywords
         )
 
         if cache_matches:
@@ -793,7 +805,7 @@ with tab_live:
         # ── Keyword Selection ──
         st.subheader("🔑 Keywords")
 
-        kw_col1, kw_col2 = st.columns([1, 1])
+        kw_col1, kw_col2, kw_col3 = st.columns([1, 1, 1])
 
         with kw_col1:
             st.markdown("**Preset Keyword Packs**")
@@ -814,7 +826,17 @@ with tab_live:
                 height=120,
                 label_visibility="collapsed",
             )
-            st.caption("💡 *Click outside the text box or press Ctrl+Enter after typing to register your keywords.*")
+            st.caption("💡 *Click outside or Ctrl+Enter to register.*")
+
+        with kw_col3:
+            st.markdown("**Negative Keywords (Exclude)**")
+            negative_kw_text = st.text_area(
+                "Enter negative keywords",
+                placeholder="e.g.\ngreenhouse gas\nghg",
+                height=120,
+                label_visibility="collapsed",
+            )
+            st.caption("💡 *Excludes hits triggered by these exact phrases.*")
 
         # Build the final keyword list
         all_keywords = []
@@ -890,9 +912,13 @@ with tab_live:
                     lambda row: get_region(row['county'], row['municipality_name']), axis=1
                 )
 
+                unique_negative_keywords = []
+                if negative_kw_text.strip():
+                    unique_negative_keywords = [kw.strip() for kw in negative_kw_text.strip().split("\n") if kw.strip()]
+
                 st.markdown(f"**Scanning {len(target_df)} municipalities for {len(unique_keywords)} keywords...**")
 
-                live_results, scan_stats = run_live_scan(target_df, unique_keywords)
+                live_results, scan_stats = run_live_scan(target_df, unique_keywords, unique_negative_keywords)
 
                 # Extract cache stats
                 cache_stats = scan_stats.get("cache_stats", {})
