@@ -869,10 +869,14 @@ with tab_live:
 
         # Enrich registry_df with county for filtering
         county_dict = _load_county_dict()
+        valid_regions = set(county_dict.values())
         registry_df['county'] = registry_df['municipality_name'].apply(
             lambda n: _map_county(n, county_dict)
         )
-        unique_counties = sorted([str(c) for c in registry_df['county'].unique() if c and str(c).strip()])
+        unique_counties = sorted([
+            str(c) for c in registry_df['county'].unique() 
+            if c and str(c).strip() and str(c) in valid_regions
+        ])
 
         st.divider()
 
