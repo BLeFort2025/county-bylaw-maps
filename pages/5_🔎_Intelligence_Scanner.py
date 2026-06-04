@@ -348,14 +348,20 @@ def _map_county(m_name, county_dict):
     if m_upper in county_dict:
         return county_dict[m_upper]
 
-    # Fuzzy match — strip common suffixes
     clean_m = re.sub(r'\s+(TP|C|M)$', '', m_upper).strip()
+    clean_m_no_punct = re.sub(r'[^\w\s]', '', clean_m)
     if clean_m in county_dict:
         return county_dict[clean_m]
 
     for db_name, area in county_dict.items():
-        if clean_m in db_name or db_name in clean_m:
+        db_name_no_punct = re.sub(r'[^\w\s]', '', db_name)
+        if clean_m_no_punct in db_name_no_punct or db_name_no_punct in clean_m_no_punct:
             return area
+            
+    # Hard fallback for Chatham-Kent if the above still misses
+    if "CHATHAM" in m_upper and "KENT" in m_upper:
+        return "Chatham-Kent"
+        
     return m_name
 
 
