@@ -1,0 +1,77 @@
+Here is your Master System Roadmap.
+🗺️ The 10,000-Foot View (The Pipeline)
+Think of your system as a factory line. It pulls raw materials (web pages) from the internet, filters them for gold (keywords), refines the metal (signal processing), and displays the final product (the map).
+The Inputs: The portal_registry.csv tells the system where to look.
+The Scanners: scanner_v1 & v2 go out and "hunt" for keywords.
+The Processor: generate_signals.py cleans duplicates and organizes the data.
+The Output: The Streamlit Map reads the final data and shows it to the world.
+
+📂 Key File & Folder Structure
+These are the only files you truly need to worry about. You can ignore almost everything else.
+Plaintext
+county-bylaw-maps/  (Root Folder)
+│
+├── run_weekly_scan.bat            <-- THE "BIG RED BUTTON" (Runs everything)
+│
+├── scanner_v1_robust.py           <-- THE HUNTER (Fast Scanner)
+├── scanner_v2_selenium.py         <-- THE BACKUP (Slow/Heavy Scanner)
+│
+├── generate_signals.py            <-- THE BRAIN (Merges & cleans data)
+│
+├── view_lower_map_v2...beta.py    <-- THE FACE (The Streamlit Website)
+│
+├── Lower_Tier.geojson             <-- MAP SHAPES (Don't touch)
+├── Upper_Tier.geojson             <-- MAP SHAPES (Don't touch)
+│
+└── signals/                       <-- THE MEMORY (Data Folder)
+    ├── portal_registry.csv        <-- CRITICAL: List of all URL links
+    ├── signals.csv                <-- CRITICAL: The final database for the map
+    └── candidates_minutes_...csv  <-- Weekly scan results (Created automatically)
+
+
+🔧 The "How-To" Guide for Future Changes
+Here is a breakdown of the common tasks you will likely need to perform, and exactly which file to touch.
+1. "I want to track a NEW topic (e.g., 'Wind Turbines')"
+You need to teach the Scanner what to look for, and the Map how to display it.
+Step 1 (The Hunter): Open scanner_v1_robust.py (and v2).
+Find KEYWORD_CONFIG.
+Add a new category: "WIND": ["Wind Turbine", "Turbine Setback", "Anemometer"].
+Step 2 (The Face): Open view_lower_map_v2_expiry_signals_beta.py.
+Find LAYER_TO_CATEGORY_MAP.
+Add the mapping: "Restrictive Wind Bylaws": "WIND".
+Step 3: Run run_weekly_scan.bat.
+2. "A municipality's link is broken / not scanning"
+The system is only as good as its address book. If a town changes their website, the scanner will fail until you update the address.
+File to edit: signals/portal_registry.csv
+Action: Find the row for that municipality. Update the example_recent_minutes_url column with a fresh link to their latest meeting minutes.
+3. "The Map isn't showing the red borders correctly"
+This is usually a logic issue in how the map interprets the data.
+File to edit: view_lower_map_v2_expiry_signals_beta.py
+Action: Look for the get_border_color function. This is where the logic lives (e.g., "If Category is Chickens AND View is Chickens -> Red").
+4. "I want to adjust the Map Colors or Sidebar Text"
+File to edit: view_lower_map_v2_expiry_signals_beta.py
+Action: This script controls the entire visual experience.
+Sidebar: Search for st.sidebar.
+Colors: Search for get_fill_color or get_border_color.
+5. "I want to manually add a 'Signal' that the scanner missed"
+Sometimes you hear about a bylaw from a colleague, not the scanner. You can manually inject it into the map.
+File to edit: signals/signals.csv
+Action: Open this in Excel. Add a row manually:
+munid: The ID of the town.
+category: e.g., "CHICKENS".
+trigger_keyword: "Manual Entry".
+evidence_url: Link to the news article/minutes.
+Save & Push: Commit this change to GitHub, and the map will update.
+🔄 The "Weekly Routine"
+When you want to update the intelligence for the week:
+Double-click run_weekly_scan.bat on your computer.
+Wait ~5-10 minutes for it to scan the web and rebuild the database.
+Run these commands in PowerShell to send the new data to the cloud:
+PowerShell
+git add .
+git commit -m "Weekly scan update"
+git push
+
+Summary:
+Logic/Keywords lives in the Root Scripts (scanner..., view...).
+Data/Links lives in the Signals Folder (registry.csv, signals.csv).

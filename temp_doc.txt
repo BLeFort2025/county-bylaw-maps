@@ -1,0 +1,275 @@
+
+
+
+Ontario Municipal Bylaw Database
+User Onboarding Guide
+
+Ontario Federation of Agriculture
+
+June 2026 
+
+Table of Contents
+1.  What Is This Tool?
+2.  Getting Started
+3.  The Home Page
+4.  Lower Tier Map
+5.  Upper Tier Map
+6.  Data Browser
+7.  Admin Panel
+8.  Intelligence Scanner
+9.  Report Generator
+10.  The Advocacy Letter Tool
+11.  Understanding the Colour Coding
+12.  Frequently Asked Questions
+13.  Glossary of Terms
+
+1. What Is This Tool?
+The Ontario Municipal Bylaw Database is a web-based application built by the Ontario Federation of Agriculture (OFA). It tracks municipal bylaws across all 444 municipalities in Ontario and helps OFA staff, board members, and county federations understand how local bylaws affect farming operations.
+The tool covers seven different bylaw categories:
+Development Charges (DC) — Fees charged to developers for new growth. Farms may or may not be exempt.
+Stormwater — Stormwater management fees. Some municipalities charge farms; others exempt them.
+Site Alteration & Fill — Rules about moving soil, grading land, or accepting fill. Farms often have exemptions.
+Livestock Guardian Dogs (LGD) — Municipal animal control bylaws that may or may not recognize livestock guardian dogs and herding dogs as working farm animals.
+Tree / Forest Conservation — Bylaws that regulate tree cutting. Many have exemptions for normal farming.
+Backyard Chickens — Whether residents can keep chickens. Tracks limits, licencing, and rooster rules.
+Fence Bylaws — Municipal fence bylaws, including whether they replace the provincial Line Fences Act and allow electric or security fencing for farms.
+For each municipality and category, the database tracks whether a farm exemption exists, the bylaw name and link, when it was enacted, when it expires, and detailed category-specific information.
+
+2. Getting Started
+How to Access the Tool
+The database is hosted on Streamlit Community Cloud and can be accessed through any modern web browser (Chrome, Edge, Firefox, Safari). https://county-bylaw-maps-8biajyvtg8hch97kkbhmpg.streamlit.app/ 
+Navigating the Application
+The application has a sidebar on the left side of the screen. This sidebar serves two purposes:
+Navigation — Click on any page name in the sidebar to switch between pages.
+Filters and controls — Each page has its own set of filters that appear in the sidebar when you are on that page.
+The available pages are listed in the sidebar:
+Home — Welcome page with an overview of the tool.
+Lower Tier Map — Interactive map of all 414 local (lower-tier) municipalities.
+Upper Tier Map — Interactive map of all 33 regional (upper-tier) municipalities.
+Data Browser — Searchable table view of all bylaw data.
+Admin — Password-protected page for editing database records (staff only).
+Intelligence Scanner — Tool to scan municipal websites for bylaw-related keywords.
+Report Generator — Create professional Word document reports.
+💡 Tip: If the sidebar is hidden, click the ">" arrow in the top-left corner of the screen to open it.
+
+3. The Home Page
+When you first open the application, you land on the Home page. This page provides an overview of what the tool does and quick links to get started.
+What You Will See
+A welcome message explaining the purpose of the database.
+A navigation table describing the two map views (Lower Tier and Upper Tier).
+An explanation of the Intelligence Engine — the automated weekly scanner that checks municipal websites for bylaw changes.
+Quick links to jump directly to the Intelligence Scanner, signal filters, expiry alerts, and map features.
+💡 Tip: Use the Home page as a starting point. Read through the overview once to understand the tool, then use the sidebar to navigate to the page you need.
+
+4. Lower Tier Map
+The Lower Tier Map is the primary visual tool in the database. It shows an interactive map of all 414 lower-tier (local) municipalities in Ontario, colour-coded by their bylaw exemption status.
+How to Use the Map
+Step 1: Choose a Bylaw Category
+In the sidebar, use the "Bylaw" dropdown to select which bylaw category you want to view. For example, selecting "Farm Exemption for Development Charges" will colour the map based on whether each municipality exempts farms from development charges.
+Step 2: Apply Filters (Optional)
+You can narrow down what the map shows using the sidebar filters:
+Status filter — Shows only municipalities with a specific status (YES, NO, or N/A).
+Expiry alert filter — Highlights municipalities where bylaws are expiring soon, already expired, or have unknown expiry dates.
+Scanner Signals checkbox — When checked, the map highlights only municipalities where our weekly scanner has found new bylaw-related activity on their website (e.g., if a town recently posted an agenda mentioning a "development charges update", the scanner picks it up and flags the town on the map).
+Display mode — Choose "Highlight matches" to dim non-matching municipalities, or "Filter to matches" to hide them entirely.
+Search — Type part of a municipality name to find it quickly.
+Step 3: Read the Map
+The map uses colours to show the status of each municipality:
+Green — The municipality has a farm exemption (YES).
+Red — The municipality does NOT have a farm exemption (NO).
+Grey — Information is not available or not applicable (N/A).
+The map also uses border outlines to show additional information:
+Red-Orange border — Our scanner recently found bylaw-related activity on this municipality's website.
+Orange border — The bylaw is expiring within the next year.
+Black border — The bylaw has already expired.
+Yellow border — The bylaw's expiry date is unknown.
+Step 4: Click on a Municipality
+Click on any municipality on the map to select it. When you click, the sidebar will update to show detailed information about that municipality, including:
+The bylaw name and its current status.
+The date the bylaw was enacted and when it expires.
+A link to view the actual bylaw document (if available).
+Any scanner intelligence signals found for that municipality.
+Step 5: View Summary Metrics
+At the top of the page, above the map, you will see a row of summary numbers showing how many municipalities fall into each status category (YES, NO, N/A, Expiring Soon, etc.). These numbers update as you apply filters.
+Step 6: Advocacy Tools and Policy Positions
+Scroll down below the map to find two additional resources for any selected municipality:
+OFA Position Statement — OFA's official policy position and background information on the specific bylaw topic you are viewing.
+How to Generate an Advocacy Letter
+If you select a municipality that does NOT currently have a farm exemption (i.e., its status is "NO"), the database will activate the Advocacy Letter Generator below the map. This feature allows you to instantly draft a customized letter to local officials. Here is how to use it:
+Scroll down below the main map window and click the collapsible box titled "✉️ Send Personalized Advocacy Letter".
+Fill in the text boxes provided (e.g., the local representative's name, your name, your title, and your contact information).
+Click the "👁️ Preview Letter" button to read the letter with your details filled in.
+Click the "📥 Download Personalized Letter" button to save a perfectly formatted Microsoft Word (.docx) file to your computer.
+If an email address is on file for that municipality, you can also click the "📧 Generate Letter & Open Email Draft" button. This will automatically open your computer's default email program (like Outlook) with a pre-written message, subject line, and the recipient's email address already filled in! All you have to do is attach the .docx file you downloaded and hit send.
+Exporting Map Data
+At the bottom of the page, expand the "Results (filtered)" section to see a table of all the municipalities currently shown on the map. You can download this table as a CSV file by clicking the download button.
+💡 Tip: Hover your mouse over a municipality on the map to see a quick tooltip with its name, status, and bylaw details without clicking.
+
+5. Upper Tier Map
+The Upper Tier Map works the same way as the Lower Tier Map, but it shows Ontario's 33 upper-tier (regional) municipalities instead of the 414 local municipalities.
+Upper-tier municipalities include regional governments like the Region of Peel, Region of Waterloo, County of Oxford, and similar entities. Some bylaw categories (like Development Charges) can apply at both the lower-tier and upper-tier level.
+All the same filters, colour coding, municipality detail panel, and export features from the Lower Tier Map are available here. The only difference is the set of municipalities shown.
+💡 Tip: Use the Upper Tier Map when you want to see the "big picture" at the regional level. Use the Lower Tier Map for municipality-by-municipality detail.
+
+6. Data Browser
+The Data Browser is a detailed table view of all the bylaw data in the database. While the maps give you a visual overview, the Data Browser lets you dig into the specifics — search, filter, sort, and read the detailed bylaw information for every municipality.
+Choosing a Bylaw Category
+Use the "Bylaw Category" dropdown in the sidebar to select which type of bylaw you want to browse. The seven options are: Development Charges, Stormwater, Site Alteration & Fill, Livestock Guardian Dogs, Tree / Forest Conservation, Backyard Chickens, and Fence Bylaws.
+Filtering the Data
+The sidebar provides several ways to narrow down the data:
+Search municipality — Type part of a municipality name to find it in the table.
+Geographic Area — Filter by county or region (e.g., show only municipalities in Oxford County).
+Exemption Status — Filter by Yes, No, N/A, or NOT KNOWN.
+Reading the Data Table
+The main table shows one row per municipality. The columns include:
+Municipality — The name of the municipality.
+Tier — Whether it is Lower Tier, Upper Tier, or Single Tier.
+County / Region — The county or region the municipality belongs to.
+Farm Exemption — Whether a farm exemption exists (colour-coded green, red, or yellow).
+Bylaw Name — The official name of the bylaw.
+Enacted / Expires — When the bylaw was enacted and when it expires.
+Expiry Notes — Notes about the bylaw's expiry.
+Progress — The review progress status (Complete, In Progress, etc.).
+Bylaw Link — A clickable link to view the actual bylaw document online (if available).
+Depending on the bylaw category you selected, additional columns will appear. For example, if you selected "Livestock Guardian Dogs," you will see extra columns for LGD Definition, Herding Definition, License Fee Exemption, Collar/Tag Requirements, and more.
+Municipality Detail Panel
+Below the table, you will find the Municipality Detail section. Select any municipality from the dropdown to see its complete profile, including:
+Basic information — name, tier, region, zone, website.
+Contact information — contact name, position, email, and phone number.
+All seven bylaw categories in expandable sections (click to expand/collapse each one).
+AMCTO Directory contacts — a table of municipal staff from the AMCTO directory.
+Scanner Intelligence Signals — any recent scanner hits for this municipality.
+💡 Tip: Use the "Export" section in the sidebar to download the current filtered view as a CSV file that you can open in Excel.
+
+7. Admin Panel
+The Admin Panel is a password-protected page used by OFA staff to update and manage the database. Only authorized users should use this page.
+Logging In
+When you navigate to the Admin page, you will see a password field. Enter the admin password and click "Login." If you have forgotten the password, click the "Forgot Password?" link to reset it to the default.
+Three Modes
+Once logged in, use the sidebar to choose between three modes:
+Mode 1: Edit Municipality
+This is where you update bylaw data for individual municipalities. Here is how to use it:
+1. Select a municipality from the dropdown.
+2. You will see a row of tabs across the top — one for "Municipality Info" and one for each of the seven bylaw categories.
+3. Click on the tab you want to edit.
+4. Fill in or update the fields in the form.
+5. Click the "Save" button at the bottom of the form to save your changes.
+The "Municipality Info" tab lets you update:
+Municipality name, tier status, geographic area, and zone.
+Website URL.
+Contact name, position, email, and phone.
+Each bylaw category tab lets you update:
+Bylaw name and link to the bylaw document.
+Date enacted and expiry date.
+Farm exemption status (Yes / No / NOT KNOWN / N/A / No explicit exemption found).
+Exemption wording and other notes.
+Progress status (e.g., Complete, In Progress).
+Category-specific detail fields (varies by category).
+Mode 2: Change History
+This mode shows an audit log of every edit made to the database. You can see who made changes, what was changed, the old value, and the new value. Use the slider to control how many entries to show, and download the history as a CSV file.
+Mode 3: Bulk Import
+This mode allows you to upload a CSV file to update multiple records at once. The CSV must have columns for municipality_name, category, field, and value. This is useful for making large batches of updates without editing each municipality one by one.
+Syncing Changes to the Maps
+After making edits in the Admin panel, click the "Sync Edits to Maps" button in the sidebar. This rebuilds the map data files so that your changes appear on the Lower Tier and Upper Tier maps. If you do not sync, the maps may show outdated information until the next automatic sync.
+📌 Note: All changes are logged automatically. Every edit is recorded in the Change History with a timestamp, so you can always see what was changed and when.
+
+8. Intelligence Scanner
+The Intelligence Scanner is a powerful tool that automatically searches municipal websites for keywords related to bylaw changes. It helps OFA stay informed about new bylaws, bylaw reviews, and upcoming council decisions that could affect agriculture.
+The Three Tabs
+Tab 1: Live Target Scanner
+This tab lets you run a real-time scan of municipal websites right now. Here is how to use it:
+1. Choose your keywords. You can select from preset keyword packs (e.g., "ALTO Rail," "Plant-Based Treaty," "Ontario Foodbelt") or type your own custom keywords, one per line.
+2. Choose which municipalities to scan. You can select "Select All" to scan all 444 municipalities (this takes 3-5 minutes) or pick specific municipalities from the dropdown.
+3. Click "Launch Scan" to start the scan.
+4. A progress bar will show you how the scan is going. You will see notifications as hits are found.
+5. When the scan finishes, you will see:
+A coverage report showing how many municipalities were successfully scanned, how many documents were read, and any errors.
+A list of keyword hits showing which municipalities had matches, what keyword was found, a snippet of the surrounding text, and a link to the source document.
+6. Download the full results as a CSV file for further analysis or sharing.
+Tab 2: Historical Intelligence Database
+This tab acts as the master "Library" for the 7 official OFA advocacy categories (like Development Charges, Stormwater Fees, and Backyard Chickens) across all 444 municipalities. Rather than making you wait for a live scan, this tab relies on an automated script that quietly runs every week in the background, reading thousands of documents to find OFA-specific issues, and saving the results here. You can filter by county/region, bylaw category, or search for specific keywords inside the extracted text snippets. This is your province-wide early warning system for tracking when local councils start quietly laying the groundwork for new agricultural bylaws.
+Tab 3: Portal Health Monitor
+This tab identifies municipalities whose websites may be out of date or inaccessible. If a municipality's portal has not had a readable document in 60 or more days, it shows up here as "stale." This helps OFA know which municipalities might need to be checked manually.
+💡 Tip: Use the Live Scanner when you need to check for something specific (like a new OFA advocacy topic). Use the Historical Database to review what the automated weekly scans have found over time.
+
+9. Report Generator
+The Report Generator creates professional Word documents (.docx) that summarize bylaw data. These reports are formatted with OFA branding and can be shared with board members, county federations, or other stakeholders.
+How to Generate a Report
+1. Choose your report scope:
+Provincial — Covers all 444 municipalities across Ontario. Best for province-wide overviews.
+County / Region — Covers all municipalities within a specific county or region. Best for county-level meetings.
+Municipality — Covers a single municipality in depth. Best for preparing for a specific meeting or advocacy effort.
+2. If you selected County or Municipality, choose the specific one from the dropdown that appears.
+3. Click "Generate Report." The tool will create the Word document.
+4. Click "Download Report (.docx)" to save it to your computer.
+What Is in the Report
+Depending on the scope you choose, the report may include:
+Executive Summary — A high-level summary of findings.
+Exemption Scorecard — A quick-reference table showing exemption counts across all seven categories.
+Category Sections — Detailed tables for each of the seven bylaw types.
+Municipality Profiles — Individual profiles with complete bylaw details (County and Municipality reports).
+Intelligence Alerts — Recent scanner hits and alerts about bylaw changes.
+Advocacy Priority Matrix — A ranked list of municipalities that are priorities for advocacy outreach (Provincial reports).
+Methodology — An explanation of how data was collected and what the status codes mean.
+💡 Tip: Generate a County report before a county federation meeting to give attendees a summary of all the bylaws in their area.
+
+10. The Advocacy Letter Tool
+The map pages (both Lower Tier and Upper Tier) include a built-in advocacy letter tool. This feature appears below the map when you are viewing a municipality that does NOT have a farm exemption (status = NO or NOT KNOWN).
+How to Use It
+1. On the map page, look for the section titled "Send Personalized Advocacy Letter." Click to expand it.
+2. Fill in your details:
+Your Name (required)
+Title / Position (required)
+Organization / Affiliation (required)
+Contact Email (optional)
+Contact Phone (optional)
+3. The municipality name, bylaw topic, and recipient email are filled in automatically from the database.
+4. Click "Preview Letter" to see what the letter will say before sending.
+5. You have two options:
+Download Personalized Letter — Downloads a Word document (.docx) with your personalized letter that you can print or email as an attachment.
+Generate Letter & Open Email Draft — Downloads the letter AND opens your email program with a draft email pre-addressed to the municipal clerk.
+OFA Policy Positions
+Below the map on each page, you will also see the OFA's official policy position on the selected bylaw topic. This gives you the background and talking points you need for advocacy conversations.
+Tracking Advocacy Activity
+The tool automatically tracks how many letters have been downloaded and emails opened. You can see this data in the "Advocacy Tool Usage" section, which shows metrics like total letters generated, emails opened, and a list of municipalities contacted.
+
+11. Understanding the Colour Coding
+The application uses consistent colour coding throughout the maps and tables to help you quickly understand the status of each municipality.
+Map Fill Colours
+
+Map Border Outlines
+
+Table Cell Colours (Data Browser)
+
+12. Frequently Asked Questions
+Q: How often is the data updated?
+A: The database is updated by OFA staff as new information becomes available. The Intelligence Scanner runs an automated weekly scan of municipal websites to flag potential changes. Staff then review the flagged items and update the database manually through the Admin panel.
+
+Q: Can I break anything by clicking around?
+A: No. The maps, Data Browser, Intelligence Scanner, and Report Generator are all read-only for regular users. Only the Admin panel (which is password-protected) can make changes to the data.
+
+Q: What does "NO BYLAW IN PLACE" mean in the Progress column?
+A: This means the municipality does not currently have a bylaw of that type. For example, a municipality with "NO BYLAW IN PLACE" for Stormwater means they do not charge stormwater fees.
+
+Q: What does the scanner actually do?
+A: The scanner visits municipal websites and looks through council agendas, minutes, and posted documents for keywords related to each bylaw category (e.g., "Development Charges Background Study," "site alteration bylaw"). When it finds a match, it records the keyword, a snippet of surrounding text, and a link to the source document.
+
+Q: Can I use this tool on my phone?
+A: The tool works best on a laptop or desktop computer with a large screen. The maps and tables are designed for wide screens. While it will technically work on a phone or tablet, the experience will be limited.
+
+Q: Who do I contact if I find an error in the data?
+A: Contact Ben LeFort at ben.lefort@ofa.on.ca 
+
+Q: How do I print or share a report?
+A: Use the Report Generator page to create a Word document, then download it. You can print it, email it as an attachment, or share it through OneDrive or other file-sharing tools.
+
+Q: What is the difference between the Lower Tier and Upper Tier maps?
+A: Lower Tier municipalities (414) are the local, town-level governments. Upper Tier municipalities (30) are the regional or county-level governments. Some bylaws (like Development Charges) can exist at both levels, so a farm could be subject to bylaws from both their lower-tier and upper-tier municipality.
+
+
+13. Glossary of Terms
+
+
+— End of Guide —
+
+Ontario Federation of Agriculture © 2026
