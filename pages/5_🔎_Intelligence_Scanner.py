@@ -439,6 +439,11 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
 
             content_lower = text_content.lower()
 
+            # FAST EXIT: Check if ANY keyword exists before looping
+            combined_pattern = re.compile(r'\b(' + '|'.join(re.escape(kw.lower()) for kw in keywords) + r')\b')
+            if not combined_pattern.search(content_lower):
+                continue
+
             for keyword in keywords:
                 # Use REGEX word boundary to prevent false matches
                 pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
@@ -525,6 +530,11 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_scanned_munis
         munis_searched.add(muni_name)
         content_lower = doc_text.lower()
 
+        # FAST EXIT: Check if ANY keyword exists before looping
+        combined_pattern = re.compile(r'\b(' + '|'.join(re.escape(kw.lower()) for kw in keywords) + r')\b')
+        if not combined_pattern.search(content_lower):
+            continue
+
         # Look up county/region from the registry
         reg_match = registry_subset[
             registry_subset["municipality_name"].str.upper() == muni_name.upper()
@@ -576,7 +586,7 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None):
 
     """Execute a concurrent, multi-keyword scan over a registry subset.
 
-    Uses a 5-thread pool (reduced from 20 to stay within Streamlit Cloud's
+    Uses a 3-thread pool (reduced from 5 to stay within Streamlit Cloud's
     ~1 GB memory limit) with Streamlit progress feedback.
 
     Crash-resilient design:
@@ -614,7 +624,7 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None):
     status_text = st.empty()
     hit_container = st.container()
 
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=3) as executor:
         future_to_name = {}
         for _, row in registry_subset.iterrows():
             future = executor.submit(_scan_single_muni, row, keywords, negative_keywords)
