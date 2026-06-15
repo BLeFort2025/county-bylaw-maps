@@ -112,12 +112,12 @@ except ImportError:
 def extract_text_from_pdf(pdf_bytes):
     text = ""
     try:
-        import pypdf
-        reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
-        for page in reader.pages[:30]:  # Limit pages for speed
-            page_text = page.extract_text()
-            if page_text:
-                text += page_text + "\n"
+        import fitz  # PyMuPDF
+        with fitz.open("pdf", pdf_bytes) as doc:
+            for page in doc[:30]:  # Limit pages for speed
+                page_text = page.get_text()
+                if page_text:
+                    text += page_text + "\n"
     except Exception as e:
         return f"[PDF Error: {e}]"
     return text
