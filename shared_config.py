@@ -144,16 +144,16 @@ def get_region(county, name):
 def extract_readable_snippet(text, keyword, window=250):
     """Extract a context snippet with visible keyword markers for CSV/UI output.
 
-    Preserves list formatting and injects ---> KEYWORD <--- markers for
+    Preserves list formatting and injects [ ** KEYWORD ** ] markers for
     instant readability in Excel and Streamlit data tables.
     """
     if not text or not keyword:
         return ""
 
-    # Clean whitespace but preserve single newlines for readability
-    text = text.replace('\r', '')
-    text = re.sub(r'\n{2,}', '\n', text)
-    text = re.sub(r'[ \t]+', ' ', text)
+    # Flatten all newlines, tabs, and carriage returns into single spaces
+    # This prevents Excel rows from becoming massively tall and hard to read
+    text = re.sub(r'[\r\n\t]+', ' ', text)
+    text = re.sub(r' {2,}', ' ', text)
 
     idx = text.lower().find(keyword.lower())
     if idx == -1:
@@ -164,9 +164,9 @@ def extract_readable_snippet(text, keyword, window=250):
 
     snippet = text[start:end].strip()
 
-    # Inject a highly visible marker around the keyword
+    # Inject an inline, highly visible marker around the keyword
     pattern = re.compile(re.escape(keyword), re.IGNORECASE)
-    snippet = pattern.sub(f"\n\n ---> {keyword.upper()} <--- \n\n", snippet)
+    snippet = pattern.sub(f" [ ** {keyword.upper()} ** ] ", snippet)
 
     return f"... {snippet} ..."
 
