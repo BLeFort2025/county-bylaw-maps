@@ -423,10 +423,18 @@ def export_map_dataframe(conn) -> pd.DataFrame:
             LEFT JOIN details_trees d ON d.bylaw_id = b.id
             WHERE b.municipality_id = {p} AND b.category = 'TREES'
         """, conn.conn, params=[mid])
+
         if not trees.empty:
             d = trees.iloc[0]
-            row["Farm Exemption - Tree Cutting Bylaw"]  = d["exemption_status"]
-            row["Exception Wording_1"]                  = d["exemption_wording"]
+            # Fall back to bylaw_exemptions if details_trees doesn't have it
+            farm_exempt = str(d.get("farm_exemption") if pd.notna(d.get("farm_exemption")) else "")
+            if not farm_exempt: farm_exempt = str(d.get("exemption_status") if pd.notna(d.get("exemption_status")) else "")
+            
+            except_word = str(d.get("farming_exception_wording") if pd.notna(d.get("farming_exception_wording")) else "")
+            if not except_word: except_word = str(d.get("exemption_wording") if pd.notna(d.get("exemption_wording")) else "")
+            
+            row["Farm Exemption - Tree Cutting Bylaw"]  = farm_exempt
+            row["Exception Wording_1"]                  = except_word
             row["Bylaw Name Forest Conservation"]       = d["bylaw_name"]
             row["Link to Forest Conservation Bylaw"]    = d["bylaw_link"]
             row["Expiry Date_4"]                        = d["expiry_date"]
