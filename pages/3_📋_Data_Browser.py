@@ -95,9 +95,20 @@ if status_filter != "All":
     df = df[df["exemption_status"] == status_filter]
 
 # ── Metrics row ──
-col1, col2, col3, col4, col5 = st.columns(5)
+col1, col1a, col2, col3, col4, col5 = st.columns(6)
 total = len(df)
 has_expiry = len(df[df["expiry_date"].notna() & (df["expiry_date"] != "")])
+
+# Calculate how many have a bylaw in place
+def _has_bylaw(name, prog):
+    name = str(name).strip().upper()
+    prog = str(prog).strip().upper()
+    if "NO BY" in prog or "NO BY-LAW" in prog: return False
+    if name in ('', 'NONE', 'NAN', 'UNKNOWN', 'N/A', 'NO BY-LAW', ''): return False
+    return True
+
+has_bylaw_count = int(df.apply(lambda r: _has_bylaw(r.get('bylaw_name'), r.get('progress_label')), axis=1).sum())
+
 
 # Category-specific metric labels and counts
 if selected_cat == "LGD":
@@ -117,6 +128,7 @@ else:
     na_count = len(df[df["exemption_status"].isin(["N/A", "NOT KNOWN"])])
 
 col1.metric("Total Shown", total)
+col1a.metric("🏛️ Has Bylaw", has_bylaw_count)
 col2.metric(yes_label, yes_count)
 col3.metric(no_label, no_count)
 col4.metric("❓ N/A / Unknown", na_count)
