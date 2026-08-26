@@ -94,6 +94,20 @@ def load_cached_docs():
         return df
     return pd.DataFrame()
 
+def _to_excel_bytes(df, sheet_name="Scan Results"):
+    """Export DataFrame to a clean in-memory Excel (.xlsx) file with formatted column widths."""
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name=sheet_name)
+        worksheet = writer.sheets[sheet_name]
+        for col in worksheet.columns:
+            val_lens = [len(str(cell.value or '')) for cell in col]
+            max_len = max(val_lens) if val_lens else 10
+            col_letter = col[0].column_letter
+            worksheet.column_dimensions[col_letter].width = min(max(max_len + 3, 12), 65)
+    output.seek(0)
+    return output.getvalue()
+
 # --- Shared Scanner Constants ---
 
 HEADERS = {
@@ -1064,6 +1078,32 @@ with tab_live:
                     else:
                         display_results = live_results
 
+                    # ── Prominent Download Toolbar ──
+                    d_col1, d_col2 = st.columns(2)
+                    excel_data = _to_excel_bytes(live_results, sheet_name="Scan Results")
+                    csv_data = live_results.to_csv(index=False).encode('utf-8')
+                    scan_date = datetime.date.today().isoformat()
+
+                    with d_col1:
+                        st.download_button(
+                            label="📊 Download Excel Spreadsheet (.xlsx)",
+                            data=excel_data,
+                            file_name=f"municipal_scan_results_{scan_date}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            type="primary",
+                            use_container_width=True,
+                            key="dl_excel_top"
+                        )
+                    with d_col2:
+                        st.download_button(
+                            label="📄 Download CSV File (.csv)",
+                            data=csv_data,
+                            file_name=f"municipal_scan_results_{scan_date}.csv",
+                            mime="text/csv",
+                            use_container_width=True,
+                            key="dl_csv_top"
+                        )
+
                     # ── Results Table ──
                     col_config = {
                         "Source URL": st.column_config.LinkColumn(
@@ -1086,16 +1126,6 @@ with tab_live:
                         use_container_width=True,
                         hide_index=True,
                         column_config=col_config,
-                    )
-
-                    # ── CSV Download ──
-                    csv = live_results.to_csv(index=False).encode('utf-8')
-                    st.download_button(
-                        label="📥 Download Full Scan Report (CSV)",
-                        data=csv,
-                        file_name=f"multi_keyword_scan_{datetime.date.today().isoformat()}.csv",
-                        mime="text/csv",
-                        use_container_width=True,
                     )
 
 # ──────────────────────────────────────────────────────────────────
@@ -1187,13 +1217,29 @@ with tab_history:
         )
         
         if not filtered_df.empty:
+            hd_col1, hd_col2 = st.columns(2)
+            excel_hist = _to_excel_bytes(filtered_df, sheet_name="OFA Intelligence")
             csv_hist = filtered_df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="Download Formatted Database Report (CSV)",
-                data=csv_hist,
-                file_name=f"ofa_bylaw_intelligence_{datetime.date.today().isoformat()}.csv",
-                mime="text/csv"
-            )
+            hist_date = datetime.date.today().isoformat()
+            with hd_col1:
+                st.download_button(
+                    label="📊 Download Excel Spreadsheet (.xlsx)",
+                    data=excel_hist,
+                    file_name=f"ofa_bylaw_intelligence_{hist_date}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    type="primary",
+                    use_container_width=True,
+                    key="dl_hist_excel"
+                )
+            with hd_col2:
+                st.download_button(
+                    label="📄 Download CSV File (.csv)",
+                    data=csv_hist,
+                    file_name=f"ofa_bylaw_intelligence_{hist_date}.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                    key="dl_hist_csv"
+                )
 
 # ──────────────────────────────────────────────────────────────────
 # Instructions / User Guide
