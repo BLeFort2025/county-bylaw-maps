@@ -209,9 +209,9 @@ def _find_recent_doc_links(listing_url, headers, max_links=4):
             has_doc_keyword = any(w in text.lower() for w in
                                  ["minute", "agenda", "council meeting", "regular meeting"])
 
-            # Skip self-referential loops
+            # Skip self-referential loops and calendar index pages
             is_self_loop = full_url.lower().rstrip("/") == listing_url.lower().rstrip("/")
-            if is_self_loop:
+            if is_self_loop or "meetingscalendarview.aspx" in full_url.lower() or "expanded=" in full_url.lower():
                 continue
 
             if (is_pdf or is_ashx or is_filestream or has_doc_keyword) and full_url not in seen_urls:
@@ -495,18 +495,16 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
     return {"matches": [], "stats": stats}
 
 
-def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_live_success_munis, negative_keywords=None):
+def _scan_cached_docs(cached_df, registry_subset, keywords, negative_keywords=None):
     """Stage 2: Search the pre-fetched Selenium cache for keyword matches.
 
-    For any municipality that Stage 1 couldn't find live meeting docs for,
-    this function checks the cached document text for keyword matches using the
-    same regex word-boundary logic and 180-day recency cutoff as Stage 1.
+    Searches the 2-tier pre-fetched meeting packages across all target municipalities.
+    Matches are de-duplicated against live Stage 1 results during result merging.
 
     Args:
         cached_df: DataFrame from cached_portal_docs.csv
         registry_subset: The target municipalities for this scan
         keywords: List of keywords to search for
-        stage1_live_success_munis: Set of municipality names that Stage 1 successfully spidered
 
     Returns:
         (list[dict], dict): Matches list and cache stats dict.
@@ -517,13 +515,9 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_live_success_
     # Get target municipality names
     target_names = set(registry_subset["municipality_name"].str.upper().tolist())
 
-    # Filter cache to municipalities that are in our target set but NOT covered by Stage 1 live spidering
+    # Search all target municipalities present in the cache
     cache_muni_col = cached_df["municipality_name"].str.upper()
-    relevant_cache = cached_df[
-        cache_muni_col.isin(target_names) & ~cache_muni_col.isin(
-            {m.upper() for m in stage1_live_success_munis}
-        )
-    ]
+    relevant_cache = cached_df[cache_muni_col.isin(target_names)]
 
     if relevant_cache.empty:
         return [], {"munis_from_cache": 0, "cache_docs_searched": 0, "cache_hits": 0}
@@ -653,7 +647,6 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None):
             future = executor.submit(_scan_single_muni, row, keywords, negative_keywords)
             future_to_name[future] = row.get('municipality_name', 'Unknown')
 
-        stage1_live_success_munis = set()
         for future in as_completed(future_to_name):
             completed += 1
             muni_name = future_to_name[future]
@@ -677,9 +670,6 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None):
                         scan_stats["munis_no_portal"] += 1
                     elif muni_stats.get("docs_scanned", 0) > 0:
                         scan_stats["munis_with_docs"] += 1
-                        # Only mark as live success if real live meeting docs were discovered on the listing page
-                        if muni_stats.get("found_live_docs", False):
-                            stage1_live_success_munis.add(muni_name)
 
                     # Collect keyword matches
                     res_list = result.get("matches", [])
@@ -723,16 +713,17 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None):
 
         cache_matches, cache_stats = _scan_cached_docs(
             cached_df, registry_subset, keywords,
-            stage1_live_success_munis, negative_keywords
+            negative_keywords
         )
 
         if cache_matches:
-            existing_keys = {(r["Municipality"], r["Keyword Found"]) for r in results}
+            existing_keys = {(r["Municipality"].upper(), r["Keyword Found"].upper()) for r in results}
             for cm in cache_matches:
-                if (cm["Municipality"], cm["Keyword Found"]) not in existing_keys:
+                key = (cm["Municipality"].upper(), cm["Keyword Found"].upper())
+                if key not in existing_keys:
                     results.append(cm)
                     hit_container.info(f"🟡 **CACHED HIT:** {cm['Municipality']} — *{cm['Keyword Found']}*")
-                    existing_keys.add((cm["Municipality"], cm["Keyword Found"]))
+                    existing_keys.add(key)
             st.session_state["_scan_results_final"] = results
 
         status_text.text(
