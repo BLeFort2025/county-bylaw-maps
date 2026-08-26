@@ -39,12 +39,43 @@ from db_utils import get_connection
 
 # --- Page Config ---
 st.set_page_config(
-    page_title="Intelligence Scanner",
+    page_title="Municipal Intelligence Scanner",
     page_icon="🔎",
     layout="wide"
 )
 
-st.title("🔎 Intelligence Scanner")
+# ── Standalone / Isolated View Mode ──
+# When accessed with ?standalone=true or ?isolated=true in the URL,
+# hide the multi-page sidebar navigation to isolate just the scanner.
+is_standalone = False
+if hasattr(st, "query_params"):
+    qp_val = st.query_params.get("standalone", "") or st.query_params.get("isolated", "")
+    if str(qp_val).lower() in ["true", "1", "yes"]:
+        is_standalone = True
+
+if is_standalone:
+    st.markdown("""
+        <style>
+            [data-testid="stSidebar"] {display: none !important;}
+            [data-testid="collapsedControl"] {display: none !important;}
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            .block-container {padding-top: 2rem !important;}
+        </style>
+    """, unsafe_allow_html=True)
+
+# ── Page Header ──
+hdr_col1, hdr_col2 = st.columns([3, 1])
+with hdr_col1:
+    st.title("🔎 Municipal Intelligence Scanner")
+with hdr_col2:
+    with st.popover("🔗 Share Scanner Link"):
+        st.markdown("**Direct Page Link:**")
+        st.code("https://county-bylaw-maps-8biajyvtg8hch97kkbhmpg.streamlit.app/Intelligence_Scanner", language="text")
+        st.markdown("**Isolated Standalone Link (Hides other pages):**")
+        st.code("https://county-bylaw-maps-8biajyvtg8hch97kkbhmpg.streamlit.app/Intelligence_Scanner?standalone=true", language="text")
+        st.caption("💡 *Anyone with the isolated link will only see the scanner interface.*")
+
 st.markdown("""
 This tool allows OFA members and policy experts to actively search municipal council agendas and minutes. 
 Use the **Live Scanner** to perform on-demand web searches for specific keywords, or use the **Historical Database** 
