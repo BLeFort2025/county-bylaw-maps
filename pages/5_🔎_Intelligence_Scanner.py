@@ -801,12 +801,10 @@ with tab_health:
 # TAB 1: LIVE TARGET SCANNER  (Fast Scanner Engine)
 # ──────────────────────────────────────────────────────────────────
 with tab_live:
-    st.header("Live Target Scanner")
+    st.header("🔎 Live Municipal Council Scanner")
     st.markdown(
-        "Perform a **concurrent, multi-keyword** scan of municipal council portals. "
-        "Select preset keyword packs and/or enter your own custom keywords. "
-        "The engine scans the **most recent documents** per municipality using a "
-        "concurrent thread pool with strict regex word-boundary matching to eliminate false positives."
+        "Search recent council meeting agendas and minutes across Ontario for any policy issue, keyword, or resolution. "
+        "The scanner reads the **most recent 2026 council documents** using word-boundary pattern matching."
     )
 
     # ── Crash recovery: offer partial results from interrupted scans ──
@@ -837,13 +835,23 @@ with tab_live:
     if registry_df.empty:
         st.warning("Portal Registry not found. Live scanning is unavailable.")
     else:
-        # ── Keyword Selection ──
-        st.subheader("🔑 Keywords")
+        # ── Keyword Selection Header & Clear Button ──
+        kw_hdr1, kw_hdr2 = st.columns([3, 1])
+        with kw_hdr1:
+            st.subheader("🔑 Step 1: Choose Your Keywords")
+        with kw_hdr2:
+            if st.button("🧹 Clear All Keywords", help="Uncheck all preset packs and clear custom keyword text boxes", use_container_width=True):
+                for pack_name in CUSTOM_KEYWORD_PACKS.keys():
+                    st.session_state[f"pack_{pack_name}"] = False
+                st.session_state["custom_kw_input"] = ""
+                st.session_state["negative_kw_input"] = ""
+                st.session_state["_scan_results_final"] = []
+                st.rerun()
 
         kw_col1, kw_col2, kw_col3 = st.columns([1, 1, 1])
 
         with kw_col1:
-            st.markdown("**Preset Keyword Packs**")
+            st.markdown("**Preset Policy Packs**")
             selected_packs = []
             for pack_name, pack_keywords in CUSTOM_KEYWORD_PACKS.items():
                 if st.checkbox(
@@ -860,18 +868,20 @@ with tab_live:
                 placeholder="e.g.\nSolar Farm\nGreenhouses\nAgri-Tourism",
                 height=120,
                 label_visibility="collapsed",
+                key="custom_kw_input"
             )
-            st.caption("💡 *Click outside or Ctrl+Enter to register.*")
+            st.caption("💡 *Type words or phrases to search.*")
 
         with kw_col3:
-            st.markdown("**Negative Keywords (Exclude)**")
+            st.markdown("**Exclude Words (Negative Keywords)**")
             negative_kw_text = st.text_area(
                 "Enter negative keywords",
                 placeholder="e.g.\ngreenhouse gas\nghg",
                 height=120,
                 label_visibility="collapsed",
+                key="negative_kw_input"
             )
-            st.caption("💡 *Excludes hits triggered by these exact phrases.*")
+            st.caption("💡 *Excludes hits containing these exact phrases.*")
 
         # Build the final keyword list
         all_keywords = []
@@ -916,7 +926,7 @@ with tab_live:
         st.divider()
 
         # ── Municipality Selection ──
-        st.subheader("🏛️ Target Municipalities")
+        st.subheader("🏛️ Step 2: Choose Where to Search")
 
         scan_mode = st.radio(
             "Select scan scope:",
@@ -948,7 +958,7 @@ with tab_live:
         st.divider()
 
         # ── Run Button ──
-        if st.button("🚀 Launch Scan", type="primary", use_container_width=True):
+        if st.button("🚀 Step 3: Launch Scan", type="primary", use_container_width=True):
             if not unique_keywords:
                 st.error("⚠️ Please select at least one keyword pack or enter a custom keyword.")
             elif not select_all and not selected_munis:
@@ -1191,24 +1201,46 @@ with tab_history:
 st.divider()
 
 st.markdown("""
-## 📖 Guide to the Intelligence Scanner
+## 📖 How to Use the Intelligence Scanner
 
-Welcome to the **Intelligence Scanner**! This tool is your early-warning system to see exactly what local municipal councils are talking about—before it becomes a finalized bylaw. 
+The **Intelligence Scanner** is your early-warning tool for municipal council discussions across Ontario. It reads through recent council meeting agendas and minutes to find where specific topics, bylaws, or policy issues are being debated.
 
-Because we track over 400 municipalities, hunting through hundreds of pages of council minutes is exhausting. This tool does the reading for you.
+---
 
-### Tab 1: Live Target Scanner (The "Search Party")
-Use this tab when you hear a rumor about a **new or specific issue** popping up in a few municipalities and you want to investigate it *right now*. 
-1. **Select your targets:** Choose one or a handful of municipalities you want to investigate.
-2. **Type your keyword:** Type the exact phrase you are looking for (like `"Solar Storage"`, `"Eminent Domain"`, or a specific road name).
-3. **Run the scan:** The system will rush out to those local websites, download their most recent council minutes, and quickly "speed read" them looking for your exact word. 
-4. **Read the snippet:** If it finds your word, it will show you a small "snippet" of text so you can see exactly how it's being discussed along with a link to the original document.
+### 🚀 3 Simple Steps to Run a Scan
 
-### Tab 2: Historical Intelligence Database (The "Library")
-Use this tab when you want a broad, immediate overview of the **7 official OFA bylaw categories** (like Development Charges, Stormwater Fees, or Backyard Chickens) across the whole province.
-1. Every week, a master automated system quietly reads thousands of documents looking for official OFA agricultural bylaws and saves whatever it finds in this "library."
-2. **Filter by County:** Select your county to instantly see every single official bylaw update that has hit council desks recently in your area. 
-3. **Filter by Issue:** Select issues like `"Site Alteration"` to see everyone in the province who is actively proposing new fill rules.
-4. **Search inside the snippets:** Use the text box to search for specific words (like `"fee"` or `"exemption"`) *inside* the evidence the automated scanner already saved. 
+1. **Step 1: Choose Your Keywords**
+   * **Preset Topic Packs:** Click any of the checkboxes (like **🚄 ALTO Rail**, **🚜 Fill & Site Alteration**, or **🏗️ Development Charges**) to load common policy terms automatically.
+   * **Custom Keywords:** Want to track a specific project or local topic? Type your words into the *Custom Keywords* box (one phrase per line, e.g. `battery storage`, `farm tax rebate`).
+   * **🧹 Clear Keywords:** Click the **Clear All Keywords** button anytime you want to wipe the slate clean and start a new search.
+
+2. **Step 2: Choose Where to Search**
+   * **Province-Wide (Recommended):** Searches across all 444+ Ontario municipal portals.
+   * **By Region / County:** Focus on specific counties (e.g. *Prescott & Russell*, *Hastings*, *Oxford County*).
+   * **Specific Municipalities:** Choose one or two specific towns to investigate.
+
+3. **Step 3: Click "Launch Scan" & View Results**
+   * Click the red **🚀 Step 3: Launch Scan** button.
+   * As the scanner reads recent 2026 council agendas, matches will appear immediately on your screen.
+
+---
+
+### 📊 How to Read Your Results & Download to Excel
+
+* **Context Snippet:** Shows the exact sentence and agenda item where your keyword was mentioned so you can see how it was debated.
+* **Source URL:** Click **🔗 Open Document** to open the actual council agenda or minutes PDF directly in your browser.
+* **Download to Excel:** Click the **📥 Download Full Scan Report (CSV)** button right below the results table to save the complete findings to your computer.
+
+---
+
+### 💡 Quick Tips & FAQ
+
+* **How recent are the council minutes?**
+  The scanner strictly reads the most recent council meeting packages (from the last 180 days) so you only see active **2026 council discussions**.
+* **What does "🟢 Live" vs "🟡 Cached" mean?**
+  * **🟢 Live:** The scanner connected directly to the municipality's website in real time during the scan.
+  * **🟡 Cached:** The scanner pulled from the pre-fetched meeting cache (used for complex JavaScript calendar portals like eScribe and CivicWeb).
+* **How do I avoid unrelated results?**
+  Use the **Exclude Words (Negative Keywords)** box! For example, typing `greenhouse gas` ensures that a search for `greenhouses` won't pull up climate change or energy reports.
 """)
 
