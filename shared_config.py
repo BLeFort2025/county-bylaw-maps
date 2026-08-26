@@ -85,6 +85,7 @@ KEYWORD_CONFIG = {
 CUSTOM_KEYWORD_PACKS = {
     "🚄 ALTO Rail": [
         "ALTO", "High Speed Rail", "High-speed rail", "Passenger Rail",
+        "High Frequency Rail", "High-frequency rail", "HFR", "Alt-NO", "ALT-NO", "VIA HFR",
     ],
     "🌱 Plant-Based Treaty": [
         "Plant Based Treaty", "Plant-Based Treaty", "Vegan Treaty",
