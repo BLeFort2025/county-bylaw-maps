@@ -14,7 +14,7 @@ REGISTRY_PATH = os.path.join(SCRIPT_DIR, "signals", "portal_registry.csv")
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "signals")
 
 # --- KEYWORD CONFIG (imported from shared module) ---
-from shared_config import KEYWORD_CONFIG, extract_snippet
+from shared_config import KEYWORD_CONFIG, check_keywords, extract_snippet
 
 def find_latest_report():
     """Automatically finds the most recent coverage report."""
@@ -44,16 +44,6 @@ def setup_driver():
     
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     return driver
-
-def check_keywords(text):
-    """Returns (keyword, category) if found."""
-    if not text: return None, None
-    text_lower = text.lower()
-    for cat, phrases in KEYWORD_CONFIG.items():
-        for p in phrases:
-            if p.lower() in text_lower:
-                return p, cat
-    return None, None
 
 def scan_with_selenium(driver, row):
     munid = row['munid']

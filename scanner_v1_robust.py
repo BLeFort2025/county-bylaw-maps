@@ -36,16 +36,6 @@ HEADERS = {
 
 # --- 4. HELPER FUNCTIONS ---
 
-def check_keywords(text):
-    """Returns (keyword, category) if found."""
-    if not text: return None, None
-    text_lower = text.lower()
-    for cat, phrases in KEYWORD_CONFIG.items():
-        for p in phrases:
-            if p.lower() in text_lower:
-                return p, cat
-    return None, None
-
 def extract_text_from_pdf(pdf_bytes):
     """Extracts text from PDF bytes using pdfplumber."""
     text = ""
