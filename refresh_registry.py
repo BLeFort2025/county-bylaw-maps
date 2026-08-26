@@ -124,26 +124,57 @@ def find_latest_document(driver, listing_url):
         return None
 
 
+def _is_recent_date(d, max_days=180):
+    """Check if a date is within max_days (default: 180 days / 6 months) from today."""
+    if d is None:
+        return True
+    today = datetime.date.today()
+    return (today - d).days <= max_days
+
+
+JUNK_PATTERNS = [
+    'form', 'permit', 'application', 'directory', 'conduct', 'boulevard',
+    'gazette', 'investigator', 'guide', 'policy', 'schedule', 'fee-schedule',
+    'complaint', 'code-of', 'procedural', 'agreement', 'delegation', 'rental',
+    'strategic-plan', 'budget', 'procurement', 'handbook'
+]
+
+MEETING_PATTERNS = [
+    'minute', 'agenda', 'council', 'regular', 'special', 'committee', 'meeting', 'filestream'
+]
+
+
 def _find_pdf_links(soup, base_url):
-    """Extract all PDF and document download links from a page."""
+    """Extract PDF and meeting document download links from a page, excluding non-meeting junk."""
     results = []
     for link in soup.find_all("a", href=True):
         href = link["href"]
         text = link.get_text().strip()
+        text_lower = text.lower()
         full_url = urllib.parse.urljoin(base_url, href)
+        full_lower = full_url.lower()
 
         if href.startswith("javascript:") or href == "#":
             continue
 
+        # Exclude non-meeting forms, permits, directories, etc.
+        if any(j in full_lower or j in text_lower for j in JUNK_PATTERNS):
+            continue
+
         is_doc = (
-            full_url.lower().endswith(".pdf") or
-            "FileStream" in href or
-            "View.ashx" in href or
-            "download" in href.lower()
+            full_lower.endswith(".pdf") or
+            "filestream" in full_lower or
+            "view.ashx" in full_lower or
+            "electronicfile" in full_lower or
+            "download" in full_lower
         )
 
-        if is_doc:
+        looks_like_meeting = any(m in full_lower or m in text_lower for m in MEETING_PATTERNS)
+
+        if is_doc and (looks_like_meeting or "filestream" in full_lower):
             date_hint = _extract_date(text + " " + full_url)
+            if date_hint and not _is_recent_date(date_hint, max_days=180):
+                continue
             results.append((full_url, text, date_hint))
 
     return results
@@ -159,17 +190,23 @@ def _find_meeting_page_links(soup, base_url):
         if href.startswith("javascript:") or href == "#":
             continue
 
+        # Exclude non-meeting items
+        if any(j in href.lower() or j in text for j in JUNK_PATTERNS):
+            continue
+
         # eScribe: Meeting.aspx?Id=...
         # General: links with meeting/minutes/agenda/council keywords
         is_meeting = (
             "Meeting.aspx" in href or
             any(w in text for w in ["regular council", "council meeting", "regular meeting",
-                                    "special council", "committee of the whole"])
+                                    "special council", "committee of the whole", "planning meeting"])
         )
 
         if is_meeting:
             full_url = urllib.parse.urljoin(base_url, href)
             date_hint = _extract_date(text + " " + full_url)
+            if date_hint and not _is_recent_date(date_hint, max_days=180):
+                continue
             results.append((full_url, text, date_hint))
 
     # Sort: most recent first

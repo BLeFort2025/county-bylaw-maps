@@ -123,6 +123,14 @@ def extract_text_from_pdf(pdf_bytes):
     return text
 
 
+def _is_recent_date(d, max_days=180):
+    """Check if a date is within max_days (default: 180 days / 6 months) from today."""
+    if d is None:
+        return True
+    today = datetime.date.today()
+    return (today - d).days <= max_days
+
+
 def _extract_date_from_text(text):
     """Try to extract a date from link text or URL for sorting by recency."""
     text = text.lower()
@@ -162,7 +170,7 @@ def _extract_date_from_text(text):
 
 
 def _find_recent_doc_links(listing_url, headers, max_links=4):
-    """Spider a listing page to find the most recent document links.
+    """Spider a listing page to find the most recent document links (within 180 days).
 
     Includes special handling for CivicWeb portals which organize
     documents in nested folder structures (filepro/documents/{id}).
@@ -208,10 +216,13 @@ def _find_recent_doc_links(listing_url, headers, max_links=4):
 
             if (is_pdf or is_ashx or is_filestream or has_doc_keyword) and full_url not in seen_urls:
                 date_hint = _extract_date_from_text(text + " " + full_url)
+                # ── 180-Day Recency Filter: discard old archives (e.g. from 2020) ──
+                if date_hint and not _is_recent_date(date_hint, max_days=180):
+                    continue
                 candidates.append((full_url, text[:80], date_hint))
                 seen_urls.add(full_url)
 
-        # Sort: dated links first (newest first), then undated
+        # Sort: dated links first (newest first within 180 days), then undated top links
         dated = [(u, t, d) for u, t, d in candidates if d is not None]
         undated = [(u, t, d) for u, t, d in candidates if d is None]
         dated.sort(key=lambda x: x[2], reverse=True)
@@ -224,7 +235,7 @@ def _find_recent_doc_links(listing_url, headers, max_links=4):
 
 
 def _spider_civicweb(base_url, soup, headers, max_links=4):
-    """Navigate CivicWeb filepro folder hierarchy to find recent documents."""
+    """Navigate CivicWeb filepro folder hierarchy to find recent documents (within 180 days)."""
     try:
         links = soup.find_all("a", href=True)
 
@@ -233,7 +244,7 @@ def _spider_civicweb(base_url, soup, headers, max_links=4):
             href = link["href"]
             text = link.get_text().strip().lower()
             full = urllib.parse.urljoin(base_url, href)
-            if "filepro/documents" in href and ("minute" in text or "agenda" in text):
+            if "filepro/documents" in href and ("minute" in text or "agenda" in text or "council" in text):
                 doc_folder_url = full
                 break
 
@@ -260,9 +271,12 @@ def _spider_civicweb(base_url, soup, headers, max_links=4):
 
             if "filestream" in href.lower():
                 date_hint = _extract_date_from_text(text + " " + full)
-                files.append((full, text, date_hint))
-            elif "filepro/documents" in href and text.strip().isdigit() and len(text.strip()) == 4:
-                year_folders.append((full, int(text.strip())))
+                if not date_hint or _is_recent_date(date_hint, max_days=180):
+                    files.append((full, text, date_hint))
+            elif "filepro/documents" in href:
+                match = re.search(r'\b(202[4-6])\b', text)
+                if match:
+                    year_folders.append((full, int(match.group(1))))
 
         if year_folders and not files:
             year_folders.sort(key=lambda x: x[1], reverse=True)
@@ -276,7 +290,8 @@ def _spider_civicweb(base_url, soup, headers, max_links=4):
                     full = urllib.parse.urljoin(latest_year_url, href)
                     if "filestream" in href.lower():
                         date_hint = _extract_date_from_text(text + " " + full)
-                        files.append((full, text, date_hint))
+                        if not date_hint or _is_recent_date(date_hint, max_days=180):
+                            files.append((full, text, date_hint))
 
         dated = [(u, t, d) for u, t, d in files if d is not None]
         undated = [(u, t, d) for u, t, d in files if d is None]
@@ -394,6 +409,7 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
         "pdfs_read": 0,        # PDF documents read
         "html_read": 0,        # HTML documents read
         "no_portal": False,    # True if no listing URL or no docs found
+        "found_live_docs": False, # True if genuine live meeting docs were discovered on the listing page
     }
 
     urls_to_scan = []
@@ -415,6 +431,7 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
             return {"matches": [], "stats": stats}
 
         stats["docs_found"] = len(urls_to_scan)
+        stats["found_live_docs"] = found_real_docs
 
         matches = []
         for url in urls_to_scan:
@@ -478,18 +495,18 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
     return {"matches": [], "stats": stats}
 
 
-def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_scanned_munis, negative_keywords=None):
+def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_live_success_munis, negative_keywords=None):
     """Stage 2: Search the pre-fetched Selenium cache for keyword matches.
 
-    For any municipality that Stage 1 couldn't read (not in stage1_scanned_munis),
+    For any municipality that Stage 1 couldn't find live meeting docs for,
     this function checks the cached document text for keyword matches using the
-    same regex word-boundary logic as Stage 1.
+    same regex word-boundary logic and 180-day recency cutoff as Stage 1.
 
     Args:
         cached_df: DataFrame from cached_portal_docs.csv
         registry_subset: The target municipalities for this scan
         keywords: List of keywords to search for
-        stage1_scanned_munis: Set of municipality names that Stage 1 already attempted
+        stage1_live_success_munis: Set of municipality names that Stage 1 successfully spidered
 
     Returns:
         (list[dict], dict): Matches list and cache stats dict.
@@ -500,11 +517,11 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_scanned_munis
     # Get target municipality names
     target_names = set(registry_subset["municipality_name"].str.upper().tolist())
 
-    # Filter cache to municipalities that are in our target set but NOT covered by Stage 1
+    # Filter cache to municipalities that are in our target set but NOT covered by Stage 1 live spidering
     cache_muni_col = cached_df["municipality_name"].str.upper()
     relevant_cache = cached_df[
         cache_muni_col.isin(target_names) & ~cache_muni_col.isin(
-            {m.upper() for m in stage1_scanned_munis}
+            {m.upper() for m in stage1_live_success_munis}
         )
     ]
 
@@ -520,6 +537,11 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_scanned_munis
         doc_url = str(row.get("doc_url", ""))
 
         if not doc_text or len(doc_text.strip()) < 50:
+            continue
+
+        # ── 180-Day Recency Filter on Cached Docs ──
+        doc_date = _extract_date_from_text(doc_text[:500] + " " + doc_url)
+        if doc_date and not _is_recent_date(doc_date, max_days=180):
             continue
 
         if negative_keywords:
@@ -547,7 +569,7 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_scanned_munis
             county = first.get("county", "") if "county" in first.index else ""
             region = first.get("region", "") if "region" in first.index else ""
         if not region:
-            region = get_region(muni_name)
+            region = get_region(county, muni_name)
 
         for keyword in keywords:
             pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
@@ -631,7 +653,7 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None):
             future = executor.submit(_scan_single_muni, row, keywords, negative_keywords)
             future_to_name[future] = row.get('municipality_name', 'Unknown')
 
-        stage1_with_docs = set()
+        stage1_live_success_munis = set()
         for future in as_completed(future_to_name):
             completed += 1
             muni_name = future_to_name[future]
@@ -655,7 +677,9 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None):
                         scan_stats["munis_no_portal"] += 1
                     elif muni_stats.get("docs_scanned", 0) > 0:
                         scan_stats["munis_with_docs"] += 1
-                        stage1_with_docs.add(muni_name)
+                        # Only mark as live success if real live meeting docs were discovered on the listing page
+                        if muni_stats.get("found_live_docs", False):
+                            stage1_live_success_munis.add(muni_name)
 
                     # Collect keyword matches
                     res_list = result.get("matches", [])
@@ -699,14 +723,17 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None):
 
         cache_matches, cache_stats = _scan_cached_docs(
             cached_df, registry_subset, keywords,
-            stage1_with_docs, negative_keywords
+            stage1_live_success_munis, negative_keywords
         )
 
         if cache_matches:
-            results.extend(cache_matches)
-            st.session_state["_scan_results_final"] = results
+            existing_keys = {(r["Municipality"], r["Keyword Found"]) for r in results}
             for cm in cache_matches:
-                hit_container.info(f"🟡 **CACHED HIT:** {cm['Municipality']} — *{cm['Keyword Found']}*")
+                if (cm["Municipality"], cm["Keyword Found"]) not in existing_keys:
+                    results.append(cm)
+                    hit_container.info(f"🟡 **CACHED HIT:** {cm['Municipality']} — *{cm['Keyword Found']}*")
+                    existing_keys.add((cm["Municipality"], cm["Keyword Found"]))
+            st.session_state["_scan_results_final"] = results
 
         status_text.text(
             f"✅ Scan complete — {total} live + {cache_stats['munis_from_cache']} cached municipalities searched.{error_note}"

@@ -55,6 +55,13 @@ def extract_text_from_pdf(pdf_bytes):
         return f"[PDF Error: {e}]"
     return text
 
+def _is_recent_date(d, max_days=180):
+    """Check if a date is within max_days (default: 180 days / 6 months) from today."""
+    if d is None:
+        return True
+    today = datetime.date.today()
+    return (today - d).days <= max_days
+
 def _extract_date_from_text(text):
     text = text.lower()
     months = {
@@ -87,7 +94,7 @@ def _spider_civicweb(base_url, soup, headers, max_links=4):
             href = link["href"]
             text = link.get_text().strip().lower()
             full = urljoin(base_url, href)
-            if "filepro/documents" in href and ("minute" in text or "agenda" in text):
+            if "filepro/documents" in href and ("minute" in text or "agenda" in text or "council" in text):
                 doc_folder_url = full
                 break
 
@@ -110,9 +117,12 @@ def _spider_civicweb(base_url, soup, headers, max_links=4):
             full = urljoin(doc_folder_url, href)
             if "filestream" in href.lower():
                 date_hint = _extract_date_from_text(text + " " + full)
-                files.append((full, text, date_hint))
-            elif "filepro/documents" in href and text.strip().isdigit() and len(text.strip()) == 4:
-                year_folders.append((full, int(text.strip())))
+                if not date_hint or _is_recent_date(date_hint, max_days=180):
+                    files.append((full, text, date_hint))
+            elif "filepro/documents" in href:
+                match = re.search(r'\b(202[4-6])\b', text)
+                if match:
+                    year_folders.append((full, int(match.group(1))))
 
         if year_folders and not files:
             year_folders.sort(key=lambda x: x[1], reverse=True)
@@ -126,7 +136,8 @@ def _spider_civicweb(base_url, soup, headers, max_links=4):
                     full = urljoin(latest_year_url, href)
                     if "filestream" in href.lower():
                         date_hint = _extract_date_from_text(text + " " + full)
-                        files.append((full, text, date_hint))
+                        if not date_hint or _is_recent_date(date_hint, max_days=180):
+                            files.append((full, text, date_hint))
 
         dated = [(u, t, d) for u, t, d in files if d is not None]
         undated = [(u, t, d) for u, t, d in files if d is None]
@@ -162,6 +173,8 @@ def _find_recent_doc_links(listing_url, headers, max_links=4):
 
             if (is_pdf or is_ashx or is_filestream or has_doc_keyword) and full_url not in seen_urls:
                 date_hint = _extract_date_from_text(text + " " + full_url)
+                if date_hint and not _is_recent_date(date_hint, max_days=180):
+                    continue
                 candidates.append((full_url, text[:80], date_hint))
                 seen_urls.add(full_url)
 

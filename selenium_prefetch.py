@@ -94,6 +94,22 @@ def extract_pdf_text(url, max_pages=30):
     return ""
 
 
+def _is_recent_date(d, max_days=180):
+    """Check if a date is within max_days (default: 180 days / 6 months) from today."""
+    if d is None:
+        return True
+    today = datetime.date.today()
+    return (today - d).days <= max_days
+
+
+JUNK_PATTERNS = [
+    'form', 'permit', 'application', 'directory', 'conduct', 'boulevard',
+    'gazette', 'investigator', 'guide', 'policy', 'schedule', 'fee-schedule',
+    'complaint', 'code-of', 'procedural', 'agreement', 'delegation', 'rental',
+    'strategic-plan', 'budget', 'procurement', 'handbook'
+]
+
+
 def find_document_links(driver, soup, base_url):
     """Spider the page for document links (PDFs, meeting pages, FileStream downloads)."""
     links = []
@@ -103,29 +119,37 @@ def find_document_links(driver, soup, base_url):
         href = a["href"]
         text = a.get_text().strip().lower()
         full_url = urllib.parse.urljoin(base_url, href)
+        full_lower = full_url.lower()
 
         if href.startswith("javascript:") or href == "#":
             continue
         if full_url in seen:
             continue
 
+        # Exclude junk non-meeting forms/policies
+        if any(j in full_lower or j in text for j in JUNK_PATTERNS):
+            continue
+
         # Is this a document link?
         is_doc = (
-            full_url.lower().endswith(".pdf") or
-            "FileStream" in href or
-            "View.ashx" in href or
-            "ElectronicFile" in href
+            full_lower.endswith(".pdf") or
+            "filestream" in full_lower or
+            "view.ashx" in full_lower or
+            "electronicfile" in full_lower
         )
 
         # Is this a meeting page link?
         is_meeting = (
-            "Meeting.aspx" in href or
+            "meeting.aspx" in full_lower or
             any(w in text for w in ["regular council", "council meeting", "regular meeting",
                                     "special council", "committee of the whole",
                                     "agenda", "minutes"])
         )
 
         if is_doc or is_meeting:
+            date_hint = extract_date_from_text(text + " " + full_url)
+            if date_hint and not _is_recent_date(date_hint, max_days=180):
+                continue
             links.append(full_url)
             seen.add(full_url)
 
