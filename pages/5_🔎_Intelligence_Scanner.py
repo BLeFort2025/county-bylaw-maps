@@ -890,7 +890,11 @@ with tab_live:
                     st.session_state[f"pack_{pack_name}"] = False
                 st.session_state["custom_kw_input"] = ""
                 st.session_state["negative_kw_input"] = ""
+                st.session_state["_scan_results_df"] = None
+                st.session_state["_scan_stats_data"] = None
+                st.session_state["_scan_has_run"] = False
                 st.session_state["_scan_results_final"] = []
+                st.session_state["_scan_results_partial"] = []
                 st.rerun()
 
         kw_col1, kw_col2, kw_col3 = st.columns([1, 1, 1])
@@ -1040,138 +1044,146 @@ with tab_live:
 
                 live_results, scan_stats = run_live_scan(target_df, unique_keywords, unique_negative_keywords)
 
-                # Extract cache stats
-                cache_stats = scan_stats.get("cache_stats", {})
-                munis_from_cache = cache_stats.get("munis_from_cache", 0)
-                cache_docs = cache_stats.get("cache_docs_searched", 0)
-                cache_hits = cache_stats.get("cache_hits", 0)
-                total_coverage = scan_stats["munis_with_docs"] + munis_from_cache
+                # Persist results in session state so they survive downloads and page reruns
+                st.session_state["_scan_results_df"] = live_results
+                st.session_state["_scan_stats_data"] = scan_stats
+                st.session_state["_scan_has_run"] = True
 
-                # ── Scan Coverage Report (always shown) ──
-                st.markdown("---")
-                st.subheader("📡 Scan Coverage Report")
+        # ── Persistent Results Display (Remains visible across downloads & filter changes) ──
+        if st.session_state.get("_scan_has_run") and st.session_state.get("_scan_results_df") is not None:
+            live_results = st.session_state["_scan_results_df"]
+            scan_stats = st.session_state.get("_scan_stats_data", {})
 
-                sc1, sc2, sc3, sc4, sc5, sc6 = st.columns(6)
-                sc1.metric("Municipalities Attempted", scan_stats["munis_attempted"])
-                sc2.metric("🟢 Live HTTP Scanned", scan_stats["munis_with_docs"])
-                sc3.metric("🟡 From Cached Data", munis_from_cache)
-                sc4.metric("Total Documents Read", scan_stats["total_docs_scanned"] + cache_docs)
-                sc5.metric("❌ Errors / Timeouts", scan_stats["munis_errored"])
-                sc6.metric("🚧 No Portal", scan_stats["munis_no_portal"])
+            # Extract cache stats
+            cache_stats = scan_stats.get("cache_stats", {})
+            munis_from_cache = cache_stats.get("munis_from_cache", 0)
+            cache_docs = cache_stats.get("cache_docs_searched", 0)
+            cache_hits = cache_stats.get("cache_hits", 0)
+            total_coverage = scan_stats.get("munis_with_docs", 0) + munis_from_cache
 
-                # Coverage percentage
-                coverage_pct = (
-                    round(total_coverage / scan_stats["munis_attempted"] * 100)
-                    if scan_stats["munis_attempted"] > 0 else 0
-                )
-                st.progress(min(coverage_pct / 100, 1.0))
-                st.caption(
-                    f"**{coverage_pct}% coverage** — "
-                    f"{scan_stats['munis_with_docs']} live + {munis_from_cache} cached = "
-                    f"{total_coverage} municipalities with searchable documents."
-                )
+            # ── Scan Coverage Report (always shown) ──
+            st.markdown("---")
+            st.subheader("📡 Scan Coverage Report")
 
-                # Cache freshness indicator
-                cached_df_info = load_cached_docs()
-                if not cached_df_info.empty and "fetch_date" in cached_df_info.columns:
-                    latest_fetch = cached_df_info["fetch_date"].max()
-                    st.caption(f"📅 Cached data last updated: **{latest_fetch}**")
-                elif munis_from_cache == 0:
-                    st.caption("📅 No cached data available — run `selenium_prefetch.py` locally to cover JS portals.")
+            sc1, sc2, sc3, sc4, sc5, sc6 = st.columns(6)
+            sc1.metric("Municipalities Attempted", scan_stats.get("munis_attempted", 0))
+            sc2.metric("🟢 Live HTTP Scanned", scan_stats.get("munis_with_docs", 0))
+            sc3.metric("🟡 From Cached Data", munis_from_cache)
+            sc4.metric("Total Documents Read", scan_stats.get("total_docs_scanned", 0) + cache_docs)
+            sc5.metric("❌ Errors / Timeouts", scan_stats.get("munis_errored", 0))
+            sc6.metric("🚧 No Portal", scan_stats.get("munis_no_portal", 0))
 
-                with st.expander("📊 Detailed scan breakdown", expanded=False):
-                    st.markdown(f"""
+            # Coverage percentage
+            attempted = scan_stats.get("munis_attempted", 0)
+            coverage_pct = round(total_coverage / attempted * 100) if attempted > 0 else 0
+            st.progress(min(coverage_pct / 100, 1.0))
+            st.caption(
+                f"**{coverage_pct}% coverage** — "
+                f"{scan_stats.get('munis_with_docs', 0)} live + {munis_from_cache} cached = "
+                f"{total_coverage} municipalities with searchable documents."
+            )
+
+            # Cache freshness indicator
+            cached_df_info = load_cached_docs()
+            if not cached_df_info.empty and "fetch_date" in cached_df_info.columns:
+                latest_fetch = cached_df_info["fetch_date"].max()
+                st.caption(f"📅 Cached data last updated: **{latest_fetch}**")
+            elif munis_from_cache == 0:
+                st.caption("📅 No cached data available — run `selenium_prefetch.py` locally to cover JS portals.")
+
+            with st.expander("📊 Detailed scan breakdown", expanded=False):
+                st.markdown(f"""
 | Metric | Count |
 |---|---|
-| Municipalities attempted | **{scan_stats['munis_attempted']}** |
+| Municipalities attempted | **{scan_stats.get('munis_attempted', 0)}** |
 | **Stage 1: Live HTTP** | |
-| — Municipalities with ≥1 doc read | **{scan_stats['munis_with_docs']}** |
-| — PDF documents read | **{scan_stats['total_pdfs_read']}** |
-| — HTML pages read | **{scan_stats['total_html_read']}** |
-| — Total docs scanned | **{scan_stats['total_docs_scanned']}** |
+| — Municipalities with ≥1 doc read | **{scan_stats.get('munis_with_docs', 0)}** |
+| — PDF documents read | **{scan_stats.get('total_pdfs_read', 0)}** |
+| — HTML pages read | **{scan_stats.get('total_html_read', 0)}** |
+| — Total docs scanned | **{scan_stats.get('total_docs_scanned', 0)}** |
 | **Stage 2: Cached Selenium** | |
 | — Municipalities from cache | **{munis_from_cache}** |
 | — Cached documents searched | **{cache_docs}** |
 | — Hits from cache | **{cache_hits}** |
 | **Errors** | |
-| — No portal / no docs | **{scan_stats['munis_no_portal']}** |
-| — Timed out / errored | **{scan_stats['munis_errored']}** |
-                    """)
+| — No portal / no docs | **{scan_stats.get('munis_no_portal', 0)}** |
+| — Timed out / errored | **{scan_stats.get('munis_errored', 0)}** |
+                """)
 
-                if live_results.empty:
-                    st.info("No matches found for the specified keywords in the selected municipalities.")
-                else:
-                    # ── Hit Metrics ──
-                    st.markdown("---")
-                    st.subheader("🎯 Keyword Hits")
-                    m1, m2, m3, m4 = st.columns(4)
-                    m1.metric("Total Hits", len(live_results))
-                    m2.metric("Unique Municipalities", live_results["Municipality"].nunique())
-                    m3.metric("Keywords Matched", live_results["Keyword Found"].nunique())
-                    m4.metric("Regions Covered", live_results["Region"].nunique())
+            if live_results.empty:
+                st.info("No matches found for the specified keywords in the selected municipalities.")
+            else:
+                # ── Hit Metrics ──
+                st.markdown("---")
+                st.subheader("🎯 Keyword Hits")
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("Total Hits", len(live_results))
+                m2.metric("Unique Municipalities", live_results["Municipality"].nunique())
+                m3.metric("Keywords Matched", live_results["Keyword Found"].nunique())
+                m4.metric("Regions Covered", live_results["Region"].nunique())
 
-                    # ── Region filter for results ──
-                    regions_found = sorted(live_results["Region"].unique().tolist())
-                    if len(regions_found) > 1:
-                        region_filter = st.multiselect(
-                            "Filter results by Region",
-                            options=regions_found,
-                            default=regions_found,
-                            key="result_region_filter"
-                        )
-                        display_results = live_results[live_results["Region"].isin(region_filter)]
-                    else:
-                        display_results = live_results
-
-                    # ── Prominent Download Toolbar ──
-                    d_col1, d_col2 = st.columns(2)
-                    excel_data = _to_excel_bytes(live_results, sheet_name="Scan Results")
-                    csv_data = live_results.to_csv(index=False).encode('utf-8')
-                    scan_date = datetime.date.today().isoformat()
-
-                    with d_col1:
-                        st.download_button(
-                            label="📊 Download Excel Spreadsheet (.xlsx)",
-                            data=excel_data,
-                            file_name=f"municipal_scan_results_{scan_date}.xlsx",
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            type="primary",
-                            use_container_width=True,
-                            key="dl_excel_top"
-                        )
-                    with d_col2:
-                        st.download_button(
-                            label="📄 Download CSV File (.csv)",
-                            data=csv_data,
-                            file_name=f"municipal_scan_results_{scan_date}.csv",
-                            mime="text/csv",
-                            use_container_width=True,
-                            key="dl_csv_top"
-                        )
-
-                    # ── Results Table ──
-                    col_config = {
-                        "Source URL": st.column_config.LinkColumn(
-                            "Source URL",
-                            display_text="🔗 Open Document"
-                        ),
-                        "Context Snippet": st.column_config.TextColumn(
-                            "Context Snippet",
-                            width="large"
-                        ),
-                    }
-                    # Only add Scan Method column config if column exists
-                    if "Scan Method" in display_results.columns:
-                        col_config["Scan Method"] = st.column_config.TextColumn(
-                            "Source", width="small"
-                        )
-
-                    st.dataframe(
-                        display_results,
-                        use_container_width=True,
-                        hide_index=True,
-                        column_config=col_config,
+                # ── Region filter for results ──
+                regions_found = sorted(live_results["Region"].unique().tolist())
+                if len(regions_found) > 1:
+                    region_filter = st.multiselect(
+                        "Filter results by Region",
+                        options=regions_found,
+                        default=regions_found,
+                        key="result_region_filter"
                     )
+                    display_results = live_results[live_results["Region"].isin(region_filter)]
+                else:
+                    display_results = live_results
+
+                # ── Prominent Download Toolbar ──
+                d_col1, d_col2 = st.columns(2)
+                excel_data = _to_excel_bytes(live_results, sheet_name="Scan Results")
+                csv_data = live_results.to_csv(index=False).encode('utf-8')
+                scan_date = datetime.date.today().isoformat()
+
+                with d_col1:
+                    st.download_button(
+                        label="📊 Download Excel Spreadsheet (.xlsx)",
+                        data=excel_data,
+                        file_name=f"municipal_scan_results_{scan_date}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        type="primary",
+                        use_container_width=True,
+                        key="dl_excel_top"
+                    )
+                with d_col2:
+                    st.download_button(
+                        label="📄 Download CSV File (.csv)",
+                        data=csv_data,
+                        file_name=f"municipal_scan_results_{scan_date}.csv",
+                        mime="text/csv",
+                        use_container_width=True,
+                        key="dl_csv_top"
+                    )
+
+                # ── Results Table ──
+                col_config = {
+                    "Source URL": st.column_config.LinkColumn(
+                        "Source URL",
+                        display_text="🔗 Open Document"
+                    ),
+                    "Context Snippet": st.column_config.TextColumn(
+                        "Context Snippet",
+                        width="large"
+                    ),
+                }
+                # Only add Scan Method column config if column exists
+                if "Scan Method" in display_results.columns:
+                    col_config["Scan Method"] = st.column_config.TextColumn(
+                        "Source", width="small"
+                    )
+
+                st.dataframe(
+                    display_results,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config=col_config,
+                )
 
 # ──────────────────────────────────────────────────────────────────
 # TAB 2: Historical Intelligence Database
