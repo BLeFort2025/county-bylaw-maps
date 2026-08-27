@@ -159,7 +159,11 @@ def find_document_links(driver, soup, base_url):
                             continue
                         seen_meeting_guids.add(guid)
                         
-                        full = urllib.parse.urljoin(cat_url, f"/Meeting.aspx?Id={guid}&Agenda=Agenda&lang=English")
+                        # Prioritize PostMinutes if available
+                        if "postminutes" in href.lower() or "minutes" in text.lower():
+                            full = urllib.parse.urljoin(cat_url, f"/Meeting.aspx?Id={guid}&Agenda=PostMinutes&lang=English")
+                        else:
+                            full = urllib.parse.urljoin(cat_url, f"/Meeting.aspx?Id={guid}&Agenda=Agenda&lang=English")
                         d_hint = extract_date_from_text(text + " " + full)
                         if _is_recent_date(d_hint, max_days=180):
                             links.append((full, d_hint))

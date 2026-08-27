@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shared_config import (
     REGION_MAPPING, get_region, extract_readable_snippet,
-    CUSTOM_KEYWORD_PACKS,
+    CUSTOM_KEYWORD_PACKS, apply_negative_keywords, is_valid_meeting_document, classify_meeting_doc,
 )
 
 try:
@@ -172,6 +172,8 @@ def _find_recent_doc_links(listing_url, headers, max_links=4):
             if is_self_loop: continue
 
             if (is_pdf or is_ashx or is_filestream or has_doc_keyword) and full_url not in seen_urls:
+                if not is_valid_meeting_document(full_url, text):
+                    continue
                 date_hint = _extract_date_from_text(text + " " + full_url)
                 if date_hint and not _is_recent_date(date_hint, max_days=180):
                     continue

@@ -34,6 +34,7 @@ sys.path.append(ROOT_DIR)
 from shared_config import (
     KEYWORD_CONFIG, extract_snippet, extract_readable_snippet,
     CUSTOM_KEYWORD_PACKS, REGION_MAPPING, get_region,
+    apply_negative_keywords, is_valid_meeting_document, classify_meeting_doc,
 )
 from db_utils import get_connection
 
@@ -260,6 +261,10 @@ def _find_recent_doc_links(listing_url, headers, max_links=4):
                 continue
 
             if (is_pdf or is_ashx or is_filestream or has_doc_keyword) and full_url not in seen_urls:
+                # ── Filter out static corporate strategic plans, master plans, etc. ──
+                if not is_valid_meeting_document(full_url, text):
+                    continue
+
                 date_hint = _extract_date_from_text(text + " " + full_url)
                 # ── 180-Day Recency Filter: discard old archives (e.g. from 2020) ──
                 if date_hint and not _is_recent_date(date_hint, max_days=180):
@@ -315,9 +320,10 @@ def _spider_civicweb(base_url, soup, headers, max_links=4):
             full = urllib.parse.urljoin(doc_folder_url, href)
 
             if "filestream" in href.lower():
-                date_hint = _extract_date_from_text(text + " " + full)
-                if not date_hint or _is_recent_date(date_hint, max_days=180):
-                    files.append((full, text, date_hint))
+                if is_valid_meeting_document(full, text):
+                    date_hint = _extract_date_from_text(text + " " + full)
+                    if not date_hint or _is_recent_date(date_hint, max_days=180):
+                        files.append((full, text, date_hint))
             elif "filepro/documents" in href:
                 match = re.search(r'\b(202[4-6])\b', text)
                 if match:
@@ -334,9 +340,10 @@ def _spider_civicweb(base_url, soup, headers, max_links=4):
                     text = link.get_text().strip()
                     full = urllib.parse.urljoin(latest_year_url, href)
                     if "filestream" in href.lower():
-                        date_hint = _extract_date_from_text(text + " " + full)
-                        if not date_hint or _is_recent_date(date_hint, max_days=180):
-                            files.append((full, text, date_hint))
+                        if is_valid_meeting_document(full, text):
+                            date_hint = _extract_date_from_text(text + " " + full)
+                            if not date_hint or _is_recent_date(date_hint, max_days=180):
+                                files.append((full, text, date_hint))
 
         dated = [(u, t, d) for u, t, d in files if d is not None]
         undated = [(u, t, d) for u, t, d in files if d is None]
@@ -426,18 +433,39 @@ def _map_county(m_name, county_dict):
     return m_name
 
 
+def _deduplicate_matches(matches):
+    """Deduplicates matches for the same meeting and keyword, prioritizing Official Minutes over Agendas."""
+    if not matches:
+        return []
+    deduped = {}
+    for m in matches:
+        muni = str(m.get("Municipality", "")).upper()
+        kw = str(m.get("Keyword Found", "")).upper()
+        url = str(m.get("Source URL", ""))
+        doc_type = str(m.get("Document Type", ""))
+
+        # Extract meeting key (GUID for eScribe, or base document URL)
+        guid_match = re.search(r'Id=([a-f0-9\-]+)', url, re.IGNORECASE)
+        if guid_match:
+            m_key = (muni, guid_match.group(1).lower(), kw)
+        else:
+            base_u = url.split('?')[0].lower()
+            m_key = (muni, base_u, kw)
+
+        if m_key not in deduped:
+            deduped[m_key] = m
+        else:
+            # If current is Official Minutes and existing is Agenda, upgrade to Official Minutes
+            if "Official Minutes" in doc_type and "Official Minutes" not in deduped[m_key].get("Document Type", ""):
+                deduped[m_key] = m
+    return list(deduped.values())
+
+
 # ──────────────────────────────────────────────────────────────────
 # Core scan function — scans ONE municipality for a LIST of keywords
 # ──────────────────────────────────────────────────────────────────
 def _scan_single_muni(row, keywords, negative_keywords=None):
-    """Scan a single municipality's recent documents for multiple keywords.
-
-    This is the function submitted to the thread pool. It:
-      1. Spiders the listing page for up to 3 recent documents
-      2. Downloads and extracts text from each document
-      3. Tests ALL keywords with regex word boundaries
-      4. Returns a dict with 'matches' (list) and 'stats' (document counts)
-    """
+    """Scan a single municipality's recent documents for multiple keywords."""
     name = row.get('municipality_name', 'Unknown')
     county = row.get('county', 'Unknown')
     region = row.get('region', 'Unknown')
@@ -447,27 +475,24 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
     listing_clean = str(listing_url).strip().rstrip("/") if listing_url and not pd.isna(listing_url) else ""
     fallback_clean = str(fallback_url).strip().rstrip("/") if fallback_url and not pd.isna(fallback_url) else ""
 
-    # Track document-level statistics for this municipality
     stats = {
-        "docs_found": 0,       # URLs discovered by spidering
-        "docs_scanned": 0,     # Documents successfully read
-        "pdfs_read": 0,        # PDF documents read
-        "html_read": 0,        # HTML documents read
-        "no_portal": False,    # True if no listing URL or no docs found
-        "found_live_docs": False, # True if genuine live meeting docs were discovered on the listing page
+        "docs_found": 0,
+        "docs_scanned": 0,
+        "pdfs_read": 0,
+        "html_read": 0,
+        "no_portal": False,
+        "found_live_docs": False,
     }
 
     urls_to_scan = []
     found_real_docs = False
 
     try:
-        # Spider the listing page
         if listing_clean:
             urls_to_scan = _find_recent_doc_links(listing_clean, HEADERS, max_links=3)
             if urls_to_scan:
                 found_real_docs = True
 
-        # Fallback if spidering fails
         if not urls_to_scan and fallback_clean:
             urls_to_scan = [fallback_clean]
 
@@ -486,6 +511,10 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
             if not is_pdf and not found_real_docs:
                 continue
 
+            # Validate that this is genuine meeting content and not static master/strategic plan
+            if not is_valid_meeting_document(url, text_content):
+                continue
+
             # Only count as "scanned" if we got meaningful text content
             if text_content and len(text_content.strip()) > 50:
                 stats["docs_scanned"] += 1
@@ -495,10 +524,7 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
                     stats["html_read"] += 1
 
             if negative_keywords:
-                for n_kw in negative_keywords:
-                    if n_kw.strip():
-                        pattern = re.compile(re.escape(n_kw.strip()), re.IGNORECASE)
-                        text_content = pattern.sub(" [IGNORED] ", text_content)
+                text_content = apply_negative_keywords(text_content, negative_keywords)
 
             content_lower = text_content.lower()
 
@@ -507,8 +533,9 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
             if not combined_pattern.search(content_lower):
                 continue
 
+            doc_type = classify_meeting_doc(url, text_content)
+
             for keyword in keywords:
-                # Use REGEX word boundary to prevent false matches
                 pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
                 if re.search(pattern, content_lower):
                     snippet = extract_readable_snippet(text_content, keyword, window=300)
@@ -517,22 +544,16 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
                         "County / Upper Tier": county,
                         "Region": region,
                         "Date Scanned": datetime.date.today().isoformat(),
+                        "Document Type": doc_type,
                         "Keyword Found": keyword,
                         "Context Snippet": snippet,
                         "Source URL": url,
                         "Scan Method": "🟢 Live",
                     })
 
-        # De-duplicate across URLs
+        # De-duplicate with Minutes-first priority
         if matches:
-            unique_matches = []
-            seen = set()
-            for m in matches:
-                key = (m["Keyword Found"], m["Source URL"])
-                if key not in seen:
-                    unique_matches.append(m)
-                    seen.add(key)
-            return {"matches": unique_matches, "stats": stats}
+            return {"matches": _deduplicate_matches(matches), "stats": stats}
 
     except Exception:
         pass
@@ -541,26 +562,11 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
 
 
 def _scan_cached_docs(cached_df, registry_subset, keywords, negative_keywords=None):
-    """Stage 2: Search the pre-fetched Selenium cache for keyword matches.
-
-    Searches the 2-tier pre-fetched meeting packages across all target municipalities.
-    Matches are de-duplicated against live Stage 1 results during result merging.
-
-    Args:
-        cached_df: DataFrame from cached_portal_docs.csv
-        registry_subset: The target municipalities for this scan
-        keywords: List of keywords to search for
-
-    Returns:
-        (list[dict], dict): Matches list and cache stats dict.
-    """
+    """Stage 2: Search the pre-fetched Selenium cache for keyword matches."""
     if cached_df.empty:
         return [], {"munis_from_cache": 0, "cache_docs_searched": 0, "cache_hits": 0}
 
-    # Get target municipality names
     target_names = set(registry_subset["municipality_name"].str.upper().tolist())
-
-    # Search all target municipalities present in the cache
     cache_muni_col = cached_df["municipality_name"].str.upper()
     relevant_cache = cached_df[cache_muni_col.isin(target_names)]
 
@@ -583,11 +589,12 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, negative_keywords=No
         if doc_date and not _is_recent_date(doc_date, max_days=180):
             continue
 
+        # Validate genuine meeting content
+        if not is_valid_meeting_document(doc_url, doc_text):
+            continue
+
         if negative_keywords:
-            for n_kw in negative_keywords:
-                if n_kw.strip():
-                    pattern = re.compile(re.escape(n_kw.strip()), re.IGNORECASE)
-                    doc_text = pattern.sub(" [IGNORED] ", doc_text)
+            doc_text = apply_negative_keywords(doc_text, negative_keywords)
 
         munis_searched.add(muni_name)
         content_lower = doc_text.lower()
@@ -597,7 +604,6 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, negative_keywords=No
         if not combined_pattern.search(content_lower):
             continue
 
-        # Look up county/region from the registry
         reg_match = registry_subset[
             registry_subset["municipality_name"].str.upper() == muni_name.upper()
         ]
@@ -610,6 +616,8 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, negative_keywords=No
         if not region:
             region = get_region(county, muni_name)
 
+        doc_type = classify_meeting_doc(doc_url, doc_text)
+
         for keyword in keywords:
             pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
             if re.search(pattern, content_lower):
@@ -619,22 +627,16 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, negative_keywords=No
                     "County / Upper Tier": county,
                     "Region": region,
                     "Date Scanned": datetime.date.today().isoformat(),
+                    "Document Type": doc_type,
                     "Keyword Found": keyword,
                     "Context Snippet": snippet,
                     "Source URL": doc_url,
                     "Scan Method": "🟡 Cached",
                 })
 
-    # De-duplicate
+    # De-duplicate with Minutes-first priority
     if matches:
-        unique = []
-        seen = set()
-        for m in matches:
-            key = (m["Keyword Found"], m["Source URL"])
-            if key not in seen:
-                unique.append(m)
-                seen.add(key)
-        matches = unique
+        matches = _deduplicate_matches(matches)
 
     stats = {
         "munis_from_cache": len(munis_searched),
@@ -775,10 +777,23 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None):
             f"✅ Scan complete — {total} live + {cache_stats['munis_from_cache']} cached municipalities searched.{error_note}"
         )
 
+    # Final meeting-level deduplication across Stage 1 and Stage 2
+    results = _deduplicate_matches(results)
+    st.session_state["_scan_results_final"] = results
+
     scan_stats["cache_stats"] = cache_stats
     st.session_state["_scan_stats"] = scan_stats
 
-    return pd.DataFrame(results), scan_stats
+    res_df = pd.DataFrame(results)
+    if not res_df.empty and "Document Type" in res_df.columns:
+        cols_order = [
+            "Municipality", "County / Upper Tier", "Region", "Date Scanned",
+            "Document Type", "Keyword Found", "Context Snippet", "Source URL", "Scan Method"
+        ]
+        present_cols = [c for c in cols_order if c in res_df.columns]
+        res_df = res_df[present_cols]
+
+    return res_df, scan_stats
 
 
 # --- UI Layout ---
@@ -1166,6 +1181,11 @@ with tab_live:
                     "Source URL": st.column_config.LinkColumn(
                         "Source URL",
                         display_text="🔗 Open Document"
+                    ),
+                    "Document Type": st.column_config.TextColumn(
+                        "Document Type & Status",
+                        width="medium",
+                        help="Indicates whether this is confirmed post-meeting Official Minutes or an Agenda (where minutes may be pending approval)."
                     ),
                     "Context Snippet": st.column_config.TextColumn(
                         "Context Snippet",
