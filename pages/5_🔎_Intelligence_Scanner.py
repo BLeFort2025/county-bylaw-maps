@@ -928,7 +928,7 @@ with tab_live:
             )
             st.caption("💡 *Excludes hits containing these exact phrases.*")
 
-        # Build the final keyword list
+        # Build positive keywords
         all_keywords = []
         for pack_name in selected_packs:
             all_keywords.extend(CUSTOM_KEYWORD_PACKS[pack_name])
@@ -936,9 +936,7 @@ with tab_live:
             custom_kws = [kw.strip() for kw in custom_kw_text.strip().split("\n") if kw.strip()]
             all_keywords.extend(custom_kws)
 
-        # De-duplicate (case-insensitive) while preserving order.
-        # Scanning is case-insensitive, so "Greenhouses" and "greenhouses"
-        # would produce identical results — we keep the first occurrence.
+        # De-duplicate positive keywords (case-insensitive)
         seen_kw = set()
         unique_keywords = []
         removed_dupes = []
@@ -949,11 +947,32 @@ with tab_live:
             else:
                 removed_dupes.append(kw)
 
-        if unique_keywords:
-            st.info(f"**{len(unique_keywords)} keyword(s) selected:** {', '.join(unique_keywords)}")
+        # Parse negative keywords (exclusions)
+        unique_negative_keywords = []
+        if negative_kw_text.strip():
+            seen_neg = set()
+            for kw in negative_kw_text.strip().split("\n"):
+                k_clean = kw.strip()
+                if k_clean and k_clean.lower() not in seen_neg:
+                    unique_negative_keywords.append(k_clean)
+                    seen_neg.add(k_clean.lower())
+
+        # ── Visual Confirmation of Registered Keywords & Exclusions ──
+        if unique_keywords or unique_negative_keywords:
+            if unique_keywords and unique_negative_keywords:
+                k_c1, k_c2 = st.columns(2)
+                with k_c1:
+                    st.info(f"🟢 **{len(unique_keywords)} Search Keyword(s) Registered:**\n\n" + ", ".join(f"`{k}`" for k in unique_keywords))
+                with k_c2:
+                    st.warning(f"🚫 **{len(unique_negative_keywords)} Exclude Phrase(s) Active:**\n\n" + ", ".join(f"`{k}`" for k in unique_negative_keywords))
+            elif unique_keywords:
+                st.info(f"🟢 **{len(unique_keywords)} Search Keyword(s) Registered:**\n\n" + ", ".join(f"`{k}`" for k in unique_keywords))
+            elif unique_negative_keywords:
+                st.warning(f"🚫 **{len(unique_negative_keywords)} Exclude Phrase(s) Active (Please select at least 1 search keyword):**\n\n" + ", ".join(f"`{k}`" for k in unique_negative_keywords))
+
             if removed_dupes:
                 st.caption(
-                    f"ℹ️ {len(removed_dupes)} duplicate(s) removed (matching is case-insensitive): "
+                    f"ℹ️ {len(removed_dupes)} duplicate search keyword(s) removed (matching is case-insensitive): "
                     f"*{', '.join(removed_dupes)}*"
                 )
 
@@ -1017,11 +1036,6 @@ with tab_live:
                 target_df['region'] = target_df.apply(
                     lambda row: get_region(row['county'], row['municipality_name']), axis=1
                 )
-
-                unique_negative_keywords = []
-                if negative_kw_text.strip():
-                    unique_negative_keywords = [kw.strip() for kw in negative_kw_text.strip().split("\n") if kw.strip()]
-
                 st.markdown(f"**Scanning {len(target_df)} municipalities for {len(unique_keywords)} keywords...**")
 
                 live_results, scan_stats = run_live_scan(target_df, unique_keywords, unique_negative_keywords)
