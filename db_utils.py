@@ -5,6 +5,7 @@ All Streamlit pages and scripts import from here to interact with bylaws.db.
 """
 
 import os
+import sqlite3
 import psycopg2
 import psycopg2.extras
 import streamlit as st
@@ -50,9 +51,33 @@ class PgWrapper:
     def cursor(self, *args, **kwargs):
         return self.conn.cursor(*args, **kwargs)
 
+
+class SqliteWrapper:
+    def __init__(self, path):
+        self.conn = sqlite3.connect(path)
+
+    def execute(self, query, params=tuple()):
+        cur = self.conn.cursor()
+        if isinstance(params, list): params = tuple(params)
+        cur.execute(query, params if params else tuple())
+        return cur
+
+    def commit(self):
+        self.conn.commit()
+
+    def close(self):
+        self.conn.close()
+
+    def cursor(self, *args, **kwargs):
+        return self.conn.cursor(*args, **kwargs)
+
+
 def get_connection(db_path: str = None):
+    if db_path and str(db_path).endswith('.db') and os.path.exists(db_path):
+        return SqliteWrapper(db_path)
     url = st.secrets.get("DATABASE_URL", "postgresql://neondb_owner:npg_gjmiS41HEeXB@ep-fancy-resonance-amthrghm.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require")
     return PgWrapper(url)
+
 
 
 def resolve_yes_no(val):

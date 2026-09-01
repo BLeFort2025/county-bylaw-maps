@@ -28,3 +28,15 @@ When asked to update data, modify the database, or push changes to the live Stre
 ## 5. UI Modifications and Testing
 - The Streamlit application renders linearly. If you introduce a Python syntax error or exception in a component (like `Data_Browser.py`), the app will crash and immediately stop rendering the rest of the page.
 - **Rule:** Before committing UI changes, double-check that your pandas logic (e.g. `.sum()`, `.apply()`) gracefully handles empty DataFrames, missing columns, or `None` values to prevent catastrophic live crashes.
+
+## 6. Protection of Verified Agricultural Exemption Data & Prevention of Blind Overwrites
+- **Never Blindly Overwrite Exemption Statuses from External Trackers:** Third-party spreadsheets or automated review trackers often focus on bylaw numbers, dates, or portal links, but carry flawed or heuristic-driven assumptions in their "Farm Exemption" columns (e.g., assuming every municipality with a DC bylaw exempts farm buildings).
+- **Substantive Exemption Standards:** A municipality must ONLY be marked as having a farm exemption (`1` / `Yes`) if the **operative sections** of the enacted bylaw explicitly exempt agricultural uses or farm buildings from the charge:
+  1. *Mere definitions do not equal exemptions:* Finding the word "farm" or "agricultural use" in Section 1 (Definitions) does NOT grant an exemption if the term is never used in the operative exemption sections (e.g., Plympton-Wyoming).
+  2. *Differentiating rates is not an exemption:* If a bylaw defines an "Agricultural" category in its fee schedule and levies a dollar rate per square metre (e.g., Middlesex Centre), it is actively imposing charges on agriculture, NOT exempting it.
+  3. *Demolition/rebuild credits are not general exemptions:* A demolition credit or replacement allowance for destroyed farm structures (e.g., Muskoka Lakes) does not constitute a general exemption.
+- **Pre-Sync Transition Audits & Baseline Protection:**
+  1. Before running any bulk update script against `bylaws.db`, generate a diff report of all proposed transitions (`No -> Yes` or `Yes -> No`).
+  2. Any transition MUST be backed by verified verbatim statutory excerpts in `exemption_wording`.
+  3. Validate provincial aggregate rates against established empirical baselines (e.g., Development Charges farm exemptions historically sit at ~78–79% of municipalities with bylaws). Any script that shifts this rate into the mid/high-80s or low-70s without explicit legislative overhaul indicates data corruption and must halt.
+
