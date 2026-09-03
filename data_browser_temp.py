@@ -53,7 +53,7 @@ CATEGORY_ICONS = {
 # ═══════════════════════════════════════════════════════════════
 st.sidebar.title("📋 Data Browser")
 
-conn = get_connection(os.path.join(HERE, "bylaws.db"))
+conn = get_connection()
 
 # Category selector
 selected_label = st.sidebar.selectbox(

@@ -55,8 +55,11 @@ class PgWrapper:
 class SqliteWrapper:
     def __init__(self, path):
         self.conn = sqlite3.connect(path)
+        self.conn.row_factory = sqlite3.Row
 
     def execute(self, query, params=tuple()):
+        query = query.replace('[', '"').replace(']', '"')
+        query = query.replace('%s', '?')
         cur = self.conn.cursor()
         if isinstance(params, list): params = tuple(params)
         cur.execute(query, params if params else tuple())

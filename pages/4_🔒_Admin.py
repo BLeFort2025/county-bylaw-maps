@@ -180,7 +180,7 @@ if not check_password():
 # ═══════════════════════════════════════════════════════════════
 # Authenticated — show admin interface
 # ═══════════════════════════════════════════════════════════════
-conn = get_connection(DB_PATH)
+conn = get_connection()
 
 st.sidebar.title("🔒 Admin Panel")
 
