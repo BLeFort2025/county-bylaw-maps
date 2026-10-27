@@ -37,7 +37,8 @@ KEYWORD_CONFIG = {
         "Notice of Public Meeting regarding Development Charges",
         "Development Charges Public Meeting", "Agricultural Exemption Review",
         "Farm Building Exemption", "Bona Fide Farm", "More Homes Built Faster Act",
-        "Community Benefits Charge", "Bill 185", "Comprehensive Zoning Bylaw"
+        "Community Benefits Charge", "Bill 185", "Comprehensive Zoning Bylaw",
+        "Farm Bunkhouse", "On-Farm Worker Housing", "Seasonal Farm Worker"
     ],
     "STORMWATER": [
         "Stormwater Rate Study", "Stormwater Utility Feasibility",
@@ -85,6 +86,7 @@ KEYWORD_CONFIG = {
 CUSTOM_KEYWORD_PACKS = {
     "🚄 ALTO Rail": [
         "ALTO", "High Speed Rail", "High-speed rail", "Passenger Rail",
+        "High Frequency Rail", "High-frequency rail", "HFR", "Alt-NO", "ALT-NO", "VIA HFR",
     ],
     "🌱 Plant-Based Treaty": [
         "Plant Based Treaty", "Plant-Based Treaty", "Vegan Treaty",
@@ -92,6 +94,15 @@ CUSTOM_KEYWORD_PACKS = {
     "🌾 Ontario Foodbelt": [
         "Foodbelt", "Food Belt", "Agricultural Preserve",
         "Golden Horseshoe Food and Farming",
+    ],
+    "🏠 On-Farm Worker Housing": [
+        "bunkhouse", "bunk house", "farm help", "farm labour", "farm labor",
+        "seasonal worker", "seasonal farm worker", "agricultural worker",
+        "agricultural labourer", "worker accommodation", "worker housing",
+        "labour house", "help house", "helphouse", "boarding, lodging, and rooming house",
+    ],
+    "🌿 Cannabis & Greenhouse DC Carve-Outs": [
+        "cannabis", "marijuana", "greenhouse", "retail-related greenhouses", "commercial greenhouses",
     ],
 }
 
@@ -285,3 +296,94 @@ def extract_snippet(raw_text: str, trigger_keyword: str, window: int = 200) -> s
         snippet = snippet + "..."
 
     return snippet
+
+
+# ──────────────────────────────────────────────────────────────────
+# NEGATIVE KEYWORD & DOCUMENT CLASSIFICATION HELPERS
+# ──────────────────────────────────────────────────────────────────
+
+def apply_negative_keywords(text, negative_keywords):
+    """Strips out negative keywords using whitespace/newline-resilient word boundaries.
+    
+    Handles newlines, multiple spaces, and tabs (e.g. 'greenhouse\\ngas' is matched).
+    """
+    if not text or not negative_keywords:
+        return text
+    for n_kw in negative_keywords:
+        clean = str(n_kw).strip()
+        if clean:
+            words = clean.split()
+            # \s+ matches any whitespace including newlines \n, \r, \t
+            pattern = re.compile(r'\b' + r'\s+'.join(re.escape(w) for w in words) + r'\b', re.IGNORECASE)
+            text = pattern.sub(" [IGNORED] ", text)
+    return text
+
+
+def is_valid_meeting_document(url, text="", title=""):
+    """Validates that a document is genuine council business and not a static report/plan."""
+    combined = (str(url) + " " + str(text[:500]) + " " + str(title)).lower()
+    
+    # Reject static corporate plans, annual reports, master plans, etc.
+    junk_patterns = [
+        "strategic-plan", "strategic_plan", "strategic plan",
+        "master-plan", "master_plan", "master plan",
+        "annual-report", "annual_report", "annual report",
+        "budget-book", "budget_book", "budget book",
+        "official-plan", "official_plan", "official plan",
+        "accessibility-plan", "recreation-master", "culture-plan",
+        "community-improvement-plan-guidelines"
+    ]
+    if any(p in combined for p in junk_patterns):
+        # Only allow if it is explicitly an agenda/minutes item
+        if not any(k in combined for k in ["agenda", "minute", "postminutes", "council meeting", "special council"]):
+            return False
+    return True
+
+
+def classify_meeting_doc(url, text=""):
+    """Classifies document as Official Minutes, Past Agenda (Minutes Pending), or Upcoming Agenda."""
+    url_lower = str(url).lower()
+    text_sample = str(text[:600]).lower()
+    
+    # 1. Official Minutes Check
+    if "postminutes" in url_lower or "agenda=minutes" in url_lower or "minutes of" in text_sample or "regular council minutes" in text_sample:
+        if "agenda=agenda" not in url_lower and "agenda=merged" not in url_lower:
+            return "📄 Official Minutes"
+            
+    # 2. Agenda Check & Date Comparison
+    date_match = re.search(r'\b(202[4-9])[-/.](0[1-9]|1[0-2])[-/.](0[1-9]|[12]\d|3[01])\b', url_lower + " " + text_sample)
+    if not date_match:
+        months = r'(january|february|march|april|may|june|july|august|september|october|november|december)'
+        date_match_text = re.search(months + r'\s+(\d{1,2}),?\s+(202[4-9])', text_sample)
+        if date_match_text:
+            try:
+                import datetime
+                m_str, d_str, y_str = date_match_text.groups()
+                m_num = datetime.datetime.strptime(m_str[:3], "%b").month
+                doc_date = datetime.date(int(y_str), m_num, int(d_str))
+                today = datetime.date.today()
+                if doc_date < today:
+                    return "📋 Agenda (* Minutes Pending)"
+                else:
+                    return "📅 Upcoming Agenda"
+            except Exception:
+                pass
+
+    if date_match:
+        try:
+            import datetime
+            y, m, d = date_match.groups()
+            doc_date = datetime.date(int(y), int(m), int(d))
+            today = datetime.date.today()
+            if doc_date < today:
+                return "📋 Agenda (* Minutes Pending)"
+            else:
+                return "📅 Upcoming Agenda"
+        except Exception:
+            pass
+
+    if "agenda" in url_lower or "agenda" in text_sample:
+        return "📋 Agenda (* Minutes Pending)"
+
+    return "📋 Council Document"
+
