@@ -2,10 +2,45 @@ import pandas as pd
 import os
 import datetime
 import glob
+import sqlite3
+from shared_config import canon_name
 
 # --- CONFIG ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SIGNALS_FILE = "signals/signals.csv"
+LOCAL_DB_PATH = os.path.join(SCRIPT_DIR, "bylaws.db")
+
+
+def _build_muni_resolver(munis_df: pd.DataFrame):
+    """Build exact and canonical municipality ID lookup dicts from a municipalities DataFrame."""
+    exact_lookup = {}
+    canon_lookup = {}
+    for _, row in munis_df.iterrows():
+        mid = int(row["id"])
+        lk = str(row.get("lookup_key", "") or "").strip()
+        nm = str(row.get("name", "") or "").strip()
+        if lk:
+            exact_lookup[lk] = mid
+            exact_lookup[lk.upper()] = mid
+            canon_lookup[canon_name(lk)] = mid
+        if nm:
+            exact_lookup[nm] = mid
+            exact_lookup[nm.upper()] = mid
+            canon_lookup[canon_name(nm)] = mid
+
+    def resolve(raw_id: str):
+        s = str(raw_id or "").strip()
+        if not s:
+            return None
+        if s in exact_lookup:
+            return exact_lookup[s]
+        if s.upper() in exact_lookup:
+            return exact_lookup[s.upper()]
+        cn = canon_name(s)
+        return canon_lookup.get(cn)
+
+    return resolve
+
 
 def generate_signals():
     print("--- Generating Master Signal Map (Smart Categorization) ---")
@@ -80,17 +115,59 @@ def generate_signals():
         
     signals['evidence_url'] = full_df.get('found_url', '')
 
-    # 4. Save
+    # 4. Save CSV
     output_path = os.path.join(SCRIPT_DIR, SIGNALS_FILE)
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     signals.to_csv(output_path, index=False)
     print(f"SUCCESS: Saved signals to {SIGNALS_FILE}")
 
-    # 5. Sync to PostgreSQL Database (Neon) for the Streamlit App
+    # 5A. Sync to Local SQLite Database (bylaws.db)
+    if os.path.exists(LOCAL_DB_PATH):
+        try:
+            sconn = sqlite3.connect(LOCAL_DB_PATH)
+            scur = sconn.cursor()
+            for col_def in [("ai_summary", "TEXT"), ("ai_confidence", "INTEGER")]:
+                try:
+                    scur.execute(f"ALTER TABLE scanner_signals ADD COLUMN {col_def[0]} {col_def[1]}")
+                    sconn.commit()
+                except Exception:
+                    pass
+
+            scur.execute("DELETE FROM scanner_signals")
+            munis_local = pd.read_sql_query("SELECT id, lookup_key, name FROM municipalities", sconn)
+            resolve_local = _build_muni_resolver(munis_local)
+
+            local_rows = []
+            matched_local = 0
+            for _, s in signals.iterrows():
+                raw_id = str(s.get("munid", ""))
+                muni_id = resolve_local(raw_id)
+                if muni_id is not None:
+                    matched_local += 1
+                ai_sum = str(s.get("ai_summary", "")) if pd.notna(s.get("ai_summary")) else ""
+                ai_conf = int(s.get("ai_confidence", 0)) if pd.notna(s.get("ai_confidence")) else 0
+                local_rows.append((
+                    muni_id, raw_id, "scanner_hit", str(s.get("discovered_date", "")),
+                    str(s.get("trigger_keyword", "")), str(s.get("category", "")),
+                    str(s.get("snippet", "")), ai_sum, ai_conf, str(s.get("evidence_url", ""))
+                ))
+
+            scur.executemany("""
+                INSERT INTO scanner_signals (
+                    municipality_id, munid_raw, signal_type, discovered_date,
+                    trigger_keyword, category, snippet, ai_summary, ai_confidence, evidence_url
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, local_rows)
+            sconn.commit()
+            sconn.close()
+            print(f"SUCCESS: Synchronized {len(local_rows)} signals ({matched_local} linked to municipality_id) into local SQLite database.")
+        except Exception as e:
+            print(f"WARNING: Failed to sync to local SQLite database: {e}")
+
+    # 5B. Sync to PostgreSQL Database (Neon) for the Streamlit App
     try:
         import psycopg2
 
-        # Use the same DATABASE_URL as db_utils.py
         NEON_URL = os.environ.get(
             "DATABASE_URL",
             "postgresql://neondb_owner:npg_gjmiS41HEeXB@ep-fancy-resonance-amthrghm.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require"
@@ -98,8 +175,6 @@ def generate_signals():
         conn = psycopg2.connect(NEON_URL)
         cursor = conn.cursor()
 
-        # Ensure AI columns exist (idempotent — PostgreSQL will error if column exists,
-        # so we catch and move on)
         for col_def in [
             ("ai_summary", "TEXT"),
             ("ai_confidence", "INTEGER"),
@@ -113,17 +188,17 @@ def generate_signals():
         cursor.execute("DELETE FROM scanner_signals")
 
         munis = pd.read_sql_query("SELECT id, lookup_key, name FROM municipalities", conn)
-        muni_map = dict(zip(munis['lookup_key'], munis['id']))
-        name_map = dict(zip(munis['name'], munis['id']))
+        resolve_pg = _build_muni_resolver(munis)
 
         rows_to_insert = []
+        matched_pg = 0
         for _, s in signals.iterrows():
             raw_id = str(s.get("munid", ""))
-            muni_id = muni_map.get(raw_id)
-            if not muni_id:
-                muni_id = name_map.get(raw_id)
+            muni_id = resolve_pg(raw_id)
+            if muni_id is not None:
+                matched_pg += 1
 
-            ai_sum = str(s.get("ai_summary", ""))
+            ai_sum = str(s.get("ai_summary", "")) if pd.notna(s.get("ai_summary")) else ""
             ai_conf = int(s.get("ai_confidence", 0)) if pd.notna(s.get("ai_confidence")) else 0
 
             rows_to_insert.append((
@@ -141,7 +216,7 @@ def generate_signals():
 
         conn.commit()
         conn.close()
-        print(f"SUCCESS: Synchronized {len(rows_to_insert)} signals into PostgreSQL database.")
+        print(f"SUCCESS: Synchronized {len(rows_to_insert)} signals ({matched_pg} linked to municipality_id) into PostgreSQL database.")
     except Exception as e:
         print(f"WARNING: Failed to sync to PostgreSQL database: {e}")
 

@@ -341,10 +341,10 @@ def classify_meeting_doc(url, text=""):
             return "📄 Official Minutes"
             
     # 2. Agenda Check & Date Comparison
-    date_match = re.search(r'\b(202[4-6])[-/.](0[1-9]|1[0-2])[-/.](0[1-9]|[12]\d|3[01])\b', url_lower + " " + text_sample)
+    date_match = re.search(r'\b(202[4-9])[-/.](0[1-9]|1[0-2])[-/.](0[1-9]|[12]\d|3[01])\b', url_lower + " " + text_sample)
     if not date_match:
         months = r'(january|february|march|april|may|june|july|august|september|october|november|december)'
-        date_match_text = re.search(months + r'\s+(\d{1,2}),?\s+(202[4-6])', text_sample)
+        date_match_text = re.search(months + r'\s+(\d{1,2}),?\s+(202[4-9])', text_sample)
         if date_match_text:
             try:
                 import datetime

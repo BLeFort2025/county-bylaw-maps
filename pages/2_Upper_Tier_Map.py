@@ -87,10 +87,10 @@ def load_signals_data():
     try:
         df = pd.read_csv(sig_path)
         # Filter to recent signals only (90 days)
-        if 'date_found' in df.columns:
-            df['date_found'] = pd.to_datetime(df['date_found'], errors='coerce')
+        if 'discovered_date' in df.columns:
+            df['discovered_date'] = pd.to_datetime(df['discovered_date'], errors='coerce')
             cutoff = pd.Timestamp.now() - pd.Timedelta(days=90)
-            df = df[df['date_found'] >= cutoff]
+            df = df[df['discovered_date'] >= cutoff]
         signals_map = {}
         for _, row in df.iterrows():
             cname = canon_name(str(row['munid']))
@@ -150,7 +150,7 @@ META_BY_LABEL: dict[str, dict[str, str]] = {
         "expiry": "Expiry date2",
     },
     "Farm Exemption for SA": {
-        "bylaw_name": "Bylaw Name Sute Alteration",
+        "bylaw_name": "Bylaw Name Site Alteration",
         "bylaw_link": "Link to site alteration & fill bylaw",
         "enacted": "Date Bylaw Enacted4 (Regional)",
         "expiry": "Expiry date 4",
@@ -207,13 +207,13 @@ META_BY_LABEL: dict[str, dict[str, str]] = {
     "Farm Exemption for Security fencing prohibitions": {
         "bylaw_name": "",
         "bylaw_link": "Link to Fence Bylaw",
-        "enacted": "",
+        "enacted": "Date Bylaw Enacted 8",
         "expiry": "",
     },
     "Farm Exemption for Electrified fencing prohibitions": {
         "bylaw_name": "",
         "bylaw_link": "Link to Fence Bylaw",
-        "enacted": "",
+        "enacted": "Date Bylaw Enacted 8",
         "expiry": "",
     },
 }
@@ -562,9 +562,9 @@ if len(detail_row) == 1:
             st.sidebar.divider()
             st.sidebar.markdown("### 🚨 Scanner Evidence Found")
             trigger = target_hit.get('trigger_keyword', 'N/A')
-            date_found = target_hit.get('date_found', 'N/A')
+            date_found = str(target_hit.get('discovered_date', 'N/A')).split(" ")[0]
             snippet = target_hit.get('snippet', '')
-            url = target_hit.get('url', '')
+            url = target_hit.get('evidence_url', '')
             
             st.sidebar.markdown(f"**Trigger word:** `{trigger}`")
             st.sidebar.markdown(f"**Date found:** {date_found}")
@@ -622,7 +622,7 @@ if content is not None:
                         adv_title = st.text_input("Your Title / Position *", value=st.session_state["advocacy_title"],
                                                   key="upper_adv_title", placeholder="e.g., President")
                         adv_federation = st.text_input("Organization / Affiliation (e.g., County Federation, Commodity Group, OFA Member) *",
-                                                       value=st.session_state["upper_adv_federation"],
+                                                       value=st.session_state["advocacy_federation"],
                                                        key="upper_adv_fed_input", placeholder="e.g., Huron County Federation of Agriculture")
                     with col_b:
                         adv_email = st.text_input("Your Contact Email (optional)",

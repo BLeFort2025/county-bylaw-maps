@@ -120,7 +120,7 @@ def _spider_civicweb(base_url, soup, headers, max_links=4):
                 if not date_hint or _is_recent_date(date_hint, max_days=180):
                     files.append((full, text, date_hint))
             elif "filepro/documents" in href:
-                match = re.search(r'\b(202[4-6])\b', text)
+                match = re.search(r'\b(202[4-9])\b', text)
                 if match:
                     year_folders.append((full, int(match.group(1))))
 
