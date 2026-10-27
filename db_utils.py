@@ -201,7 +201,7 @@ def get_category_summary(conn, category):
         sql = f"""
             SELECT m.id, m.name, m.municipal_status, m.geographic_area,
                    b.bylaw_name, b.date_enacted, b.expiry_date, b.expiry_notes,
-                   b.progress_label, b.bylaw_link,
+                   b.progress_label, b.bylaw_link, b.other_notes,
                    be.exemption_status, be.exemption_wording,
                    d.*
             FROM municipalities m
@@ -215,7 +215,7 @@ def get_category_summary(conn, category):
         sql = """
             SELECT m.id, m.name, m.municipal_status, m.geographic_area,
                    b.bylaw_name, b.date_enacted, b.expiry_date, b.expiry_notes,
-                   b.progress_label, b.bylaw_link,
+                   b.progress_label, b.bylaw_link, b.other_notes,
                    be.exemption_status, be.exemption_wording
             FROM municipalities m
             JOIN bylaws b ON b.municipality_id = m.id

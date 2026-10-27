@@ -66,6 +66,25 @@ icon = CATEGORY_ICONS.get(selected_cat, "📋")
 
 # Search
 search_term = st.sidebar.text_input("🔍 Search municipality", "")
+wording_search = st.sidebar.text_input(
+    "🔤 Search Exemption Wording",
+    "",
+    help="Filter by statutory wording keywords (e.g. 'bunkhouse', 'farm help', 'cannabis', 'greenhouse', 'FBRN')",
+)
+dc_carveout_filter = "All"
+if selected_cat == "DC":
+    dc_carveout_filter = st.sidebar.selectbox(
+        "🏠 DC Worker Housing & Carve-Outs",
+        [
+            "All",
+            "✅ Worker Housing Explicitly Exempt",
+            "❌ Worker Housing Explicitly Excluded",
+            "⚠️ Worker Housing Silent (Standard Non-Res)",
+            "🌿 Cannabis Mentioned / Carve-Out",
+            "🌱 Greenhouses Mentioned / Carve-Out",
+        ],
+        index=0,
+    )
 
 # Geographic area filter
 areas = get_geographic_areas(conn)
@@ -84,7 +103,49 @@ st.title(f"{icon} {selected_label}")
 st.caption("Browse municipal bylaw data from the OFA database")
 
 # Load category summary
+# Load category summary
 df = get_category_summary(conn, selected_cat)
+
+def _classify_dc_worker_housing(row):
+    w = str(row.get("exemption_wording") or "").lower()
+    prog = str(row.get("progress_label") or "").upper()
+    status = str(row.get("exemption_status") or "").strip().upper()
+    is_yes = status in ("1", "YES", "Y", "TRUE")
+    is_no = status in ("2", "NO", "N", "FALSE")
+
+    excl_patterns = (
+        "excluding on-farm bunk houses",
+        "excluding bunk houses",
+        "excludes: (a) bunk house",
+        "excluding on-farm worker bunkhouses",
+        "is excluded from the farm building exemption",
+        "does not include facilities for the permanent or temporary housing of persons employed on the lot",
+        "excludes bunk houses",
+        "including farm labour residences",
+    )
+    incl_patterns = (
+        "bunk house",
+        "bunkhouse",
+        "farm help",
+        "farm helphouse",
+        "seasonal agricultural labourer",
+        "accommodation for full-time farm labour",
+        "on-farm site farm accommodations",
+    )
+    if any(p in w for p in excl_patterns):
+        return "❌ Explicitly Excluded"
+    if any(p in w for p in incl_patterns):
+        return "✅ Explicitly Exempt"
+    if "NO BY-LAW" in prog or "NO BYLAW" in prog:
+        return "No DC Bylaw"
+    if is_yes:
+        return "⚠️ Silent (Standard Non-Res)"
+    if is_no:
+        return "No Farm Exemption"
+    return "—"
+
+if selected_cat == "DC":
+    df["_dc_worker_housing"] = df.apply(_classify_dc_worker_housing, axis=1)
 
 # ── Apply filters ──
 if search_term:
@@ -93,6 +154,19 @@ if selected_area != "All":
     df = df[df["geographic_area"] == selected_area]
 if status_filter != "All":
     df = df[df["exemption_status"] == status_filter]
+if wording_search and "exemption_wording" in df.columns:
+    df = df[df["exemption_wording"].fillna("").str.contains(wording_search, case=False, na=False)]
+if selected_cat == "DC" and dc_carveout_filter != "All":
+    if dc_carveout_filter == "✅ Worker Housing Explicitly Exempt":
+        df = df[df["_dc_worker_housing"] == "✅ Explicitly Exempt"]
+    elif dc_carveout_filter == "❌ Worker Housing Explicitly Excluded":
+        df = df[df["_dc_worker_housing"] == "❌ Explicitly Excluded"]
+    elif dc_carveout_filter == "⚠️ Worker Housing Silent (Standard Non-Res)":
+        df = df[df["_dc_worker_housing"] == "⚠️ Silent (Standard Non-Res)"]
+    elif dc_carveout_filter == "🌿 Cannabis Mentioned / Carve-Out":
+        df = df[df["exemption_wording"].fillna("").str.contains("cannabis|marijuana|marihuana", case=False, regex=True)]
+    elif dc_carveout_filter == "🌱 Greenhouses Mentioned / Carve-Out":
+        df = df[df["exemption_wording"].fillna("").str.contains("greenhouse", case=False, regex=True)]
 
 # ── Metrics row ──
 col1, col1a, col2, col3, col4, col5 = st.columns(6)
@@ -158,7 +232,8 @@ CATEGORY_DETAIL_COLS = {
         "fence_notes":                  "Notes",
     },
     "DC": {
-        "has_dc":           "Has DC Bylaw",
+        "has_dc":              "Has DC Bylaw",
+        "_dc_worker_housing":  "Worker Housing Treatment",
         "fees_bylaw_name":  "Fees Bylaw",
         "fees_enacted":     "Fees Enacted",
         "fees_expiry":      "Fees Expiry",
@@ -201,7 +276,7 @@ YES_NO_DETAIL_FIELDS = {
 # ── Build display columns ──
 base_cols = ["name", "municipal_status", "geographic_area",
              "exemption_status", "bylaw_name", "date_enacted",
-             "expiry_date", "expiry_notes", "progress_label", "bylaw_link"]
+             "expiry_date", "expiry_notes", "progress_label", "exemption_wording", "bylaw_link"]
 
 detail_map = CATEGORY_DETAIL_COLS.get(selected_cat, {})
 
@@ -259,6 +334,7 @@ rename_map = {
     "expiry_date": "Expires",
     "expiry_notes": "Expiry Notes",
     "progress_label": "Progress",
+    "exemption_wording": "Exemption Wording",
     "bylaw_link": "Bylaw Link",
 }
 # Add detail column renames
@@ -276,16 +352,16 @@ st.subheader(f"📊 {selected_label} — {total} Municipalities")
 # Highlight function for exemption status and Yes/No fields
 def highlight_status(val):
     v = str(val).strip()
-    if v == "Yes":
+    if v in ("Yes", "✅ Explicitly Exempt"):
         return "background-color: #d4edda; color: #155724"
-    elif v == "No":
+    elif v in ("No", "❌ Explicitly Excluded", "No Farm Exemption"):
         return "background-color: #f8d7da; color: #721c24"
-    elif v in ("N/A", "NOT KNOWN"):
+    elif v in ("N/A", "NOT KNOWN", "⚠️ Silent (Standard Non-Res)"):
         return "background-color: #fff3cd; color: #856404"
     return ""
 
 # Apply highlighting to Farm Exemption and all Yes/No detail columns
-highlight_cols = ["Farm Exemption"]
+highlight_cols = ["Farm Exemption", "Worker Housing Treatment"]
 for raw_col, nice_name in detail_map.items():
     if raw_col in YES_NO_DETAIL_FIELDS and nice_name in display_df.columns:
         highlight_cols.append(nice_name)
@@ -387,7 +463,7 @@ if muni_names:
                 wording = brow["exemption_wording"]
                 if pd.notna(wording) and str(wording).strip():
                     st.markdown("**Exemption Wording:**")
-                    st.info(str(wording)[:500])
+                    st.info(str(wording)[:2000])
 
                 notes = brow["other_notes"]
                 if pd.notna(notes) and str(notes).strip():

@@ -37,7 +37,8 @@ KEYWORD_CONFIG = {
         "Notice of Public Meeting regarding Development Charges",
         "Development Charges Public Meeting", "Agricultural Exemption Review",
         "Farm Building Exemption", "Bona Fide Farm", "More Homes Built Faster Act",
-        "Community Benefits Charge", "Bill 185", "Comprehensive Zoning Bylaw"
+        "Community Benefits Charge", "Bill 185", "Comprehensive Zoning Bylaw",
+        "Farm Bunkhouse", "On-Farm Worker Housing", "Seasonal Farm Worker"
     ],
     "STORMWATER": [
         "Stormwater Rate Study", "Stormwater Utility Feasibility",
@@ -93,6 +94,15 @@ CUSTOM_KEYWORD_PACKS = {
     "🌾 Ontario Foodbelt": [
         "Foodbelt", "Food Belt", "Agricultural Preserve",
         "Golden Horseshoe Food and Farming",
+    ],
+    "🏠 On-Farm Worker Housing": [
+        "bunkhouse", "bunk house", "farm help", "farm labour", "farm labor",
+        "seasonal worker", "seasonal farm worker", "agricultural worker",
+        "agricultural labourer", "worker accommodation", "worker housing",
+        "labour house", "help house", "helphouse", "boarding, lodging, and rooming house",
+    ],
+    "🌿 Cannabis & Greenhouse DC Carve-Outs": [
+        "cannabis", "marijuana", "greenhouse", "retail-related greenhouses", "commercial greenhouses",
     ],
 }
 
