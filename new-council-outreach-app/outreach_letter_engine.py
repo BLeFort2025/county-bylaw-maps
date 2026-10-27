@@ -54,10 +54,12 @@ def build_letter_sections(
 ) -> dict:
     """Assemble all structured text blocks for both .docx and plain-text rendering."""
     today_str = datetime.date.today().strftime("%B %d, %Y")
-    muni_name = muni_data.get("name", "")
+    raw_muni_name = muni_data.get("name", "")
     muni_status = muni_data.get("municipal_status", "")
     address = muni_data.get("address", "")
     county_display = county_data.get("display_name", county_data.get("county_key", ""))
+    # For Upper-Tier councils (whose DB name is e.g. 'Huron' or 'Essex'), use full display name ('Huron County')
+    muni_name = county_display if muni_status == "Upper Tier" else raw_muni_name
 
     # Determine appropriate salutation title (Warden vs Mayor/Chair)
     if muni_status == "Upper Tier":

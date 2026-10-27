@@ -209,10 +209,12 @@ with st.expander("🔍 View Detailed County Census Profile, OMAFA Economic Attri
 
     with dcol2:
         st.markdown("#### 💼 OMAFA Attribution Model")
+        gdp25_md = fmt_gdp_millions(attr["gdp_2025_m"]).replace("$", r"\$")
+        gdp24_md = fmt_gdp_millions(attr["gdp_2024_m"]).replace("$", r"\$")
         st.markdown(
             f"- **Region / Division:** {attr.get('cd_label', county_data['display_name'])}\n"
-            f"- **2025 Agri-Food GDP:** {fmt_gdp_millions(attr['gdp_2025_m'])} *(chained 2017 dollars)*\n"
-            f"- **2024 Agri-Food GDP:** {fmt_gdp_millions(attr['gdp_2024_m'])}\n"
+            f"- **2025 Agri-Food GDP:** {gdp25_md} *(chained 2017 dollars)*\n"
+            f"- **2024 Agri-Food GDP:** {gdp24_md}\n"
             f"- **Agri-Food Employment:** **{attr['jobs_latest']:,} jobs** across primary agriculture, "
             f"food & beverage processing, and agri-food retail."
         )
@@ -374,8 +376,13 @@ sections = build_letter_sections(
 )
 
 # ── STEP 3: Preview, Download .docx & Send Automated Clerk Email ──
+muni_display_label = (
+    county_data["display_name"]
+    if muni_effective.get("municipal_status") == "Upper Tier"
+    else muni_effective["name"]
+)
 st.markdown("---")
-st.subheader(f"3️⃣ Preview & Send Letter to {muni_effective['name']}")
+st.subheader(f"3️⃣ Preview & Send Letter to {muni_display_label}")
 
 required_ok = bool(sender_name.strip() and sender_title.strip() and federation_name.strip())
 if not required_ok:
@@ -398,7 +405,7 @@ docx_buffer = generate_docx(
     logo_alignment=logo_alignment,
     logo_width_inches=logo_width_inches,
 )
-safe_muni = re.sub(r"[^\w\s-]", "", muni_effective["name"]).strip().replace(" ", "_")
+safe_muni = re.sub(r"[^\w\s-]", "", muni_display_label).strip().replace(" ", "_")
 docx_filename = f"Congratulations_New_Council_{safe_muni}_{selected_county_key}.docx"
 
 act_col1, act_col2, act_col3 = st.columns([1.2, 1.4, 1.4])
@@ -406,7 +413,7 @@ act_col1, act_col2, act_col3 = st.columns([1.2, 1.4, 1.4])
 with act_col1:
     st.markdown("#### 📥 Step A: Download Word Letter")
     st.download_button(
-        label=f"📄 Download Letter for {muni_effective['name']} (.docx)",
+        label=f"📄 Download Letter for {muni_display_label} (.docx)",
         data=docx_buffer,
         file_name=docx_filename,
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
