@@ -476,6 +476,15 @@ def is_valid_meeting_document(url, text="", title=""):
     if any(dom in url_low for dom in SOCIAL_JUNK_DOMAINS):
         return False
 
+    # Always reject static governance documents (Procedural Bylaws, Terms of Reference, multi-year highlight archives)
+    static_doc_url_patterns = (
+        "procedural%20bylaw", "procedural-bylaw", "procedural_bylaw", "procedure%20by-law",
+        "terms%20of%20reference", "terms-of-reference", "terms_of_reference",
+        "/council-highlights",
+    )
+    if any(p in url_low for p in static_doc_url_patterns):
+        return False
+
     combined = (url_low + " " + str(text[:500]) + " " + str(title)).lower()
     
     # Reject static corporate plans, annual reports, master plans, etc.
@@ -488,6 +497,7 @@ def is_valid_meeting_document(url, text="", title=""):
         "accessibility-plan", "recreation-master", "culture-plan",
         "community-improvement-plan-guidelines",
         "watch-midland-council-meetings-live-on-youtube",
+        "procedural bylaw", "procedure by-law", "terms of reference",
     ]
     if any(p in combined for p in junk_patterns):
         # Only allow if it is explicitly an agenda/minutes item

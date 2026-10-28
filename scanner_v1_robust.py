@@ -8,6 +8,7 @@ import warnings
 import sys
 import re
 from urllib.parse import urljoin
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from bs4 import BeautifulSoup
 
 # --- 1. SETUP & IMPORTS ---
@@ -159,10 +160,14 @@ def scan_municipality(row, cached_munis_upper):
         return [], coverage
 
     urls_to_scan = []
+    found_real_docs = False
     if listing_url:
         urls_to_scan = _find_recent_doc_links(listing_url, max_links=4)
+        if urls_to_scan:
+            found_real_docs = True
     if not urls_to_scan and fallback_url and fallback_url.rstrip("/") != listing_url.rstrip("/"):
         urls_to_scan = [fallback_url]
+        found_real_docs = True
     elif not urls_to_scan and fallback_url:
         urls_to_scan = [fallback_url]
 
@@ -177,8 +182,9 @@ def scan_municipality(row, cached_munis_upper):
 
             content_type = response.headers.get('Content-Type', '').lower()
             text_content = ""
+            url_low = str(target_url).lower()
 
-            if 'pdf' in content_type or str(target_url).lower().endswith('.pdf') or 'filestream' in str(target_url).lower():
+            if 'pdf' in content_type or url_low.endswith('.pdf') or 'filestream' in url_low or 'electronicfile' in url_low:
                 if PDF_SUPPORT:
                     text_content = extract_text_from_pdf(response.content)
                     if text_content and len(text_content.strip()) > 50:
@@ -189,6 +195,9 @@ def scan_municipality(row, cached_munis_upper):
                     coverage['status'] = 'pdf_skipped_no_lib'
                     continue
             else:
+                is_meeting_html = any(k in url_low for k in ("meeting.aspx", "meetinginformation.aspx", "agenda=", "postminutes"))
+                if not found_real_docs and not is_meeting_html:
+                    continue
                 soup = BeautifulSoup(response.text, "html.parser")
                 for tag in soup(["script", "style", "nav", "header", "footer"]):
                     tag.decompose()
@@ -226,7 +235,7 @@ def scan_municipality(row, cached_munis_upper):
 
 
 def main():
-    print("--- STARTING SCANNER V1 (Multi-Doc Spider + By-law/Bylaw Matching) ---")
+    print("--- STARTING SCANNER V1 (Concurrent Multi-Doc Spider + By-law/Bylaw Matching) ---")
     print(f"Script Location: {SCRIPT_DIR}")
     print(f"Registry Path: {REGISTRY_PATH}")
 
@@ -253,18 +262,35 @@ def main():
 
     candidates = []
     coverage_log = []
+    completed = 0
+    total = len(df)
 
-    print("Scanning...")
-    for index, row in df.iterrows():
-        if index % 25 == 0:
-            print(f"  Processing {index}/{len(df)}...")
-
-        cands, cov = scan_municipality(row, cached_munis_upper)
-        coverage_log.append(cov)
-
-        for cand in cands:
-            candidates.append(cand)
-            print(f"  [!] HIT: {row['municipality_name']} -> {cand['category']} ({cand['trigger_keyword']})")
+    print("Scanning concurrently (12 workers)...")
+    with ThreadPoolExecutor(max_workers=12) as executor:
+        future_to_row = {
+            executor.submit(scan_municipality, row, cached_munis_upper): row
+            for _, row in df.iterrows()
+        }
+        for future in as_completed(future_to_row):
+            completed += 1
+            if completed % 50 == 0 or completed == total:
+                print(f"  Progress: {completed}/{total} municipalities...")
+            row = future_to_row[future]
+            try:
+                cands, cov = future.result()
+                coverage_log.append(cov)
+                for cand in cands:
+                    candidates.append(cand)
+                    print(f"  [!] HIT: {row['municipality_name']} -> {cand['category']} ({cand['trigger_keyword']})")
+            except Exception as exc:
+                coverage_log.append({
+                    'munid': row['munid'],
+                    'name': row['municipality_name'],
+                    'scan_date': datetime.date.today(),
+                    'status': 'error',
+                    'error': str(exc),
+                    'target_url': row.get('example_recent_minutes_url', '')
+                })
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     today_str = datetime.date.today().strftime('%Y-%m-%d')
