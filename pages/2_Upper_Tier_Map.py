@@ -508,7 +508,8 @@ layer = pdk.Layer(
 view_state = pdk.ViewState(latitude=44.0, longitude=-80.0, zoom=5.8)
 
 st.pydeck_chart(
-    pdk.Deck(
+    height=720,
+    pydeck_obj=pdk.Deck(
         layers=[layer],
         initial_view_state=view_state,
         map_style="light",
