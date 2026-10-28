@@ -20,7 +20,7 @@ import pandas as pd
 from db_utils import (
     get_connection, get_category_summary, get_municipalities,
     get_bylaws, get_bylaws_with_details, get_contacts, get_signals,
-    get_geographic_areas, resolve_yes_no,
+    get_geographic_areas, resolve_yes_no, resolve_welfare_codes,
 )
 
 # ── Page config ──
@@ -269,7 +269,7 @@ YES_NO_DETAIL_FIELDS = {
     "has_fence_bylaw", "applies_all_lands", "replaces_lfa",
     "security_fencing_exemption", "electrified_fencing_exemption",
     "equal_apportionment", "has_dc", "farm_exemption", "can_keep",
-    "roosters_allowed", "licence_required", "welfare_requirements",
+    "roosters_allowed", "licence_required",
     "special_provision",
 }
 
@@ -481,7 +481,12 @@ if muni_names:
                         val = detail_row[col_name]
                         if val and str(val).strip():
                             nice_name = col_name.replace("_", " ").title()
-                            resolved = resolve_yes_no(val) if str(val) in ("1","2","3","4","5") else val
+                            if col_name == "welfare_requirements":
+                                resolved = resolve_welfare_codes(val)
+                            elif str(val) in ("1","2","3","4","5"):
+                                resolved = resolve_yes_no(val)
+                            else:
+                                resolved = val
                             extra_fields.append((nice_name, resolved))
                     if extra_fields:
                         st.markdown("**Category Details:**")

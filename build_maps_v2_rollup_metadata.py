@@ -175,6 +175,91 @@ META_EXPIRY_COLS = [
     "Expiry Date 6", "Expiry Date 7", "Expiry Date 8",
 ]
 
+def _load_live_df(conn=None):
+    """Fetch the live database wide dataframe and compute status columns."""
+    from db_utils import get_connection, export_map_dataframe
+    close_after = False
+    if conn is None:
+        try:
+            conn = get_connection()
+        except Exception:
+            conn = get_connection(BYLAW_DB)
+        close_after = True
+    try:
+        df = export_map_dataframe(conn)
+    finally:
+        if close_after and conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+    df = df.astype(str).replace({"None": "", "nan": ""})
+    return compute_status_columns(df)
+
+
+def overlay_live_lower(gdf: gpd.GeoDataFrame, conn=None) -> gpd.GeoDataFrame:
+    """Overlay live database status and metadata columns onto a cached Lower Tier GeoDataFrame."""
+    df, status_cols = _load_live_df(conn)
+    df_dedup = df.drop_duplicates("_MUNI_NAME").set_index("_MUNI_NAME")
+
+    if "_MUNI_NAME" not in gdf.columns:
+        name_col = next((c for c in ["Municipality", "MUNICIPA_8", "OFFICIAL_M", "NAME"] if c in gdf.columns), gdf.columns[0])
+        gdf = gdf.copy()
+        gdf["_MUNI_NAME"] = gdf[name_col].astype(str).map(canon)
+    else:
+        gdf = gdf.copy()
+
+    overlay_cols = [c for c in (status_cols + META_TEXT_COLS + META_EXPIRY_COLS + ["Municipality Has Fence Bylaw"]) if c in df_dedup.columns]
+    for col in overlay_cols:
+        gdf[col] = gdf["_MUNI_NAME"].map(df_dedup[col])
+    return gdf
+
+
+def overlay_live_upper(upper_gdf: gpd.GeoDataFrame, lower_parquet_path: str = LOWER_PARQUET, conn=None) -> gpd.GeoDataFrame:
+    """Overlay live database rollup status and metadata columns onto a cached Upper Tier GeoDataFrame."""
+    df, status_cols = _load_live_df(conn)
+    df_dedup = df.drop_duplicates("_MUNI_NAME")
+
+    low_keys = pd.read_parquet(lower_parquet_path, columns=["_MUNI_NAME", LOWER_TO_UPPER_FIELD])
+    tmp = low_keys.merge(df_dedup, on="_MUNI_NAME", how="left")
+    tmp["_UPPER_NAME"] = tmp[LOWER_TO_UPPER_FIELD].astype(str).map(canon)
+
+    agg_dict = {c: agg_status for c in status_cols if c in tmp.columns}
+    for c in META_TEXT_COLS:
+        if c in tmp.columns:
+            agg_dict[c] = agg_first_non_empty
+    for c in META_EXPIRY_COLS:
+        if c in tmp.columns:
+            agg_dict[c] = agg_min_date
+
+    upper_agg = tmp.groupby("_UPPER_NAME", dropna=False).agg(agg_dict).reset_index()
+
+    if "Municipal Status" in df.columns:
+        up_df = df[df["Municipal Status"] == "Upper Tier"].drop_duplicates("_MUNI_NAME").set_index("_MUNI_NAME")
+        all_meta_cols = [c for c in (META_TEXT_COLS + META_EXPIRY_COLS) if c in upper_agg.columns and c in up_df.columns]
+        for idx, r in upper_agg.iterrows():
+            uname = r["_UPPER_NAME"]
+            if uname in up_df.index:
+                up_row = up_df.loc[uname]
+                for mc in all_meta_cols:
+                    val = strip_nbsp_and_space(up_row.get(mc, ""))
+                    if val and val.lower() not in ("see local municipalities", "(no bylaw)", "(no fence bylaw)"):
+                        upper_agg.at[idx, mc] = val
+
+    upper_agg_idx = upper_agg.drop_duplicates("_UPPER_NAME").set_index("_UPPER_NAME")
+    upper_gdf = upper_gdf.copy()
+    if "_UPPER_NAME" not in upper_gdf.columns and UPPER_NAME_FIELD in upper_gdf.columns:
+        upper_gdf["_UPPER_NAME"] = upper_gdf[UPPER_NAME_FIELD].astype(str).map(canon)
+
+    for c in status_cols:
+        if c in upper_agg_idx.columns:
+            upper_gdf[c] = upper_gdf["_UPPER_NAME"].map(upper_agg_idx[c]).fillna("NOT KNOWN")
+    for c in (META_TEXT_COLS + META_EXPIRY_COLS):
+        if c in upper_agg_idx.columns:
+            upper_gdf[c] = upper_gdf["_UPPER_NAME"].map(upper_agg_idx[c]).fillna("")
+    return upper_gdf
+
+
 # ---------- MAIN ----------
 def main():
     print(f"Working Directory: {HERE}")

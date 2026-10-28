@@ -90,6 +90,36 @@ def _read_sql(conn, sql, params=None):
     return pd.read_sql_query(sql, raw_conn, params=params)
 
 
+# Lookup map for semicolon-delimited Access Chicken Welfare codes (List 10 - Chicken Welfare Req)
+WELFARE_LOOKUP = {
+    "1": "NONE",
+    "2": "Food",
+    "3": "Enclosure",
+    "4": "Water",
+    "5": "Land",
+    "6": "Other",
+    "7": "Specific Requirements",
+    "8": "Non-Specific Requirements",
+    "9": "Vet Care - as needed",
+    "10": "N/A",
+    "11": "Biosecurity measures",
+}
+
+
+def resolve_welfare_codes(val) -> str:
+    """Resolve semicolon-delimited Access Chicken Welfare codes (e.g. '2;3;4;5') to human-readable text."""
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return "N/A"
+    s = str(val).strip()
+    if not s or s.lower() in ("nan", "none"):
+        return "N/A"
+    if s.upper() in ("NO", "N/A", "NOT KNOWN", "YES"):
+        return s
+    parts = [p.strip() for p in s.split(";") if p.strip()]
+    resolved = [WELFARE_LOOKUP.get(p, p) for p in parts]
+    return ", ".join(resolved) if resolved else "N/A"
+
+
 def resolve_yes_no(val):
     """Resolve an integer/string code to a human-readable Yes/No value."""
     if val is None:
@@ -233,6 +263,12 @@ def get_category_summary(conn, category):
         df = df.drop(columns=['bylaw_id'])
     # Resolve integer codes to labels
     df['exemption_status'] = df['exemption_status'].apply(resolve_yes_no)
+    if 'has_dc' in df.columns:
+        df['has_dc'] = df['has_dc'].apply(resolve_yes_no)
+    if 'can_keep' in df.columns:
+        df['can_keep'] = df['can_keep'].apply(resolve_yes_no)
+    if 'welfare_requirements' in df.columns:
+        df['welfare_requirements'] = df['welfare_requirements'].apply(resolve_welfare_codes)
     return df
 
 

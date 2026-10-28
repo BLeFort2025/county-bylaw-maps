@@ -19,7 +19,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import nsdecls
 from docx.oxml import parse_xml
 
-from db_utils import get_connection, get_report_data, resolve_yes_no
+from db_utils import get_connection, get_report_data, resolve_yes_no, resolve_welfare_codes
 
 # ── Paths ──
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -437,7 +437,10 @@ def _add_category_detail(doc, cat_code, cat_bylaws, details_df):
         d_row = [_clean(row.get('municipality_name'))]
         for field, _ in detail_fields:
             val = row.get(field, '')
-            val = _resolve(val) if str(val).strip() in ('1', '2', '3', '4', '5') else _clean(val)
+            if field == 'welfare_requirements':
+                val = _clean(resolve_welfare_codes(val))
+            else:
+                val = _resolve(val) if str(val).strip() in ('1', '2', '3', '4', '5') else _clean(val)
             d_row.append(val)
         d_rows.append(d_row)
 
