@@ -197,20 +197,20 @@ with nav_c2:
 
 with nav_c3:
     with st.container(border=True):
-        st.markdown("#### 📋 Data Browser & Word Reports")
+        st.markdown("#### 📋 Data Browser")
         st.caption(
-            "Browse, search, and filter all 3,108 bylaw records and generate formatted **Provincial, County, "
-            "or Municipal Word (.docx) Briefing Reports** and CSV exports."
+            "Browse, search, and filter all 3,108 bylaw records across all 444 Ontario municipalities "
+            "and export custom filtered tables to CSV."
         )
-        st.page_link("pages/3_📋_Data_Browser.py", label="Open Data Browser & Reports →", icon="📋", use_container_width=True)
+        st.page_link("pages/3_📋_Data_Browser.py", label="Open Data Browser →", icon="📋", use_container_width=True)
 
     with st.container(border=True):
-        st.markdown("#### 📖 User Guide")
+        st.markdown("#### 📊 Report Generator")
         st.caption(
-            "Step-by-step documentation for OFA staff, county federations, and members on using the interactive "
-            "maps, advocacy letter generator, and intelligence scanner."
+            "Generate OFA-branded **Provincial, County/Regional, or Municipal Word (.docx) Briefing Reports** "
+            "summarizing bylaw data, exemption statuses, and advocacy priorities."
         )
-        st.page_link("pages/6_📖_User_Guide.py", label="Open User Guide →", icon="📖", use_container_width=True)
+        st.page_link("pages/6_📊_Report_Generator.py", label="Open Report Generator →", icon="📊", use_container_width=True)
 
 # ── Live 7-Category Province-Wide Scorecard ──
 if summary is not None:
