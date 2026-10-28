@@ -28,10 +28,19 @@ from io import BytesIO
 from bs4 import BeautifulSoup
 
 try:
+    import fitz
+except ImportError:
+    fitz = None
+
+try:
     import pdfplumber
+except ImportError:
+    pdfplumber = None
+
+try:
     import requests
 except ImportError:
-    print("Missing requirements: pip install pdfplumber requests bs4")
+    print("Missing requirements: pip install pymupdf pdfplumber requests bs4")
     sys.exit(1)
 
 from selenium import webdriver
@@ -51,7 +60,7 @@ OUTPUT_PATH = os.path.join(SCRIPT_DIR, "signals", "cached_portal_docs.csv")
 JS_PORTAL_TYPES = {"civicweb", "escribe", "(escribe)", "granicus_legistar"}
 
 # Maximum text length to store per document (controls CSV file size)
-MAX_TEXT_LENGTH = 15000  # ~15KB per doc, keeps total CSV under 15MB
+MAX_TEXT_LENGTH = 25000  # ~25KB per doc, retains full council meeting minutes + key attachments
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -78,17 +87,32 @@ def setup_driver():
 
 
 def extract_pdf_text(url, max_pages=30):
-    """Download and extract text from a PDF URL without saving to disk."""
+    """Download and extract text from a PDF URL without saving to disk (PyMuPDF + pdfplumber fallback)."""
     try:
         resp = requests.get(url, headers=HEADERS, timeout=15, verify=False)
         if resp.status_code == 200 and len(resp.content) > 500:
-            with pdfplumber.open(BytesIO(resp.content)) as pdf:
-                text = ""
-                for page in pdf.pages[:max_pages]:
-                    extracted = page.extract_text()
-                    if extracted:
-                        text += extracted + "\n"
-                return text.strip()
+            if fitz is not None:
+                try:
+                    doc = fitz.open(stream=resp.content, filetype="pdf")
+                    text_parts = []
+                    for i in range(min(max_pages, len(doc))):
+                        page_txt = doc[i].get_text("text")
+                        if page_txt:
+                            text_parts.append(page_txt)
+                    doc.close()
+                    full_txt = "\n".join(text_parts).strip()
+                    if full_txt:
+                        return full_txt
+                except Exception:
+                    pass
+            if pdfplumber is not None:
+                with pdfplumber.open(BytesIO(resp.content)) as pdf:
+                    text = ""
+                    for page in pdf.pages[:max_pages]:
+                        extracted = page.extract_text()
+                        if extracted:
+                            text += extracted + "\n"
+                    return text.strip()
     except Exception:
         pass
     return ""
@@ -254,28 +278,63 @@ def find_document_links(driver, soup, base_url):
 
 
 def extract_date_from_text(text):
-    """Try to extract a date from link text or URL for sorting."""
+    """Extract a realistic calendar date from link text or URL while ignoring GUIDs and bylaw numbers."""
+    if not text:
+        return None
+    cleaned = re.sub(
+        r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
+        ' ',
+        str(text),
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.sub(r'[?&]id=[0-9a-f\-]+', ' ', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(
+        r'\b(?:by-?law|report|res(?:olution)?|no\.?|file|item)\s*#?\s*\d{4}[-/]\d{1,4}\b',
+        ' ',
+        cleaned,
+        flags=re.IGNORECASE,
+    )
     months = {
         'january': 1, 'february': 2, 'march': 3, 'april': 4,
         'may': 5, 'june': 6, 'july': 7, 'august': 8,
-        'september': 9, 'october': 10, 'november': 11, 'december': 12
+        'september': 9, 'october': 10, 'november': 11, 'december': 12,
+        'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'jun': 6,
+        'jul': 7, 'aug': 8, 'sep': 9, 'sept': 9, 'oct': 10, 'nov': 11, 'dec': 12,
+        'janvier': 1, 'février': 2, 'fevrier': 2, 'mars': 3, 'avril': 4,
+        'mai': 5, 'juin': 6, 'juillet': 7, 'août': 8, 'aout': 8,
+        'septembre': 9, 'octobre': 10, 'novembre': 11, 'décembre': 12, 'decembre': 12,
     }
-    text_lower = text.lower()
+    text_lower = cleaned.lower()
     for m_name, m_num in months.items():
-        match = re.search(rf'{m_name}\s+(\d{{1,2}}),?\s*(\d{{4}})', text_lower)
+        match = re.search(rf'\b{m_name}\.?\s+(\d{{1,2}})(?:st|nd|rd|th)?,?\s*(20[12]\d)\b', text_lower)
         if match:
             try:
                 return datetime.date(int(match.group(2)), m_num, int(match.group(1)))
             except ValueError:
                 pass
+        match_dmy = re.search(rf'\b(\d{{1,2}})\s+{m_name}\.?,?\s*(20[12]\d)\b', text_lower)
+        if match_dmy:
+            try:
+                return datetime.date(int(match_dmy.group(2)), m_num, int(match_dmy.group(1)))
+            except ValueError:
+                pass
 
-    match = re.search(r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})', text_lower)
+    match = re.search(r'(?<![0-9a-f\-])(20[12]\d)[-/](0?[1-9]|1[0-2])[-/](0?[1-9]|[12]\d|3[01])(?![0-9a-f\-])', text_lower)
     if match:
         try:
             return datetime.date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
         except ValueError:
             pass
     return None
+
+
+ATTACHMENT_POLICY_KEYWORDS = [
+    "rail", "alto", "hfr", "bylaw", "by-law", "charge", "study", "report",
+    "resolution", "letter", "tree", "woodland", "forest", "chicken", "hen",
+    "poultry", "dog", "kennel", "fence", "stormwater", "drainage", "fill",
+    "topsoil", "alteration", "agricultural", "farm", "exemption", "housing",
+    "bess", "battery", "energy", "zoning", "official plan",
+]
 
 
 def prefetch_single_muni(driver, row):
@@ -332,15 +391,15 @@ def prefetch_single_muni(driver, row):
                     doc_text = driver.find_element("tag name", "body").text
                     doc_type = "html_agenda"
 
-                    # Optional: extract text from up to 2 major report attachments if titles match relevant policy terms
+                    # Optional: extract text from up to 3 major report attachments if titles match relevant policy terms
                     agenda_soup = BeautifulSoup(driver.page_source, "html.parser")
                     att_count = 0
                     for a in agenda_soup.find_all("a", href=True):
                         a_href = a["href"]
                         a_text = a.get_text().strip()
-                        if "filestream.ashx" in a_href.lower() and att_count < 2:
+                        if "filestream.ashx" in a_href.lower() and att_count < 3:
                             # Only download attachment if title contains policy keywords
-                            if any(k in a_text.lower() for k in ["rail", "alto", "hfr", "bylaw", "charge", "study", "report", "resolution", "letter"]):
+                            if any(k in a_text.lower() for k in ATTACHMENT_POLICY_KEYWORDS):
                                 full_att = urllib.parse.urljoin(doc_url, a_href)
                                 att_text = extract_pdf_text(full_att)
                                 if att_text and len(att_text.strip()) > 100:

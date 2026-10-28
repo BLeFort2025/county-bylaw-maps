@@ -17,12 +17,18 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # Suppress insecure request warnings for municipal sites with bad SSLs
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# PDF Support
+# PDF Support (PyMuPDF preferred, pdfplumber fallback)
+PDF_SUPPORT = False
+try:
+    import fitz  # PyMuPDF
+    PDF_SUPPORT = True
+except ImportError:
+    pass
 try:
     import pdfplumber
     PDF_SUPPORT = True
 except ImportError:
-    PDF_SUPPORT = False
+    pass
 
 # --- Setup Paths & Imports ---
 # This file is in `pages/`, so the root is one level up
@@ -32,10 +38,12 @@ sys.path.append(ROOT_DIR)
 
 # Import shared modules from the parent directory
 from shared_config import (
-    KEYWORD_CONFIG, extract_snippet, extract_readable_snippet,
+    KEYWORD_CONFIG, OFA_BYLAW_CATEGORY_PACKS,
+    extract_snippet, extract_readable_snippet,
     CUSTOM_KEYWORD_PACKS, REGION_MAPPING, get_region,
     apply_negative_keywords, is_valid_meeting_document, classify_meeting_doc,
-    canon_name,
+    canon_name, canon_name as _canon_muni,
+    build_keyword_regex, build_combined_keyword_regex,
 )
 from db_utils import get_connection
 
@@ -231,12 +239,13 @@ def _save_live_hits_to_db(df: pd.DataFrame) -> tuple[int, int]:
     st.cache_data.clear()
     return inserted, skipped
 
+REGISTRY_PATH = os.path.join(ROOT_DIR, "signals", "portal_registry.csv")
+
 @st.cache_data(ttl=3600)
 def load_registry():
     """Load the URL portal registry for live scanning."""
-    registry_path = os.path.join(ROOT_DIR, "signals", "portal_registry.csv")
-    if os.path.exists(registry_path):
-        return pd.read_csv(registry_path)
+    if os.path.exists(REGISTRY_PATH):
+        return pd.read_csv(REGISTRY_PATH)
     return pd.DataFrame()
 
 # Path to the Selenium pre-fetched cache (generated weekly by selenium_prefetch.py)
@@ -285,17 +294,32 @@ except ImportError:
     BS4_SUPPORT = False
 
 def extract_text_from_pdf(pdf_bytes):
-    text = ""
+    """Extract text from PDF bytes using PyMuPDF (fitz) with pdfplumber fallback."""
+    if not pdf_bytes or len(pdf_bytes) < 200:
+        return ""
     try:
         import fitz  # PyMuPDF
+        text = ""
         with fitz.open("pdf", pdf_bytes) as doc:
-            for page in doc[:30]:  # Limit pages for speed
+            for page in doc[:35]:
                 page_text = page.get_text()
                 if page_text:
                     text += page_text + "\n"
-    except Exception as e:
-        return f"[PDF Error: {e}]"
-    return text
+        if text.strip():
+            return text
+    except Exception:
+        pass
+    try:
+        import pdfplumber
+        text = ""
+        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            for page in pdf.pages[:35]:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+        return text
+    except Exception:
+        return ""
 
 
 def _is_recent_date(d, max_days=180):
@@ -307,34 +331,55 @@ def _is_recent_date(d, max_days=180):
 
 
 def _extract_date_from_text(text):
-    """Try to extract a date from link text or URL for sorting by recency."""
-    text = text.lower()
-    # Match patterns like "march 19, 2026", "2026-03-19", "march-19-2026"
+    """Extract a meeting date from link text, header text, or URL (ignoring GUIDs and bylaw numbers)."""
+    if not text:
+        return None
+    clean = str(text).lower()
+    # 1. Strip query-string GUIDs (e.g. ?Id=1090-04ab-...) and hex UUIDs
+    clean = re.sub(r'[?&]id=[a-f0-9\-]+', ' ', clean)
+    clean = re.sub(r'\b[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\b', ' ', clean)
+    # 2. Strip bylaw/report/resolution numbers (e.g. By-law 2019-05, DEV2025-12, Report 2024-09)
+    clean = re.sub(
+        r'\b(?:by[-\s]?law|règlement|reglement|report|res(?:olution)?|motion|policy|file|no\.?|#)\s*(?:no\.?\s*|#\s*)?[a-z]*\s*\d{2,4}[-/]\d{1,4}\b',
+        ' ',
+        clean,
+    )
+    clean = re.sub(r'\b[a-z]{2,5}\s*\d{4}[-/]\d{1,4}\b', ' ', clean)
+
     months = {
         'january': 1, 'february': 2, 'march': 3, 'april': 4,
         'may': 5, 'june': 6, 'july': 7, 'august': 8,
-        'september': 9, 'october': 10, 'november': 11, 'december': 12
+        'september': 9, 'october': 10, 'november': 11, 'december': 12,
+        'janvier': 1, 'février': 2, 'fevrier': 2, 'mars': 3, 'avril': 4,
+        'mai': 5, 'juin': 6, 'juillet': 7, 'août': 8, 'aout': 8,
+        'septembre': 9, 'octobre': 10, 'novembre': 11, 'décembre': 12, 'decembre': 12,
     }
 
-    # "March 19, 2026" or "March 19 2026"
+    # "March 19, 2026" or "19 mars 2026"
     for m_name, m_num in months.items():
-        match = re.search(rf'{m_name}\s+(\d{{1,2}}),?\s*(\d{{4}})', text)
+        match = re.search(rf'\b{m_name}\s+(\d{{1,2}}),?\s+(20[12]\d)\b', clean)
         if match:
             try:
                 return datetime.date(int(match.group(2)), m_num, int(match.group(1)))
             except ValueError:
                 pass
+        match_fr = re.search(rf'\b(\d{{1,2}})\s+(?:er\s+)?{m_name},?\s+(20[12]\d)\b', clean)
+        if match_fr:
+            try:
+                return datetime.date(int(match_fr.group(2)), m_num, int(match_fr.group(1)))
+            except ValueError:
+                pass
 
-    # ISO-style "2026-03-19" or in URL paths "2026/03"
-    match = re.search(r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})', text)
+    # Full ISO-style "2026-03-19" or "2026/03/19" (require realistic 2010-2029 year)
+    match = re.search(r'\b(20[12]\d)[-/](0?[1-9]|1[0-2])[-/](0?[1-9]|[12]\d|3[01])\b', clean)
     if match:
         try:
             return datetime.date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
         except ValueError:
             pass
 
-    # Partial: "2026/03" (year/month only)
-    match = re.search(r'(\d{4})[-/](\d{1,2})', text)
+    # URL path year/month only: "/2026/03/" or "/2026/10/"
+    match = re.search(r'/(202[4-9])/(0?[1-9]|1[0-2])(?:/|\b)', clean)
     if match:
         try:
             return datetime.date(int(match.group(1)), int(match.group(2)), 1)
@@ -521,44 +566,54 @@ def _fetch_and_extract_text(url, headers):
 # ──────────────────────────────────────────────────────────────────
 @st.cache_data(ttl=3600)
 def _load_county_dict():
-    """Build a name→county lookup from the local bylaws.db."""
-    db_path = os.path.join(ROOT_DIR, "bylaws.db")
-    county_dict = {}
-    if os.path.exists(db_path):
-        try:
-            conn = sqlite3.connect(db_path)
-            db_df = pd.read_sql_query(
-                "SELECT name, geographic_area FROM municipalities", conn
-            )
-            for _, r in db_df.iterrows():
-                if pd.notna(r['name']) and pd.notna(r['geographic_area']):
-                    county_dict[str(r['name']).upper().strip()] = r['geographic_area']
-            conn.close()
-        except Exception:
-            pass
+    """Build a canonical name→county lookup from the database (with local SQLite fallback)."""
+    county_dict = {
+        "BURK TMS FALLS": "Parry Sound",
+        "BURKS FALLS": "Parry Sound",
+        "CENTER WELLINGTON": "Wellington",
+        "CENTRE WELLINGTON": "Wellington",
+        "MACDONALD MEREDITH AND ABERDEEN ADDL": "Algoma",
+        "MACDONALD MEREDITH AND ABERDEEN ADDITIONAL": "Algoma",
+        "TARBUTT AND TARBUTT ADDITIONAL": "Algoma",
+        "TARBUTT": "Algoma",
+        "SUDBURY": "Greater Sudbury",
+        "DISTRICT OF SUDBURY": "Greater Sudbury",
+        "TIMISKAMING": "Timiskaming",
+        "DISTRICT OF TIMISKAMING": "Timiskaming",
+        "CHATHAM KENT": "Chatham-Kent",
+    }
+    try:
+        conn = get_connection()
+        db_df = pd.read_sql_query("SELECT name, geographic_area FROM municipalities", conn.conn)
+        conn.close()
+        for _, r in db_df.iterrows():
+            if pd.notna(r["name"]) and pd.notna(r["geographic_area"]):
+                raw_up = str(r["name"]).upper().strip()
+                area = str(r["geographic_area"]).strip()
+                county_dict[raw_up] = area
+                county_dict[_canon_muni(raw_up)] = area
+    except Exception:
+        pass
     return county_dict
 
 
 def _map_county(m_name, county_dict):
-    """Resolve a municipality name to its county/upper-tier from the lookup dict."""
-    m_upper = str(m_name).upper().strip()
+    """Resolve a municipality name to its county/upper-tier from the canonical lookup dict."""
+    m_upper = str(m_name or "").upper().strip()
     if m_upper in county_dict:
         return county_dict[m_upper]
 
-    clean_m = re.sub(r'\s+(TP|C|M)$', '', m_upper).strip()
-    clean_m_no_punct = re.sub(r'[^\w\s]', '', clean_m)
+    clean_m = re.sub(r"\s+(TP|C|M|T|V)$", "", m_upper).strip()
     if clean_m in county_dict:
         return county_dict[clean_m]
 
-    for db_name, area in county_dict.items():
-        db_name_no_punct = re.sub(r'[^\w\s]', '', db_name)
-        if clean_m_no_punct in db_name_no_punct or db_name_no_punct in clean_m_no_punct:
-            return area
-            
-    # Hard fallback for Chatham-Kent if the above still misses
+    c_muni = _canon_muni(clean_m)
+    if c_muni in county_dict:
+        return county_dict[c_muni]
+
     if "CHATHAM" in m_upper and "KENT" in m_upper:
         return "Chatham-Kent"
-        
+
     return m_name
 
 
@@ -632,12 +687,17 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
         stats["docs_found"] = len(urls_to_scan)
         stats["found_live_docs"] = found_real_docs
 
+        combined_pattern = build_combined_keyword_regex(keywords)
+        kw_patterns = [(kw, build_keyword_regex(kw)) for kw in keywords]
+
         matches = []
         for url in urls_to_scan:
             text_content, is_pdf = _fetch_and_extract_text(url, HEADERS)
 
-            # Skip HTML portal/listing pages to avoid false positives from menus
-            if not is_pdf and not found_real_docs:
+            # Skip generic HTML portal/listing index pages, but allow specific HTML meeting pages
+            url_low = url.lower()
+            is_meeting_html = any(k in url_low for k in ("meeting.aspx", "meetinginformation.aspx", "agenda=", "postminutes"))
+            if not is_pdf and not found_real_docs and not is_meeting_html:
                 continue
 
             # Validate that this is genuine meeting content and not static master/strategic plan
@@ -651,22 +711,20 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
                     stats["pdfs_read"] += 1
                 else:
                     stats["html_read"] += 1
+            else:
+                continue
 
             if negative_keywords:
                 text_content = apply_negative_keywords(text_content, negative_keywords)
 
-            content_lower = text_content.lower()
-
-            # FAST EXIT: Check if ANY keyword exists before looping
-            combined_pattern = re.compile(r'\b(' + '|'.join(re.escape(kw.lower()) for kw in keywords) + r')\b')
-            if not combined_pattern.search(content_lower):
+            # FAST EXIT: Check if ANY keyword exists before looping (handles by-law / bylaw variants)
+            if not combined_pattern.search(text_content):
                 continue
 
             doc_type = classify_meeting_doc(url, text_content)
 
-            for keyword in keywords:
-                pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
-                if re.search(pattern, content_lower):
+            for keyword, kw_regex in kw_patterns:
+                if kw_regex.search(text_content):
                     snippet = extract_readable_snippet(text_content, keyword, window=300)
                     matches.append({
                         "Municipality": name,
@@ -702,6 +760,9 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, negative_keywords=No
     if relevant_cache.empty:
         return [], {"munis_from_cache": 0, "cache_docs_searched": 0, "cache_hits": 0}
 
+    combined_pattern = build_combined_keyword_regex(keywords)
+    kw_patterns = [(kw, build_keyword_regex(kw)) for kw in keywords]
+
     matches = []
     munis_searched = set()
 
@@ -714,7 +775,7 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, negative_keywords=No
             continue
 
         # ── 180-Day Recency Filter on Cached Docs ──
-        doc_date = _extract_date_from_text(doc_text[:500] + " " + doc_url)
+        doc_date = _extract_date_from_text(doc_text[:350] + " " + doc_url)
         if doc_date and not _is_recent_date(doc_date, max_days=180):
             continue
 
@@ -726,11 +787,9 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, negative_keywords=No
             doc_text = apply_negative_keywords(doc_text, negative_keywords)
 
         munis_searched.add(muni_name)
-        content_lower = doc_text.lower()
 
-        # FAST EXIT: Check if ANY keyword exists before looping
-        combined_pattern = re.compile(r'\b(' + '|'.join(re.escape(kw.lower()) for kw in keywords) + r')\b')
-        if not combined_pattern.search(content_lower):
+        # FAST EXIT: Check if ANY keyword exists before looping (handles by-law / bylaw variants)
+        if not combined_pattern.search(doc_text):
             continue
 
         reg_match = registry_subset[
@@ -747,9 +806,8 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, negative_keywords=No
 
         doc_type = classify_meeting_doc(doc_url, doc_text)
 
-        for keyword in keywords:
-            pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
-            if re.search(pattern, content_lower):
+        for keyword, kw_regex in kw_patterns:
+            if kw_regex.search(doc_text):
                 snippet = extract_readable_snippet(doc_text, keyword, window=300)
                 matches.append({
                     "Municipality": muni_name,
@@ -775,32 +833,45 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, negative_keywords=No
     return matches, stats
 
 
-def run_live_scan(registry_subset, keywords, negative_keywords=None):
+def run_live_scan(registry_subset, keywords, negative_keywords=None, fast_mode=True):
 
     """Execute a concurrent, multi-keyword scan over a registry subset.
 
     Uses a 3-thread pool (reduced from 5 to stay within Streamlit Cloud's
     ~1 GB memory limit) with Streamlit progress feedback.
 
-    Crash-resilient design:
-    - Each future.result() is wrapped in try/except with a 60-second timeout
-      so a single hung municipal site cannot kill the entire scan.
-    - Partial results are saved to st.session_state after every hit so that
-      even if a late failure or Streamlit rerun occurs, earlier results survive.
-    - A summary of timed-out/errored municipalities is displayed at the end.
-
-    Returns:
-        (pd.DataFrame, dict): Results DataFrame and aggregated scan statistics.
+    When fast_mode=True (default), JS-rendered portals (eScribe, CivicWeb, Legistar)
+    that already have pre-fetched documents in cached_portal_docs.csv skip redundant
+    Stage 1 HTTP calls and are searched directly in Stage 2.
     """
     results = []
     errors = []
     total = len(registry_subset)
     completed = 0
 
+    cached_df = load_cached_docs()
+    js_portal_types = {"escribe", "(escribe)", "civicweb", "granicus_legistar"}
+    cached_muni_set = (
+        set(cached_df["municipality_name"].dropna().astype(str).str.upper().str.strip())
+        if not cached_df.empty and "municipality_name" in cached_df.columns
+        else set()
+    )
+
+    if fast_mode and cached_muni_set:
+        is_cached_js = (
+            registry_subset["portal_type"].fillna("").astype(str).str.lower().isin(js_portal_types)
+            & registry_subset["municipality_name"].fillna("").astype(str).str.upper().str.strip().isin(cached_muni_set)
+        )
+        live_targets = registry_subset[~is_cached_js]
+    else:
+        live_targets = registry_subset
+
+    total_live = len(live_targets)
+
     # Aggregate document-level statistics across all municipalities
     scan_stats = {
         "munis_attempted": total,
-        "munis_with_docs": 0,      # Municipalities where ≥1 document was read
+        "munis_with_docs": 0,      # Municipalities where ≥1 document was read via live HTTP
         "munis_no_portal": 0,      # Municipalities with no portal or no documents found
         "total_docs_found": 0,     # Total document URLs discovered by spidering
         "total_docs_scanned": 0,   # Total documents successfully read
@@ -817,55 +888,55 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None):
     status_text = st.empty()
     hit_container = st.container()
 
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        future_to_name = {}
-        for _, row in registry_subset.iterrows():
-            future = executor.submit(_scan_single_muni, row, keywords, negative_keywords)
-            future_to_name[future] = row.get('municipality_name', 'Unknown')
+    if total_live > 0:
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            future_to_name = {}
+            for _, row in live_targets.iterrows():
+                future = executor.submit(_scan_single_muni, row, keywords, negative_keywords)
+                future_to_name[future] = row.get('municipality_name', 'Unknown')
 
-        for future in as_completed(future_to_name):
-            completed += 1
-            muni_name = future_to_name[future]
+            for future in as_completed(future_to_name):
+                completed += 1
+                muni_name = future_to_name[future]
 
-            # Update progress
-            progress_bar.progress(completed / total)
-            status_text.text(f"Scanning... {completed} / {total} municipalities processed")
+                # Update progress
+                progress_bar.progress(completed / total_live)
+                status_text.text(f"Stage 1 (Live HTTP): {completed} / {total_live} portals processed")
 
-            try:
-                result = future.result(timeout=60)
+                try:
+                    result = future.result(timeout=60)
 
-                # Aggregate document stats
-                if result and isinstance(result, dict):
-                    muni_stats = result.get("stats", {})
-                    scan_stats["total_docs_found"] += muni_stats.get("docs_found", 0)
-                    scan_stats["total_docs_scanned"] += muni_stats.get("docs_scanned", 0)
-                    scan_stats["total_pdfs_read"] += muni_stats.get("pdfs_read", 0)
-                    scan_stats["total_html_read"] += muni_stats.get("html_read", 0)
+                    # Aggregate document stats
+                    if result and isinstance(result, dict):
+                        muni_stats = result.get("stats", {})
+                        scan_stats["total_docs_found"] += muni_stats.get("docs_found", 0)
+                        scan_stats["total_docs_scanned"] += muni_stats.get("docs_scanned", 0)
+                        scan_stats["total_pdfs_read"] += muni_stats.get("pdfs_read", 0)
+                        scan_stats["total_html_read"] += muni_stats.get("html_read", 0)
 
-                    if muni_stats.get("no_portal"):
-                        scan_stats["munis_no_portal"] += 1
-                    elif muni_stats.get("docs_scanned", 0) > 0:
-                        scan_stats["munis_with_docs"] += 1
+                        if muni_stats.get("no_portal"):
+                            scan_stats["munis_no_portal"] += 1
+                        elif muni_stats.get("docs_scanned", 0) > 0:
+                            scan_stats["munis_with_docs"] += 1
 
-                    # Collect keyword matches
-                    res_list = result.get("matches", [])
-                    if res_list:
-                        results.extend(res_list)
-                        # Save partial results so they survive a crash
-                        st.session_state["_scan_results_partial"] = list(results)
-                        found_kws = ", ".join(list(set([r['Keyword Found'] for r in res_list])))
-                        hit_container.success(f"🎯 **HIT:** {muni_name} — *{found_kws}*")
+                        # Collect keyword matches
+                        res_list = result.get("matches", [])
+                        if res_list:
+                            results.extend(res_list)
+                            # Save partial results so they survive a crash
+                            st.session_state["_scan_results_partial"] = list(results)
+                            found_kws = ", ".join(list(set([r['Keyword Found'] for r in res_list])))
+                            hit_container.success(f"🎯 **HIT:** {muni_name} — *{found_kws}*")
 
-            except TimeoutError:
-                errors.append(f"⏳ {muni_name} — timed out (site unresponsive)")
-                scan_stats["munis_errored"] += 1
-            except Exception as e:
-                errors.append(f"❌ {muni_name} — {str(e)[:100]}")
-                scan_stats["munis_errored"] += 1
+                except TimeoutError:
+                    errors.append(f"⏳ {muni_name} — timed out (site unresponsive)")
+                    scan_stats["munis_errored"] += 1
+                except Exception as e:
+                    errors.append(f"❌ {muni_name} — {str(e)[:100]}")
+                    scan_stats["munis_errored"] += 1
 
     # Final status
     error_note = f"  ({len(errors)} failed)" if errors else ""
-    status_text.text(f"✅ Scan complete — {total} municipalities processed.{error_note}")
     progress_bar.empty()
 
     # Show errors in a collapsed section so they don't clutter the results
@@ -880,7 +951,6 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None):
     st.session_state["_scan_stats"] = scan_stats
 
     # ── Stage 2: Search the Selenium pre-fetch cache ──
-    cached_df = load_cached_docs()
     cache_matches = []
     cache_stats = {"munis_from_cache": 0, "cache_docs_searched": 0, "cache_hits": 0}
 
@@ -903,7 +973,7 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None):
             st.session_state["_scan_results_final"] = results
 
         status_text.text(
-            f"✅ Scan complete — {total} live + {cache_stats['munis_from_cache']} cached municipalities searched.{error_note}"
+            f"✅ Scan complete — {scan_stats['munis_with_docs']} live + {cache_stats['munis_from_cache']} cached municipalities searched.{error_note}"
         )
 
     # Final meeting-level deduplication across Stage 1 and Stage 2
@@ -935,40 +1005,64 @@ tab_live, tab_history, tab_health = st.tabs(["🚀 Live Target Scanner", "📂 H
 with tab_health:
     st.markdown("### 🩺 Portal Health Monitor")
     st.markdown("""
-    This monitor identifies municipalities that **have not published a readable document in the last 60 days**. 
+    This monitor identifies municipalities that **have not published a readable document in the last 60 days** (combining both direct portal verification and the pre-fetched council cache). 
     If a municipality is listed here, they have likely either:
-    1. Changed their website portal completely (e.g., migrated to eScribe)
+    1. Changed their website portal completely (e.g., migrated to eScribe or CivicWeb)
     2. Stopped uploading documents and switched to Video-only (YouTube)
     3. Experienced a broken link on their homepage
     
-    **Action Required:** Locate their new Agendas & Minutes portal online and update the `minutes_listing_url` in your database.
+    **Action Required:** Locate their new Agendas & Minutes portal online and update the `minutes_listing_url` using the editor below.
     """)
     
-    registry_df = pd.read_csv("signals/portal_registry.csv")
+    registry_health_df = pd.read_csv(REGISTRY_PATH)
+    cached_health_df = load_cached_docs()
     cutoff_date = (datetime.date.today() - datetime.timedelta(days=60)).isoformat()
     
-    # Fill missing dates with a very old date so they show up as stale
-    registry_df["example_recent_minutes_date"] = registry_df["example_recent_minutes_date"].fillna("2000-01-01")
+    # Cross-reference cached_portal_docs.csv fetch_date per municipality
+    cache_latest_map = {}
+    if not cached_health_df.empty and "municipality_name" in cached_health_df.columns and "fetch_date" in cached_health_df.columns:
+        valid_cache = cached_health_df[cached_health_df["doc_text"].fillna("").str.len() > 50]
+        cache_latest_map = (
+            valid_cache.groupby("municipality_name")["fetch_date"]
+            .max()
+            .to_dict()
+        )
     
-    stale_df = registry_df[registry_df["example_recent_minutes_date"] < cutoff_date].copy()
+    def _effective_doc_date(row):
+        reg_d = str(row.get("example_recent_minutes_date", "") or "").strip()
+        if reg_d in ("", "nan", "None"):
+            reg_d = "2000-01-01"
+        muni_name = str(row.get("municipality_name", "")).strip()
+        cache_d = str(cache_latest_map.get(muni_name, "") or "").strip()
+        if cache_d in ("", "nan", "None"):
+            cache_d = "2000-01-01"
+        return max(reg_d[:10], cache_d[:10])
+    
+    registry_health_df["effective_doc_date"] = registry_health_df.apply(_effective_doc_date, axis=1)
+    stale_df = registry_health_df[registry_health_df["effective_doc_date"] < cutoff_date].copy()
+    healthy_count = len(registry_health_df) - len(stale_df)
+    
+    hm1, hm2, hm3 = st.columns(3)
+    hm1.metric("Total Registered Municipalities", len(registry_health_df))
+    hm2.metric("🟢 Healthy / Recently Verified", healthy_count)
+    hm3.metric("⚠️ Stale / Needs URL Review", len(stale_df))
     
     if stale_df.empty:
-        st.success("✅ All 444 municipal portals are healthy and reporting recent documents!")
+        st.success(f"✅ All {len(registry_health_df)} municipal portals are healthy and reporting recent documents!")
     else:
-        st.warning(f"⚠️ {len(stale_df)} municipalities have stale portals and require investigation.")
+        st.warning(f"⚠️ {len(stale_df)} municipalities have stale or missing portals and require investigation.")
         
-        # Clean up presentation
         def safe_days_stale(date_str):
             if date_str == "2000-01-01":
-                return "Unknown"
+                return "Never Scraped"
             try:
                 d = datetime.date.fromisoformat(str(date_str)[:10])
-                return (datetime.date.today() - d).days
+                return f"{(datetime.date.today() - d).days} days"
             except Exception:
-                return "Invalid Data"
+                return "Unknown"
                 
-        stale_df["Days Stale"] = stale_df["example_recent_minutes_date"].apply(safe_days_stale)
-        stale_df["Last Document Date"] = stale_df['example_recent_minutes_date'].replace("2000-01-01", "Never Scraped")
+        stale_df["Days Stale"] = stale_df["effective_doc_date"].apply(safe_days_stale)
+        stale_df["Last Document Date"] = stale_df["effective_doc_date"].replace("2000-01-01", "Never Scraped")
         
         display_stale = stale_df[["municipality_name", "tier", "portal_type", "Last Document Date", "Days Stale", "minutes_listing_url"]].sort_values("Last Document Date")
         
@@ -980,11 +1074,43 @@ with tab_health:
                 "tier": "Tier",
                 "portal_type": "Tech Stack",
                 "Last Document Date": "Latest Doc Date",
-                "Days Stale": "Days Stale",
+                "Days Stale": "Staleness",
                 "minutes_listing_url": st.column_config.LinkColumn("Current Registered Portal URL", max_chars=100)
             },
             hide_index=True
         )
+    
+    with st.expander("🔧 Update Municipal Portal URL in Registry", expanded=False):
+        st.caption("Update a municipality's Agendas & Minutes URL directly in `signals/portal_registry.csv`.")
+        all_muni_names = sorted(registry_health_df["municipality_name"].dropna().unique().tolist())
+        edit_muni = st.selectbox("Select Municipality to Update", options=all_muni_names, key="health_edit_muni")
+        current_row = registry_health_df[registry_health_df["municipality_name"] == edit_muni].iloc[0]
+        cur_url = str(current_row.get("minutes_listing_url", "") or "")
+        if cur_url == "nan":
+            cur_url = ""
+        cur_ptype = str(current_row.get("portal_type", "custom_html") or "custom_html")
+        portal_type_options = ["escribe", "civicweb", "custom_html", "laserfiche", "granicus_legistar", "escribemeetings"]
+        if cur_ptype not in portal_type_options:
+            portal_type_options.insert(0, cur_ptype)
+        
+        with st.form("update_portal_registry_form"):
+            new_url = st.text_input("Agendas & Minutes Listing URL", value=cur_url, placeholder="https://...")
+            new_ptype = st.selectbox("Portal Tech Stack", options=portal_type_options, index=portal_type_options.index(cur_ptype))
+            mark_verified = st.checkbox("Mark portal as verified today", value=True)
+            save_portal_btn = st.form_submit_button("💾 Save Portal URL Update", type="primary")
+            
+            if save_portal_btn:
+                full_reg = pd.read_csv(REGISTRY_PATH)
+                mask = full_reg["municipality_name"] == edit_muni
+                full_reg.loc[mask, "minutes_listing_url"] = new_url.strip()
+                full_reg.loc[mask, "portal_type"] = new_ptype
+                if mark_verified and new_url.strip():
+                    full_reg.loc[mask, "example_recent_minutes_date"] = datetime.date.today().isoformat()
+                    full_reg.loc[mask, "status"] = "Active"
+                full_reg.to_csv(REGISTRY_PATH, index=False)
+                load_registry.clear()
+                st.success(f"✅ Updated portal URL for **{edit_muni}**.")
+                st.rerun()
 
 # ──────────────────────────────────────────────────────────────────
 # TAB 1: LIVE TARGET SCANNER  (Fast Scanner Engine)
@@ -993,7 +1119,7 @@ with tab_live:
     st.header("🔎 Live Municipal Council Scanner")
     st.markdown(
         "Search recent council meeting agendas and minutes across Ontario for any policy issue, keyword, or resolution. "
-        "The scanner reads the **most recent 2026 council documents** using word-boundary pattern matching."
+        "The scanner reads the **most recent 2026 council documents** using word-boundary pattern matching (automatically matching both *Bylaw* and *By-law* variations)."
     )
 
     # ── Crash recovery: offer partial results from interrupted scans ──
@@ -1032,6 +1158,8 @@ with tab_live:
             if st.button("🧹 Clear All Keywords", help="Uncheck all preset packs and clear custom keyword text boxes", use_container_width=True):
                 for pack_name in CUSTOM_KEYWORD_PACKS.keys():
                     st.session_state[f"pack_{pack_name}"] = False
+                for pack_name in OFA_BYLAW_CATEGORY_PACKS.keys():
+                    st.session_state[f"ofa_pack_{pack_name}"] = False
                 st.session_state["custom_kw_input"] = ""
                 st.session_state["negative_kw_input"] = ""
                 st.session_state["_scan_results_df"] = None
@@ -1041,10 +1169,21 @@ with tab_live:
                 st.session_state["_scan_results_partial"] = []
                 st.rerun()
 
-        kw_col1, kw_col2, kw_col3 = st.columns([1, 1, 1])
+        kw_col1, kw_col2, kw_col3, kw_col4 = st.columns([1.15, 1.15, 1, 1])
 
         with kw_col1:
-            st.markdown("**Preset Policy Packs**")
+            st.markdown("**Core OFA Bylaw Categories**")
+            selected_ofa_packs = []
+            for pack_name, pack_keywords in OFA_BYLAW_CATEGORY_PACKS.items():
+                if st.checkbox(
+                    f"{pack_name}",
+                    help=f"Keywords: {', '.join(pack_keywords)}",
+                    key=f"ofa_pack_{pack_name}"
+                ):
+                    selected_ofa_packs.append(pack_name)
+
+        with kw_col2:
+            st.markdown("**Special Policy Watch Packs**")
             selected_packs = []
             for pack_name, pack_keywords in CUSTOM_KEYWORD_PACKS.items():
                 if st.checkbox(
@@ -1054,30 +1193,32 @@ with tab_live:
                 ):
                     selected_packs.append(pack_name)
 
-        with kw_col2:
+        with kw_col3:
             st.markdown("**Custom Keywords** *(one per line)*")
             custom_kw_text = st.text_area(
                 "Enter additional keywords",
                 placeholder="e.g.\nSolar Farm\nGreenhouses\nAgri-Tourism",
-                height=120,
+                height=155,
                 label_visibility="collapsed",
                 key="custom_kw_input"
             )
-            st.caption("💡 *Type words or phrases to search.*")
+            st.caption("💡 *Matches both 'Bylaw' & 'By-law' automatically.*")
 
-        with kw_col3:
+        with kw_col4:
             st.markdown("**Exclude Words (Negative Keywords)**")
             negative_kw_text = st.text_area(
                 "Enter negative keywords",
                 placeholder="e.g.\ngreenhouse gas\nghg",
-                height=120,
+                height=155,
                 label_visibility="collapsed",
                 key="negative_kw_input"
             )
-            st.caption("💡 *Excludes hits containing these exact phrases.*")
+            st.caption("💡 *Excludes hits containing these phrases.*")
 
         # Build positive keywords
         all_keywords = []
+        for pack_name in selected_ofa_packs:
+            all_keywords.extend(OFA_BYLAW_CATEGORY_PACKS[pack_name])
         for pack_name in selected_packs:
             all_keywords.extend(CUSTOM_KEYWORD_PACKS[pack_name])
         if custom_kw_text.strip():
@@ -1169,7 +1310,13 @@ with tab_live:
 
         st.divider()
 
-        # ── Run Button ──
+        # ── Fast Mode & Run Button ──
+        fast_mode = st.checkbox(
+            "⚡ Fast Mode — Use pre-fetched cache for JS portals (eScribe / CivicWeb) to speed up scans ~2.5x",
+            value=True,
+            help="When enabled, complex JavaScript portals that are already stored in the pre-fetched Selenium cache go straight to instant cache scanning instead of waiting on empty live HTTP requests."
+        )
+
         if st.button("🚀 Step 3: Launch Scan", type="primary", use_container_width=True):
             if not unique_keywords:
                 st.error("⚠️ Please select at least one keyword pack or enter a custom keyword.")
@@ -1186,7 +1333,7 @@ with tab_live:
                 )
                 st.markdown(f"**Scanning {len(target_df)} municipalities for {len(unique_keywords)} keywords...**")
 
-                live_results, scan_stats = run_live_scan(target_df, unique_keywords, unique_negative_keywords)
+                live_results, scan_stats = run_live_scan(target_df, unique_keywords, unique_negative_keywords, fast_mode=fast_mode)
 
                 # Persist results in session state so they survive downloads and page reruns
                 st.session_state["_scan_results_df"] = live_results
