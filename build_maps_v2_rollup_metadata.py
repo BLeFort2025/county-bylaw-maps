@@ -231,6 +231,43 @@ def overlay_live_lower(gdf: gpd.GeoDataFrame, conn=None) -> gpd.GeoDataFrame:
     return gdf
 
 
+def _apply_upper_direct_and_combined(upper_agg: pd.DataFrame, df: pd.DataFrame, status_cols: list[str]) -> pd.DataFrame:
+    """Populate __DIRECT columns for Upper-Tier / Single-Tier view and include Upper-Tier direct status in Combined rollup."""
+    all_meta_cols = [c for c in (META_TEXT_COLS + META_EXPIRY_COLS) if c in upper_agg.columns]
+
+    # Default __DIRECT columns to the rollup values (which for Single-Tier municipalities are their own values)
+    for sc in status_cols:
+        if sc in upper_agg.columns:
+            upper_agg[f"{sc}__DIRECT"] = upper_agg[sc]
+    for mc in all_meta_cols:
+        upper_agg[f"{mc}__DIRECT"] = upper_agg[mc]
+
+    if "Municipal Status" in df.columns:
+        up_df = df[df["Municipal Status"] == "Upper Tier"].drop_duplicates("_MUNI_NAME").set_index("_MUNI_NAME")
+        for idx, r in upper_agg.iterrows():
+            uname = r["_UPPER_NAME"]
+            if uname in up_df.index:
+                up_row = up_df.loc[uname]
+                # 1. Direct status and Combined status (Upper Tier + Lower Tier rollup)
+                for sc in status_cols:
+                    if sc in upper_agg.columns and sc in up_df.columns:
+                        direct_st = strip_nbsp_and_space(up_row.get(sc, "NOT KNOWN")) or "NOT KNOWN"
+                        upper_agg.at[idx, f"{sc}__DIRECT"] = direct_st
+                        rollup_st = strip_nbsp_and_space(r.get(sc, "NOT KNOWN")) or "NOT KNOWN"
+                        upper_agg.at[idx, sc] = agg_status(pd.Series([rollup_st, direct_st]))
+
+                # 2. Direct metadata and Combined metadata
+                for mc in all_meta_cols:
+                    if mc in up_df.columns:
+                        val = strip_nbsp_and_space(up_row.get(mc, ""))
+                        if val and val.lower() not in ("see local municipalities", "(no bylaw)", "(no fence bylaw)"):
+                            upper_agg.at[idx, f"{mc}__DIRECT"] = val
+                            upper_agg.at[idx, mc] = val
+                        else:
+                            upper_agg.at[idx, f"{mc}__DIRECT"] = ""
+    return upper_agg
+
+
 def overlay_live_upper(upper_gdf: gpd.GeoDataFrame, lower_parquet_path: str = LOWER_PARQUET, conn=None) -> gpd.GeoDataFrame:
     """Overlay live database rollup status and metadata columns onto a cached Upper Tier GeoDataFrame."""
     df, status_cols = _load_live_df(conn)
@@ -250,18 +287,7 @@ def overlay_live_upper(upper_gdf: gpd.GeoDataFrame, lower_parquet_path: str = LO
             agg_dict[c] = agg_min_date
 
     upper_agg = tmp.groupby("_UPPER_NAME", dropna=False).agg(agg_dict).reset_index()
-
-    if "Municipal Status" in df.columns:
-        up_df = df[df["Municipal Status"] == "Upper Tier"].drop_duplicates("_MUNI_NAME").set_index("_MUNI_NAME")
-        all_meta_cols = [c for c in (META_TEXT_COLS + META_EXPIRY_COLS) if c in upper_agg.columns and c in up_df.columns]
-        for idx, r in upper_agg.iterrows():
-            uname = r["_UPPER_NAME"]
-            if uname in up_df.index:
-                up_row = up_df.loc[uname]
-                for mc in all_meta_cols:
-                    val = strip_nbsp_and_space(up_row.get(mc, ""))
-                    if val and val.lower() not in ("see local municipalities", "(no bylaw)", "(no fence bylaw)"):
-                        upper_agg.at[idx, mc] = val
+    upper_agg = _apply_upper_direct_and_combined(upper_agg, df, status_cols)
 
     upper_agg_idx = upper_agg.drop_duplicates("_UPPER_NAME").set_index("_UPPER_NAME")
     upper_gdf = upper_gdf.copy()
@@ -271,9 +297,15 @@ def overlay_live_upper(upper_gdf: gpd.GeoDataFrame, lower_parquet_path: str = LO
     for c in status_cols:
         if c in upper_agg_idx.columns:
             upper_gdf[c] = upper_gdf["_UPPER_NAME"].map(upper_agg_idx[c]).fillna("NOT KNOWN")
+        direct_c = f"{c}__DIRECT"
+        if direct_c in upper_agg_idx.columns:
+            upper_gdf[direct_c] = upper_gdf["_UPPER_NAME"].map(upper_agg_idx[direct_c]).fillna("NOT KNOWN")
     for c in (META_TEXT_COLS + META_EXPIRY_COLS):
         if c in upper_agg_idx.columns:
             upper_gdf[c] = upper_gdf["_UPPER_NAME"].map(upper_agg_idx[c]).fillna("")
+        direct_c = f"{c}__DIRECT"
+        if direct_c in upper_agg_idx.columns:
+            upper_gdf[direct_c] = upper_gdf["_UPPER_NAME"].map(upper_agg_idx[direct_c]).fillna("")
     return upper_gdf
 
 
@@ -354,28 +386,19 @@ def main():
                 agg_dict[c] = agg_min_date
 
         upper_agg = tmp.groupby("_UPPER_NAME", dropna=False).agg(agg_dict).reset_index()
-
-        # Overlay direct Upper Tier municipality metadata (bylaw name, link, enacted, expiry)
-        # where the Upper Tier municipality itself has a recorded bylaw in df
-        if "Municipal Status" in df.columns:
-            up_df = df[df["Municipal Status"] == "Upper Tier"].drop_duplicates("_MUNI_NAME").set_index("_MUNI_NAME")
-            all_meta_cols = [c for c in (META_TEXT_COLS + META_EXPIRY_COLS) if c in upper_agg.columns and c in up_df.columns]
-            for idx, r in upper_agg.iterrows():
-                uname = r["_UPPER_NAME"]
-                if uname in up_df.index:
-                    up_row = up_df.loc[uname]
-                    for mc in all_meta_cols:
-                        val = strip_nbsp_and_space(up_row.get(mc, ""))
-                        if val and val.lower() not in ("see local municipalities", "(no bylaw)", "(no fence bylaw)"):
-                            upper_agg.at[idx, mc] = val
+        upper_agg = _apply_upper_direct_and_combined(upper_agg, df, status_cols)
 
         g_up = gpd.read_file(UPPER_GEO)
         g_up["_UPPER_NAME"] = g_up[UPPER_NAME_FIELD].astype(str).map(canon)
         upper = g_up.merge(upper_agg, on="_UPPER_NAME", how="left")
         for c in status_cols:
             if c in upper.columns: upper[c] = upper[c].fillna("NOT KNOWN")
+            direct_c = f"{c}__DIRECT"
+            if direct_c in upper.columns: upper[direct_c] = upper[direct_c].fillna("NOT KNOWN")
         for c in (META_TEXT_COLS + META_EXPIRY_COLS):
             if c in upper.columns: upper[c] = upper[c].fillna("")
+            direct_c = f"{c}__DIRECT"
+            if direct_c in upper.columns: upper[direct_c] = upper[direct_c].fillna("")
         upper.to_parquet(UPPER_PARQUET, index=False)
         print(f"Wrote {UPPER_PARQUET}")
 

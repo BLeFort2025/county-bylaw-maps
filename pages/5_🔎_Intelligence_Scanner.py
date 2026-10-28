@@ -35,6 +35,7 @@ from shared_config import (
     KEYWORD_CONFIG, extract_snippet, extract_readable_snippet,
     CUSTOM_KEYWORD_PACKS, REGION_MAPPING, get_region,
     apply_negative_keywords, is_valid_meeting_document, classify_meeting_doc,
+    canon_name,
 )
 from db_utils import get_connection
 
@@ -101,6 +102,134 @@ def load_historical_signals():
     df = pd.read_sql_query(query, conn.conn)
     conn.close()
     return df
+
+
+def _infer_category_for_keyword(keyword: str) -> str:
+    """Map a matched keyword to a standard OFA bylaw category or topic code."""
+    kw_low = str(keyword or "").strip().lower()
+    for cat, phrases in KEYWORD_CONFIG.items():
+        if any(kw_low == p.lower() or p.lower() in kw_low for p in phrases):
+            return cat
+    for pack_name, phrases in CUSTOM_KEYWORD_PACKS.items():
+        if any(kw_low == p.lower() for p in phrases):
+            if "Worker Housing" in pack_name or "Greenhouse" in pack_name:
+                return "DC"
+            if "ALTO" in pack_name:
+                return "ALTO_RAIL"
+            if "Plant-Based" in pack_name:
+                return "PLANT_TREATY"
+            if "Foodbelt" in pack_name:
+                return "FOODBELT"
+    if any(t in kw_low for t in ("development charge", "dc ", "bunkhouse", "worker housing", "farm help")):
+        return "DC"
+    if any(t in kw_low for t in ("stormwater", "drainage", "runoff")):
+        return "STORMWATER"
+    if any(t in kw_low for t in ("site alteration", "fill", "topsoil")):
+        return "SITE_ALT"
+    if any(t in kw_low for t in ("tree", "woodland", "forest")):
+        return "TREES"
+    if any(t in kw_low for t in ("chicken", "hen", "poultry")):
+        return "CHICKENS"
+    if any(t in kw_low for t in ("dog", "kennel", "barking")):
+        return "LGD"
+    if "fence" in kw_low:
+        return "FENCES"
+    return "CUSTOM"
+
+
+def _save_live_hits_to_db(df: pd.DataFrame) -> tuple[int, int]:
+    """Persist live scan hits into scanner_signals (and signals.csv fallback)."""
+    if df is None or df.empty:
+        return 0, 0
+    conn = get_connection()
+    inserted = 0
+    skipped = 0
+    new_csv_rows = []
+    try:
+        muni_df = pd.read_sql_query("SELECT id, name FROM municipalities", conn.conn)
+        canon_to_id = {canon_name(r["name"]): int(r["id"]) for _, r in muni_df.iterrows()}
+
+        existing_df = pd.read_sql_query(
+            "SELECT municipality_id, trigger_keyword, evidence_url FROM scanner_signals",
+            conn.conn,
+        )
+        existing_keys = set(
+            (
+                int(r["municipality_id"]) if pd.notna(r["municipality_id"]) else -1,
+                str(r["trigger_keyword"] or "").strip().lower(),
+                str(r["evidence_url"] or "").strip(),
+            )
+            for _, r in existing_df.iterrows()
+        )
+
+        today_str = datetime.date.today().isoformat()
+        for _, row in df.iterrows():
+            muni_name = str(row.get("Municipality", "") or "").strip()
+            kw = str(row.get("Keyword Found", "") or "").strip()
+            snippet = str(row.get("Context Snippet", "") or "").strip()
+            url = str(row.get("Source URL", "") or "").strip()
+            disc_date = str(row.get("Date Scanned", "") or today_str).strip()
+            cat = _infer_category_for_keyword(kw)
+            mid = canon_to_id.get(canon_name(muni_name))
+
+            dedup_key = (mid if mid is not None else -1, kw.lower(), url)
+            if dedup_key in existing_keys:
+                skipped += 1
+                continue
+
+            conn.execute(
+                """
+                INSERT INTO scanner_signals
+                    (municipality_id, signal_type, discovered_date, trigger_keyword,
+                     category, snippet, ai_summary, ai_confidence, evidence_url)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    mid,
+                    "Mentioned in minutes/agendas",
+                    disc_date,
+                    kw,
+                    cat,
+                    snippet,
+                    None,
+                    None,
+                    url,
+                ),
+            )
+            existing_keys.add(dedup_key)
+            inserted += 1
+            new_csv_rows.append(
+                {
+                    "munid": muni_name,
+                    "signal_type": "Mentioned in minutes/agendas",
+                    "discovered_date": disc_date,
+                    "trigger_keyword": kw,
+                    "category": cat,
+                    "snippet": snippet,
+                    "ai_summary": "",
+                    "ai_confidence": "",
+                    "evidence_url": url,
+                }
+            )
+        conn.commit()
+    finally:
+        conn.close()
+
+    if new_csv_rows:
+        sig_path = os.path.join(ROOT_DIR, "signals", "signals.csv")
+        try:
+            new_df = pd.DataFrame(new_csv_rows)
+            if os.path.exists(sig_path):
+                old_df = pd.read_csv(sig_path)
+                combined = pd.concat([old_df, new_df], ignore_index=True)
+                combined.to_csv(sig_path, index=False)
+            else:
+                new_df.to_csv(sig_path, index=False)
+        except Exception:
+            pass
+
+    st.cache_data.clear()
+    return inserted, skipped
 
 @st.cache_data(ttl=3600)
 def load_registry():
@@ -1150,8 +1279,8 @@ with tab_live:
                 else:
                     display_results = live_results
 
-                # ── Prominent Download Toolbar ──
-                d_col1, d_col2 = st.columns(2)
+                # ── Prominent Download & Save Toolbar ──
+                d_col1, d_col2, d_col3 = st.columns(3)
                 excel_data = _to_excel_bytes(live_results, sheet_name="Scan Results")
                 csv_data = live_results.to_csv(index=False).encode('utf-8')
                 scan_date = datetime.date.today().isoformat()
@@ -1175,6 +1304,18 @@ with tab_live:
                         use_container_width=True,
                         key="dl_csv_top"
                     )
+                with d_col3:
+                    if st.button(
+                        "💾 Save Hits to Intelligence Database",
+                        use_container_width=True,
+                        key="save_hits_db_btn",
+                        help="Save these scan hits to the master Intelligence Database so they appear on the Lower/Upper Tier Maps, Historical Database tab, and Word Reports.",
+                    ):
+                        ins, skp = _save_live_hits_to_db(display_results)
+                        if ins > 0:
+                            st.success(f"✅ Saved {ins} new signal(s) to the Intelligence Database ({skp} duplicate(s) skipped).")
+                        else:
+                            st.info(f"ℹ️ All {skp} signal(s) are already recorded in the Intelligence Database.")
 
                 # ── Results Table ──
                 col_config = {
