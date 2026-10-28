@@ -30,52 +30,86 @@ BYLAW_CATEGORIES = [
 # ──────────────────────────────────────────────────────────────────
 KEYWORD_CONFIG = {
     "DC": [
-        "Development Charges Background Study", "DC Background Study",
-        "Development Charges Update Study", "Draft Development Charges By-law",
-        "Proposed Development Charges By-law", "Passage of Development Charges By-law",
-        "Statutory Public Meeting regarding Development Charges",
-        "Notice of Public Meeting regarding Development Charges",
-        "Development Charges Public Meeting", "Agricultural Exemption Review",
-        "Farm Building Exemption", "Bona Fide Farm", "More Homes Built Faster Act",
-        "Community Benefits Charge", "Bill 185", "Comprehensive Zoning Bylaw",
-        "Farm Bunkhouse", "On-Farm Worker Housing", "Seasonal Farm Worker"
+        "Development Charges By-law",
+        "Development Charge By-law",
+        "Development Charges Background Study",
+        "DC Background Study",
+        "Development Charges Study",
+        "Development Charges Update",
+        "Development Charges Review",
+        "Development Charges Public Meeting",
+        "Development Charges Act",
+        "Development Charge Exemption",
+        "Agricultural Development Charge",
+        "Farm Building Exemption",
     ],
     "STORMWATER": [
-        "Stormwater Rate Study", "Stormwater Utility Feasibility",
-        "Impervious Area Charge", "Runoff Management Fee",
-        "Drainage Master Plan", "Stormwater User Fee",
-        "Stormwater Funding Model"
+        "Stormwater Management By-law",
+        "Stormwater Charge",
+        "Stormwater Fee",
+        "Stormwater User Fee",
+        "Stormwater Rate",
+        "Stormwater Utility",
+        "Stormwater Credit",
+        "Stormwater Funding",
+        "Impervious Area Charge",
+        "Runoff Management Fee",
     ],
     "SITE_ALT": [
-        "Site Alteration Bylaw", "Fill Bylaw", "Topsoil Preservation",
-        "Topsoil Removal", "Dumping of Fill", "Large Scale Fill Agreement",
-        "Commercial Fill Operation"
+        "Site Alteration By-law",
+        "Fill By-law",
+        "Fill Management By-law",
+        "Topsoil Preservation",
+        "Topsoil Removal",
+        "Dumping of Fill",
+        "Excess Soil By-law",
+        "Large Scale Fill",
+        "Commercial Fill Operation",
     ],
     "TREES": [
-        "Tree Cutting Bylaw", "Private Tree Protection",
-        "Woodland Conservation Bylaw", "Forest Conservation Bylaw",
-        "Tree Canopy Strategy", "Significant Woodland Review",
-        "Stop Work Order - Trees"
+        "Tree Cutting By-law",
+        "Tree Preservation By-law",
+        "Tree Protection By-law",
+        "Private Tree By-law",
+        "Woodland Conservation By-law",
+        "Woodlands Conservation By-law",
+        "Woodlot Conservation By-law",
+        "Forest Conservation By-law",
+        "Good Forestry Practices",
+        "Tree Canopy Strategy",
+        "Significant Woodland",
     ],
     "CHICKENS": [
-        "Backyard Chickens",           # Most important — from V2
+        "Backyard Chickens",
         "Backyard Hens",
-        "Urban Hens Pilot",
+        "Urban Hens",
+        "Urban Chickens",
         "Backyard Poultry",
-        "Chicken Coop Regulations",
-        # NOTE: "Keeping of Animals Bylaw" was removed — too broad.
-        # Every Ontario municipality has a generic "Keeping of Animals"
-        # bylaw that is unrelated to backyard chickens specifically.
+        "Keeping of Chickens",
+        "Keeping of Hens",
+        "Chicken Coop",
     ],
     "LGD": [
-        "Animal Control Bylaw Review", "Dog Control Bylaw",
-        "Kennel By-law", "Livestock Guardian Dog",
-        "Working Dog Exemption", "Dog Licensing Fee Review"
+        "Livestock Guardian Dog",
+        "Working Dog Exemption",
+        "Working Dog",
+        "Herding Dog",
+        "Dog Control By-law",
+        "Canine Control By-law",
+        "Animal Control By-law",
+        "Kennel By-law",
+        "Dog Licensing By-law",
     ],
     "FENCES": [
-        "Fence Bylaw", "Division Fence", "Line Fences Act",
-        "Cost of Division Fences"
-    ]
+        "Fence By-law",
+        "Line Fence By-law",
+        "Division Fence",
+        "Line Fences Act",
+        "Cost of Division Fences",
+        "Fence Cost Sharing",
+        "Fence Viewer",
+        "Fence-Viewer",
+    ],
 }
 
 
@@ -98,8 +132,8 @@ OFA_BYLAW_CATEGORY_PACKS = {
 # ──────────────────────────────────────────────────────────────────
 CUSTOM_KEYWORD_PACKS = {
     "🚄 ALTO Rail": [
-        "ALTO", "High Speed Rail", "High-speed rail", "Passenger Rail",
-        "High Frequency Rail", "High-frequency rail", "HFR", "Alt-NO", "ALT-NO", "VIA HFR",
+        "ALTO", "ALTO Rail", "High Frequency Rail", "High-frequency rail",
+        "High Speed Rail", "High-speed rail", "VIA HFR", "HFR", "Alt-NO", "ALT-NO",
     ],
     "🌱 Plant-Based Treaty": [
         "Plant Based Treaty", "Plant-Based Treaty", "Vegan Treaty",
@@ -109,13 +143,16 @@ CUSTOM_KEYWORD_PACKS = {
         "Golden Horseshoe Food and Farming",
     ],
     "🏠 On-Farm Worker Housing": [
-        "bunkhouse", "bunk house", "farm help", "farm labour", "farm labor",
-        "seasonal worker", "seasonal farm worker", "agricultural worker",
-        "agricultural labourer", "worker accommodation", "worker housing",
-        "labour house", "help house", "helphouse", "boarding, lodging, and rooming house",
+        "on-farm worker housing", "farm worker housing", "agricultural worker housing",
+        "seasonal farm worker", "seasonal agricultural worker", "farm bunkhouse",
+        "bunkhouse", "bunk house", "farm help house", "help house", "helphouse",
+        "farm labour housing", "farm labor housing", "agricultural worker accommodation",
     ],
     "🌿 Cannabis & Greenhouse DC Carve-Outs": [
-        "cannabis", "marijuana", "greenhouse", "retail-related greenhouses", "commercial greenhouses",
+        "cannabis production", "cannabis facility", "cannabis cultivation",
+        "licensed producer", "agricultural cannabis", "commercial greenhouses",
+        "retail-related greenhouses", "greenhouse development charge",
+        "greenhouse by-law", "greenhouse abatement",
     ],
 }
 
@@ -340,8 +377,8 @@ def extract_snippet(raw_text: str, trigger_keyword: str, window: int = 200) -> s
     text = re.sub(r"<script[^>]*>.*?</script>", " ", text, flags=re.DOTALL | re.IGNORECASE)
     text = re.sub(r"<style[^>]*>.*?</style>", " ", text, flags=re.DOTALL | re.IGNORECASE)
 
-    # --- Step 2: Strip all remaining HTML tags ---
-    text = re.sub(r"<[^>]+>", " ", text)
+    # --- Step 2: Strip HTML tags (bounded so stray < and > in OCR PDFs do not eat pages) ---
+    text = re.sub(r"<[a-zA-Z/!][^>\n]{0,300}>", " ", text)
 
     # --- Step 3: Decode common HTML entities ---
     text = text.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")

@@ -4,6 +4,7 @@ import datetime
 import glob
 import sqlite3
 from shared_config import (
+    KEYWORD_CONFIG,
     canon_name,
     check_all_keywords,
     extract_snippet,
@@ -152,6 +153,20 @@ def generate_signals():
     # Filter out any invalid social media URLs
     full_df = full_df[
         full_df["found_url"].fillna("").apply(lambda u: is_valid_meeting_document(u))
+    ].copy()
+
+    # Filter out deprecated/removed trigger keywords from historical CSVs
+    valid_keywords_upper = set()
+    for kw_list in KEYWORD_CONFIG.values():
+        for kw in kw_list:
+            ku = kw.strip().upper()
+            valid_keywords_upper.add(ku)
+            valid_keywords_upper.add(ku.replace("BY-LAW", "BYLAW"))
+            valid_keywords_upper.add(ku.replace("BYLAW", "BY-LAW"))
+            valid_keywords_upper.add(ku.replace("BY-LAW", "BY LAW"))
+
+    full_df = full_df[
+        full_df["trigger_keyword"].fillna("").astype(str).str.strip().str.upper().isin(valid_keywords_upper)
     ].copy()
 
     # Prefer rows with AI summaries first, then newest found_date
