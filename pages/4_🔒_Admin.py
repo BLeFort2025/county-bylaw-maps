@@ -22,7 +22,7 @@ import streamlit as st
 import pandas as pd
 from db_utils import (
     get_connection, get_municipalities, get_bylaws, get_bylaws_with_details,
-    get_contacts, get_audit_log, update_record, resolve_yes_no,
+    get_contacts, get_audit_log, update_record, resolve_yes_no, resolve_welfare_codes,
 )
 from shared_config import ADMIN_PASSWORD_HASH, BYLAW_CATEGORIES
 
@@ -205,7 +205,8 @@ if st.sidebar.button("🔄 Sync Edits to Maps"):
             # Call the build script
             subprocess.run([sys.executable, "build_maps_v2_rollup_metadata.py"], 
                            cwd=HERE, capture_output=True, text=True, check=True)
-            st.sidebar.success("✅ Maps rebuilt successfully! Refresh the map pages to see changes.")
+            st.cache_data.clear()
+            st.sidebar.success("✅ Maps rebuilt and live cache cleared! Refresh or open the map pages to see changes.")
         except subprocess.CalledProcessError as e:
             st.sidebar.error("❌ Map build failed.")
             st.sidebar.code(e.stderr, language="text")
@@ -276,6 +277,8 @@ if admin_mode == "✏️ Edit Municipality":
                             (value if value else None, muni_id)
                         )
                     conn.commit()
+                    conn.commit()
+                    st.cache_data.clear()
                     st.success(f"✅ Saved municipality info for {new_name}")
                     st.rerun()
                 except Exception as e:
@@ -331,7 +334,9 @@ if admin_mode == "✏️ Edit Municipality":
                     )
 
                     # Progress
-                    progress_opts = ["", "COMPLETE", "COMMUNICATION NEEDED",
+                    progress_opts = ["", "COMPLETE", "COMPLETE - FARM FRIENDLY", "COMPLETE - NOTABLE CASE",
+                                     "COMMUNICATION NEEDED", "AWAITING RESPONSE", "IN PROGRESS",
+                                     "NO BY-LAW IN PLACE", "NOT STARTED"]
                                      "AWAITING RESPONSE", "IN PROGRESS",
                                      "NO BY-LAW IN PLACE", "NOT STARTED"]
                     current_progress = brow["progress_label"] or ""
@@ -349,6 +354,18 @@ if admin_mode == "✏️ Edit Municipality":
                 st.markdown("**Category-Specific Details**")
 
                 detail_updates = {}
+                def _opt_idx(opts, raw_val):
+                    if raw_val is None or str(raw_val).strip() == "":
+                        return 0
+                    s = str(raw_val).strip()
+                    if s in opts:
+                        return opts.index(s)
+                    r = resolve_yes_no(s)
+                    if r in opts:
+                        return opts.index(r)
+                    if r.upper() in opts:
+                        return opts.index(r.upper())
+                    return 0
 
                 if cat_code == "DC" and not detail_df.empty:
                     drow = detail_df.iloc[0]
@@ -397,20 +414,20 @@ if admin_mode == "✏️ Edit Municipality":
                     lgd1, lgd2 = st.columns(2)
                     yn_opts = ["", "Yes", "No", "NOT KNOWN"]
                     with lgd1:
-                        detail_updates["has_lgd_definition"] = st.selectbox("Has LGD Definition?", yn_opts, key=f"hld_{cat_code}_{muni_id}")
+                        detail_updates["has_lgd_definition"] = st.selectbox("Has LGD Definition?", yn_opts, index=_opt_idx(yn_opts, drow["has_lgd_definition"]), key=f"hld_{cat_code}_{muni_id}")
                         detail_updates["lgd_definition"] = st.text_area("LGD Definition", value=drow["lgd_definition"] or "", height=80, key=f"ldd_{cat_code}_{muni_id}")
-                        detail_updates["has_herding_def"] = st.selectbox("Has Herding Dog Def?", yn_opts, key=f"hhd_{cat_code}_{muni_id}")
+                        detail_updates["has_herding_def"] = st.selectbox("Has Herding Dog Def?", yn_opts, index=_opt_idx(yn_opts, drow["has_herding_def"]), key=f"hhd_{cat_code}_{muni_id}")
                         detail_updates["herding_definition"] = st.text_area("Herding Dog Definition", value=drow["herding_definition"] or "", height=80, key=f"hdd_{cat_code}_{muni_id}")
                     with lgd2:
-                        detail_updates["exempt_license_fees"] = st.selectbox("Exempt from License Fees?", yn_opts, key=f"elf_{cat_code}_{muni_id}")
-                        detail_updates["collar_tag_req"] = st.selectbox("Collar/Tag Required?", yn_opts, key=f"ctr_{cat_code}_{muni_id}")
-                        detail_updates["barking_restrictions"] = st.selectbox("Barking Restrictions?", yn_opts, key=f"br_{cat_code}_{muni_id}")
-                        detail_updates["exempt_barking"] = st.selectbox("Exempt from Barking?", yn_opts, key=f"eb_{cat_code}_{muni_id}")
+                        detail_updates["exempt_license_fees"] = st.selectbox("Exempt from License Fees?", yn_opts, index=_opt_idx(yn_opts, drow["exempt_license_fees"]), key=f"elf_{cat_code}_{muni_id}")
+                        detail_updates["collar_tag_req"] = st.selectbox("Collar/Tag Required?", yn_opts, index=_opt_idx(yn_opts, drow["collar_tag_req"]), key=f"ctr_{cat_code}_{muni_id}")
+                        detail_updates["barking_restrictions"] = st.selectbox("Barking Restrictions?", yn_opts, index=_opt_idx(yn_opts, drow["barking_restrictions"]), key=f"br_{cat_code}_{muni_id}")
+                        detail_updates["exempt_barking"] = st.selectbox("Exempt from Barking?", yn_opts, index=_opt_idx(yn_opts, drow["exempt_barking"]), key=f"eb_{cat_code}_{muni_id}")
                         detail_updates["dog_limit"] = st.text_input("Dog Limit", value=drow["dog_limit"] or "", key=f"dl_{cat_code}_{muni_id}")
 
                 elif cat_code == "TREES" and not detail_df.empty:
                     drow = detail_df.iloc[0]
-                    detail_updates["farm_exemption"] = st.selectbox("Farm Exemption?", ["", "Yes", "No", "NOT KNOWN"], key=f"tfe_{cat_code}_{muni_id}")
+                    detail_updates["farm_exemption"] = st.selectbox("Farm Exemption?", ["", "Yes", "No", "NOT KNOWN"], index=_opt_idx(["", "Yes", "No", "NOT KNOWN"], drow["farm_exemption"]), key=f"tfe_{cat_code}_{muni_id}")
                     detail_updates["bylaw_wording"] = st.text_area("Bylaw Wording", value=drow["bylaw_wording"] or "", height=80, key=f"tw_{cat_code}_{muni_id}")
                     detail_updates["farming_exception_wording"] = st.text_area("Farming Exception Wording", value=drow["farming_exception_wording"] or "", height=80, key=f"few_{cat_code}_{muni_id}")
 
@@ -418,12 +435,12 @@ if admin_mode == "✏️ Edit Municipality":
                     drow = detail_df.iloc[0]
                     ch1, ch2 = st.columns(2)
                     with ch1:
-                        detail_updates["can_keep"] = st.selectbox("Can Keep Chickens?", ["", "Yes", "No", "NOT KNOWN", "No explicit exemption found"], key=f"ck_{cat_code}_{muni_id}")
+                        detail_updates["can_keep"] = st.selectbox("Can Keep Chickens?", ["", "Yes", "No", "NOT KNOWN", "No explicit exemption found"], index=_opt_idx(["", "Yes", "No", "NOT KNOWN", "No explicit exemption found"], drow["can_keep"]), key=f"ck_{cat_code}_{muni_id}")
                         detail_updates["definition"] = st.text_area("Definition", value=drow["definition"] or "", height=60, key=f"cd_{cat_code}_{muni_id}")
                         detail_updates["chicken_limit"] = st.text_input("Chicken Limit", value=drow["chicken_limit"] or "", key=f"cl_{cat_code}_{muni_id}")
                     with ch2:
-                        detail_updates["roosters_allowed"] = st.selectbox("Roosters Allowed?", ["", "Yes", "No", "NOT KNOWN"], key=f"ra_{cat_code}_{muni_id}")
-                        detail_updates["licence_required"] = st.selectbox("Licence Required?", ["", "Yes", "No", "NOT KNOWN"], key=f"lr_{cat_code}_{muni_id}")
+                        detail_updates["roosters_allowed"] = st.selectbox("Roosters Allowed?", ["", "Yes", "No", "NOT KNOWN"], index=_opt_idx(["", "Yes", "No", "NOT KNOWN"], drow["roosters_allowed"]), key=f"ra_{cat_code}_{muni_id}")
+                        detail_updates["licence_required"] = st.selectbox("Licence Required?", ["", "Yes", "No", "NOT KNOWN"], index=_opt_idx(["", "Yes", "No", "NOT KNOWN"], drow["licence_required"]), key=f"lr_{cat_code}_{muni_id}")
                         detail_updates["welfare_requirements"] = st.text_area("Welfare Requirements", value=drow["welfare_requirements"] or "" if isinstance(drow["welfare_requirements"], str) else "", height=60, key=f"wr_{cat_code}_{muni_id}")
 
                 elif cat_code == "FENCES" and not detail_df.empty:
@@ -431,13 +448,13 @@ if admin_mode == "✏️ Edit Municipality":
                     yn_opts = ["", "YES", "NO", "N/A"]
                     f1, f2 = st.columns(2)
                     with f1:
-                        detail_updates["has_fence_bylaw"] = st.selectbox("Has Fence Bylaw?", yn_opts, key=f"hfb_{cat_code}_{muni_id}")
-                        detail_updates["applies_all_lands"] = st.selectbox("Applies to All Lands?", yn_opts, key=f"aal_{cat_code}_{muni_id}")
-                        detail_updates["replaces_lfa"] = st.selectbox("Replaces Line Fences Act?", yn_opts, key=f"rlf_{cat_code}_{muni_id}")
+                        detail_updates["has_fence_bylaw"] = st.selectbox("Has Fence Bylaw?", yn_opts, index=_opt_idx(yn_opts, drow["has_fence_bylaw"]), key=f"hfb_{cat_code}_{muni_id}")
+                        detail_updates["applies_all_lands"] = st.selectbox("Applies to All Lands?", yn_opts, index=_opt_idx(yn_opts, drow["applies_all_lands"]), key=f"aal_{cat_code}_{muni_id}")
+                        detail_updates["replaces_lfa"] = st.selectbox("Replaces Line Fences Act?", yn_opts, index=_opt_idx(yn_opts, drow["replaces_lfa"]), key=f"rlf_{cat_code}_{muni_id}")
                     with f2:
-                        detail_updates["security_fencing_exemption"] = st.selectbox("Security Fencing Exemption?", yn_opts, key=f"sfe2_{cat_code}_{muni_id}")
-                        detail_updates["electrified_fencing_exemption"] = st.selectbox("Electrified Fencing Exemption?", yn_opts, key=f"efe_{cat_code}_{muni_id}")
-                        detail_updates["equal_apportionment"] = st.selectbox("Equal Apportionment?", yn_opts, key=f"ea_{cat_code}_{muni_id}")
+                        detail_updates["security_fencing_exemption"] = st.selectbox("Security Fencing Exemption?", yn_opts, index=_opt_idx(yn_opts, drow["security_fencing_exemption"]), key=f"sfe2_{cat_code}_{muni_id}")
+                        detail_updates["electrified_fencing_exemption"] = st.selectbox("Electrified Fencing Exemption?", yn_opts, index=_opt_idx(yn_opts, drow["electrified_fencing_exemption"]), key=f"efe_{cat_code}_{muni_id}")
+                        detail_updates["equal_apportionment"] = st.selectbox("Equal Apportionment?", yn_opts, index=_opt_idx(yn_opts, drow["equal_apportionment"]), key=f"ea_{cat_code}_{muni_id}")
 
                 # Submit button
                 if st.form_submit_button(f"💾 Save {cat_label}"):
@@ -485,6 +502,8 @@ if admin_mode == "✏️ Edit Municipality":
                                 )
 
                         conn.commit()
+                        conn.commit()
+                        st.cache_data.clear()
                         st.success(f"✅ Saved {cat_label} for {selected_name}")
                         st.rerun()
 
@@ -581,6 +600,7 @@ elif admin_mode == "📤 Bulk Import":
                     else:
                         errors.append(f"Unknown field: {field}")
 
+                st.cache_data.clear()
                 st.success(f"✅ Applied {success} updates successfully.")
                 if errors:
                     st.warning(f"⚠️ {len(errors)} errors:")

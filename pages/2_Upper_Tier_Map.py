@@ -101,9 +101,14 @@ def load_signals_data():
     except Exception as e:
         return {}
 
-@st.cache_data
+@st.cache_data(ttl=300)
 def load_parquet(path):
     gdf = gpd.read_parquet(path)
+    try:
+        from build_maps_v2_rollup_metadata import overlay_live_upper
+        gdf = overlay_live_upper(gdf)
+    except Exception:
+        pass
     try:
         gdf = gdf.to_crs(4326)
     except Exception:
@@ -112,7 +117,7 @@ def load_parquet(path):
 
 
 def find_status_columns(df: pd.DataFrame) -> list[str]:
-    return sorted([c for c in df.columns if c.strip().endswith(" Status")])
+    return sorted([c for c in df.columns if c.strip().endswith(" Status") and c.strip() != "Municipal Status"])
 
 
 def pick_name_field(df: pd.DataFrame) -> str:
@@ -265,7 +270,7 @@ def add_expiry_signal_columns(gdf: gpd.GeoDataFrame, selected_label: str) -> gpd
     signal.loc[has_expiry & (days >= 0) & (days <= EXPIRY_SOON_DAYS)] = "Expiring soon"
 
     expects_expiry = bool(expiry_col)
-    has_bylaw = bylaw_name.ne("") | bylaw_link.ne("")
+    has_bylaw = bylaw_name.ne("")
     signal.loc[expects_expiry & ~has_expiry & has_bylaw] = "Expiry unknown"
 
     def _line_color_for_signal(sig: str) -> list[int]:

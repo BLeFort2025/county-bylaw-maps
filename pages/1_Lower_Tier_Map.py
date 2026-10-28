@@ -40,7 +40,7 @@ SIGNAL_PRIORITY = [
 
 def find_status_columns(df: pd.DataFrame) -> list[str]:
     """Return all columns that represent map-ready status fields."""
-    return sorted([c for c in df.columns if c.strip().endswith(" Status")])
+    return sorted([c for c in df.columns if c.strip().endswith(" Status") and c.strip() != "Municipal Status"])
 
 
 def pick_name_field(df: pd.DataFrame) -> str:
@@ -286,7 +286,7 @@ def add_expiry_signal_columns(gdf: gpd.GeoDataFrame, selected_label: str) -> gpd
 
     # If we expect expiry but don't have one, flag as "Expiry unknown" when a bylaw likely exists
     expects_expiry = bool(expiry_col)
-    has_bylaw = bylaw_name.ne("") | bylaw_link.ne("")
+    has_bylaw = bylaw_name.ne("")
     signal.loc[expects_expiry & ~has_expiry & has_bylaw] = "Expiry unknown"
 
     # Line colour to draw attention to signals (outline only; fill still reflects Status)
@@ -309,7 +309,7 @@ def add_expiry_signal_columns(gdf: gpd.GeoDataFrame, selected_label: str) -> gpd
     return gdf
 
 
-@st.cache_data
+@st.cache_data(ttl=300)
 def load_data(path: str):
     """Load, reproject and lightly simplify the lower-tier map data.
 
@@ -319,6 +319,11 @@ def load_data(path: str):
         name_field: chosen municipality name column
     """
     gdf = gpd.read_parquet(path)
+    try:
+        from build_maps_v2_rollup_metadata import overlay_live_lower
+        gdf = overlay_live_lower(gdf)
+    except Exception:
+        pass
 
     # Ensure WGS84 for pydeck
     try:
