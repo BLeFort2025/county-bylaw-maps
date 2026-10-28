@@ -49,6 +49,7 @@ def canon(x: str) -> str:
     s = re.sub(r"\s+", " ", s).strip()
     for p in ["CITY OF ","TOWN OF ","TOWNSHIP OF ","VILLAGE OF ",
               "MUNICIPALITY OF ","REGIONAL MUNICIPALITY OF ",
+              "DISTRICT MUNICIPALITY OF ","UNITED COUNTIES OF ",
               "REGION OF ","COUNTY OF ","DISTRICT OF "]:
         if s.startswith(p):
             s = s[len(p):].strip()
@@ -57,7 +58,7 @@ def canon(x: str) -> str:
         if s.endswith(suf):
             s = s[:-len(suf)].strip()
             break
-    s = re.sub(r"\b(CO\.?|CNTY)\b$", "", s).strip()
+    s = re.sub(r"\b(CO\.?|CNTY|R)\b$", "", s).strip()
     return re.sub(r"\s+"," ", s).strip()
 
 YES_SET     = {"YES","Y","TRUE","T","1","ALLOW","ALLOWED","PERMITTED","PERMIT","EXEMPT","EXEMPTION","EXCEPTION","PRESENT","EXISTS"}
@@ -158,6 +159,22 @@ def agg_min_date(values: pd.Series) -> str:
         return dt.min().date().isoformat()
     return ""
 
+# Metadata columns to carry into Upper Tier Parquet
+META_TEXT_COLS = [
+    "Bylaw Name Development Charges", "Link to DC Bylaw", "Date Bylaw Enacted (Regional)",
+    "Bylaw Name Stormwater", "Link to Storm Water bylaw", "Date Bylaw Enacted2 (Regional)",
+    "Bylaw Name Site Alteration", "Link to site alteration & fill bylaw", "Date Bylaw Enacted4 (Regional)",
+    "Bylaw Name LGD", "Livestock Guardian Dog bylaw link", "Date Bylaw Enacted 5 (Regional)",
+    "Bylaw Name Forest Conservation", "Tree Cutting Bylaw Link", "Date Bylaw Enacted 6 (Regional)",
+    "Bylaw Name Backyard Chicken", "Backyard Chicken Bylaw Link", "Date Bylaw Enacted 7 (Regional)",
+    "Bylaw Name Fence", "Link to Fence Bylaw", "Date Bylaw Enacted 8",
+]
+
+META_EXPIRY_COLS = [
+    "Expiry Date", "Expiry date2", "Expiry date 4", "Expiry Date 5",
+    "Expiry Date 6", "Expiry Date 7", "Expiry Date 8",
+]
+
 # ---------- MAIN ----------
 def main():
     print(f"Working Directory: {HERE}")
@@ -225,12 +242,37 @@ def main():
     tmp = pd.DataFrame(lower.drop(columns=lower.geometry.name))
     if LOWER_TO_UPPER_FIELD in tmp.columns:
         tmp["_UPPER_NAME"] = tmp[LOWER_TO_UPPER_FIELD].astype(str).map(canon)
-        upper_agg = tmp.groupby("_UPPER_NAME", dropna=False)[status_cols].agg(agg_status).reset_index()
+        agg_dict = {c: agg_status for c in status_cols if c in tmp.columns}
+        for c in META_TEXT_COLS:
+            if c in tmp.columns:
+                agg_dict[c] = agg_first_non_empty
+        for c in META_EXPIRY_COLS:
+            if c in tmp.columns:
+                agg_dict[c] = agg_min_date
+
+        upper_agg = tmp.groupby("_UPPER_NAME", dropna=False).agg(agg_dict).reset_index()
+
+        # Overlay direct Upper Tier municipality metadata (bylaw name, link, enacted, expiry)
+        # where the Upper Tier municipality itself has a recorded bylaw in df
+        if "Municipal Status" in df.columns:
+            up_df = df[df["Municipal Status"] == "Upper Tier"].drop_duplicates("_MUNI_NAME").set_index("_MUNI_NAME")
+            all_meta_cols = [c for c in (META_TEXT_COLS + META_EXPIRY_COLS) if c in upper_agg.columns and c in up_df.columns]
+            for idx, r in upper_agg.iterrows():
+                uname = r["_UPPER_NAME"]
+                if uname in up_df.index:
+                    up_row = up_df.loc[uname]
+                    for mc in all_meta_cols:
+                        val = strip_nbsp_and_space(up_row.get(mc, ""))
+                        if val and val.lower() not in ("see local municipalities", "(no bylaw)", "(no fence bylaw)"):
+                            upper_agg.at[idx, mc] = val
+
         g_up = gpd.read_file(UPPER_GEO)
         g_up["_UPPER_NAME"] = g_up[UPPER_NAME_FIELD].astype(str).map(canon)
         upper = g_up.merge(upper_agg, on="_UPPER_NAME", how="left")
         for c in status_cols:
             if c in upper.columns: upper[c] = upper[c].fillna("NOT KNOWN")
+        for c in (META_TEXT_COLS + META_EXPIRY_COLS):
+            if c in upper.columns: upper[c] = upper[c].fillna("")
         upper.to_parquet(UPPER_PARQUET, index=False)
         print(f"Wrote {UPPER_PARQUET}")
 

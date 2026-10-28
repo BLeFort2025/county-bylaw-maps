@@ -34,17 +34,49 @@ sys.path.append(ROOT_DIR)
 from shared_config import (
     KEYWORD_CONFIG, extract_snippet, extract_readable_snippet,
     CUSTOM_KEYWORD_PACKS, REGION_MAPPING, get_region,
+    apply_negative_keywords, is_valid_meeting_document, classify_meeting_doc,
 )
 from db_utils import get_connection
 
 # --- Page Config ---
 st.set_page_config(
-    page_title="Intelligence Scanner",
+    page_title="Municipal Intelligence Scanner",
     page_icon="🔎",
     layout="wide"
 )
 
-st.title("🔎 Intelligence Scanner")
+# ── Standalone / Isolated View Mode ──
+# When accessed with ?standalone=true or ?isolated=true in the URL,
+# hide the multi-page sidebar navigation to isolate just the scanner.
+is_standalone = False
+if hasattr(st, "query_params"):
+    qp_val = st.query_params.get("standalone", "") or st.query_params.get("isolated", "")
+    if str(qp_val).lower() in ["true", "1", "yes"]:
+        is_standalone = True
+
+if is_standalone:
+    st.markdown("""
+        <style>
+            [data-testid="stSidebar"] {display: none !important;}
+            [data-testid="collapsedControl"] {display: none !important;}
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            .block-container {padding-top: 2rem !important;}
+        </style>
+    """, unsafe_allow_html=True)
+
+# ── Page Header ──
+hdr_col1, hdr_col2 = st.columns([3, 1])
+with hdr_col1:
+    st.title("🔎 Municipal Intelligence Scanner")
+with hdr_col2:
+    with st.popover("🔗 Share Scanner Link"):
+        st.markdown("**Direct Page Link:**")
+        st.code("https://county-bylaw-maps-8biajyvtg8hch97kkbhmpg.streamlit.app/Intelligence_Scanner", language="text")
+        st.markdown("**Isolated Standalone Link (Hides other pages):**")
+        st.code("https://county-bylaw-maps-8biajyvtg8hch97kkbhmpg.streamlit.app/Intelligence_Scanner?standalone=true", language="text")
+        st.caption("💡 *Anyone with the isolated link will only see the scanner interface.*")
+
 st.markdown("""
 This tool allows OFA members and policy experts to actively search municipal council agendas and minutes. 
 Use the **Live Scanner** to perform on-demand web searches for specific keywords, or use the **Historical Database** 
@@ -94,6 +126,20 @@ def load_cached_docs():
         return df
     return pd.DataFrame()
 
+def _to_excel_bytes(df, sheet_name="Scan Results"):
+    """Export DataFrame to a clean in-memory Excel (.xlsx) file with formatted column widths."""
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name=sheet_name)
+        worksheet = writer.sheets[sheet_name]
+        for col in worksheet.columns:
+            val_lens = [len(str(cell.value or '')) for cell in col]
+            max_len = max(val_lens) if val_lens else 10
+            col_letter = col[0].column_letter
+            worksheet.column_dimensions[col_letter].width = min(max(max_len + 3, 12), 65)
+    output.seek(0)
+    return output.getvalue()
+
 # --- Shared Scanner Constants ---
 
 HEADERS = {
@@ -121,6 +167,14 @@ def extract_text_from_pdf(pdf_bytes):
     except Exception as e:
         return f"[PDF Error: {e}]"
     return text
+
+
+def _is_recent_date(d, max_days=180):
+    """Check if a date is within max_days (default: 180 days / 6 months) from today."""
+    if d is None:
+        return True
+    today = datetime.date.today()
+    return (today - d).days <= max_days
 
 
 def _extract_date_from_text(text):
@@ -162,7 +216,7 @@ def _extract_date_from_text(text):
 
 
 def _find_recent_doc_links(listing_url, headers, max_links=4):
-    """Spider a listing page to find the most recent document links.
+    """Spider a listing page to find the most recent document links (within 180 days).
 
     Includes special handling for CivicWeb portals which organize
     documents in nested folder structures (filepro/documents/{id}).
@@ -201,17 +255,24 @@ def _find_recent_doc_links(listing_url, headers, max_links=4):
             has_doc_keyword = any(w in text.lower() for w in
                                  ["minute", "agenda", "council meeting", "regular meeting"])
 
-            # Skip self-referential loops
+            # Skip self-referential loops and calendar index pages
             is_self_loop = full_url.lower().rstrip("/") == listing_url.lower().rstrip("/")
-            if is_self_loop:
+            if is_self_loop or "meetingscalendarview.aspx" in full_url.lower() or "expanded=" in full_url.lower():
                 continue
 
             if (is_pdf or is_ashx or is_filestream or has_doc_keyword) and full_url not in seen_urls:
+                # ── Filter out static corporate strategic plans, master plans, etc. ──
+                if not is_valid_meeting_document(full_url, text):
+                    continue
+
                 date_hint = _extract_date_from_text(text + " " + full_url)
+                # ── 180-Day Recency Filter: discard old archives (e.g. from 2020) ──
+                if date_hint and not _is_recent_date(date_hint, max_days=180):
+                    continue
                 candidates.append((full_url, text[:80], date_hint))
                 seen_urls.add(full_url)
 
-        # Sort: dated links first (newest first), then undated
+        # Sort: dated links first (newest first within 180 days), then undated top links
         dated = [(u, t, d) for u, t, d in candidates if d is not None]
         undated = [(u, t, d) for u, t, d in candidates if d is None]
         dated.sort(key=lambda x: x[2], reverse=True)
@@ -224,7 +285,7 @@ def _find_recent_doc_links(listing_url, headers, max_links=4):
 
 
 def _spider_civicweb(base_url, soup, headers, max_links=4):
-    """Navigate CivicWeb filepro folder hierarchy to find recent documents."""
+    """Navigate CivicWeb filepro folder hierarchy to find recent documents (within 180 days)."""
     try:
         links = soup.find_all("a", href=True)
 
@@ -233,7 +294,7 @@ def _spider_civicweb(base_url, soup, headers, max_links=4):
             href = link["href"]
             text = link.get_text().strip().lower()
             full = urllib.parse.urljoin(base_url, href)
-            if "filepro/documents" in href and ("minute" in text or "agenda" in text):
+            if "filepro/documents" in href and ("minute" in text or "agenda" in text or "council" in text):
                 doc_folder_url = full
                 break
 
@@ -259,10 +320,14 @@ def _spider_civicweb(base_url, soup, headers, max_links=4):
             full = urllib.parse.urljoin(doc_folder_url, href)
 
             if "filestream" in href.lower():
-                date_hint = _extract_date_from_text(text + " " + full)
-                files.append((full, text, date_hint))
-            elif "filepro/documents" in href and text.strip().isdigit() and len(text.strip()) == 4:
-                year_folders.append((full, int(text.strip())))
+                if is_valid_meeting_document(full, text):
+                    date_hint = _extract_date_from_text(text + " " + full)
+                    if not date_hint or _is_recent_date(date_hint, max_days=180):
+                        files.append((full, text, date_hint))
+            elif "filepro/documents" in href:
+                match = re.search(r'\b(202[4-9])\b', text)
+                if match:
+                    year_folders.append((full, int(match.group(1))))
 
         if year_folders and not files:
             year_folders.sort(key=lambda x: x[1], reverse=True)
@@ -275,8 +340,10 @@ def _spider_civicweb(base_url, soup, headers, max_links=4):
                     text = link.get_text().strip()
                     full = urllib.parse.urljoin(latest_year_url, href)
                     if "filestream" in href.lower():
-                        date_hint = _extract_date_from_text(text + " " + full)
-                        files.append((full, text, date_hint))
+                        if is_valid_meeting_document(full, text):
+                            date_hint = _extract_date_from_text(text + " " + full)
+                            if not date_hint or _is_recent_date(date_hint, max_days=180):
+                                files.append((full, text, date_hint))
 
         dated = [(u, t, d) for u, t, d in files if d is not None]
         undated = [(u, t, d) for u, t, d in files if d is None]
@@ -366,18 +433,39 @@ def _map_county(m_name, county_dict):
     return m_name
 
 
+def _deduplicate_matches(matches):
+    """Deduplicates matches for the same meeting and keyword, prioritizing Official Minutes over Agendas."""
+    if not matches:
+        return []
+    deduped = {}
+    for m in matches:
+        muni = str(m.get("Municipality", "")).upper()
+        kw = str(m.get("Keyword Found", "")).upper()
+        url = str(m.get("Source URL", ""))
+        doc_type = str(m.get("Document Type", ""))
+
+        # Extract meeting key (GUID for eScribe, or base document URL)
+        guid_match = re.search(r'Id=([a-f0-9\-]+)', url, re.IGNORECASE)
+        if guid_match:
+            m_key = (muni, guid_match.group(1).lower(), kw)
+        else:
+            base_u = url.split('?')[0].lower()
+            m_key = (muni, base_u, kw)
+
+        if m_key not in deduped:
+            deduped[m_key] = m
+        else:
+            # If current is Official Minutes and existing is Agenda, upgrade to Official Minutes
+            if "Official Minutes" in doc_type and "Official Minutes" not in deduped[m_key].get("Document Type", ""):
+                deduped[m_key] = m
+    return list(deduped.values())
+
+
 # ──────────────────────────────────────────────────────────────────
 # Core scan function — scans ONE municipality for a LIST of keywords
 # ──────────────────────────────────────────────────────────────────
 def _scan_single_muni(row, keywords, negative_keywords=None):
-    """Scan a single municipality's recent documents for multiple keywords.
-
-    This is the function submitted to the thread pool. It:
-      1. Spiders the listing page for up to 3 recent documents
-      2. Downloads and extracts text from each document
-      3. Tests ALL keywords with regex word boundaries
-      4. Returns a dict with 'matches' (list) and 'stats' (document counts)
-    """
+    """Scan a single municipality's recent documents for multiple keywords."""
     name = row.get('municipality_name', 'Unknown')
     county = row.get('county', 'Unknown')
     region = row.get('region', 'Unknown')
@@ -387,26 +475,24 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
     listing_clean = str(listing_url).strip().rstrip("/") if listing_url and not pd.isna(listing_url) else ""
     fallback_clean = str(fallback_url).strip().rstrip("/") if fallback_url and not pd.isna(fallback_url) else ""
 
-    # Track document-level statistics for this municipality
     stats = {
-        "docs_found": 0,       # URLs discovered by spidering
-        "docs_scanned": 0,     # Documents successfully read
-        "pdfs_read": 0,        # PDF documents read
-        "html_read": 0,        # HTML documents read
-        "no_portal": False,    # True if no listing URL or no docs found
+        "docs_found": 0,
+        "docs_scanned": 0,
+        "pdfs_read": 0,
+        "html_read": 0,
+        "no_portal": False,
+        "found_live_docs": False,
     }
 
     urls_to_scan = []
     found_real_docs = False
 
     try:
-        # Spider the listing page
         if listing_clean:
             urls_to_scan = _find_recent_doc_links(listing_clean, HEADERS, max_links=3)
             if urls_to_scan:
                 found_real_docs = True
 
-        # Fallback if spidering fails
         if not urls_to_scan and fallback_clean:
             urls_to_scan = [fallback_clean]
 
@@ -415,6 +501,7 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
             return {"matches": [], "stats": stats}
 
         stats["docs_found"] = len(urls_to_scan)
+        stats["found_live_docs"] = found_real_docs
 
         matches = []
         for url in urls_to_scan:
@@ -422,6 +509,10 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
 
             # Skip HTML portal/listing pages to avoid false positives from menus
             if not is_pdf and not found_real_docs:
+                continue
+
+            # Validate that this is genuine meeting content and not static master/strategic plan
+            if not is_valid_meeting_document(url, text_content):
                 continue
 
             # Only count as "scanned" if we got meaningful text content
@@ -433,10 +524,7 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
                     stats["html_read"] += 1
 
             if negative_keywords:
-                for n_kw in negative_keywords:
-                    if n_kw.strip():
-                        pattern = re.compile(re.escape(n_kw.strip()), re.IGNORECASE)
-                        text_content = pattern.sub(" [IGNORED] ", text_content)
+                text_content = apply_negative_keywords(text_content, negative_keywords)
 
             content_lower = text_content.lower()
 
@@ -445,8 +533,9 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
             if not combined_pattern.search(content_lower):
                 continue
 
+            doc_type = classify_meeting_doc(url, text_content)
+
             for keyword in keywords:
-                # Use REGEX word boundary to prevent false matches
                 pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
                 if re.search(pattern, content_lower):
                     snippet = extract_readable_snippet(text_content, keyword, window=300)
@@ -455,22 +544,16 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
                         "County / Upper Tier": county,
                         "Region": region,
                         "Date Scanned": datetime.date.today().isoformat(),
+                        "Document Type": doc_type,
                         "Keyword Found": keyword,
                         "Context Snippet": snippet,
                         "Source URL": url,
                         "Scan Method": "🟢 Live",
                     })
 
-        # De-duplicate across URLs
+        # De-duplicate with Minutes-first priority
         if matches:
-            unique_matches = []
-            seen = set()
-            for m in matches:
-                key = (m["Keyword Found"], m["Source URL"])
-                if key not in seen:
-                    unique_matches.append(m)
-                    seen.add(key)
-            return {"matches": unique_matches, "stats": stats}
+            return {"matches": _deduplicate_matches(matches), "stats": stats}
 
     except Exception:
         pass
@@ -478,35 +561,14 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
     return {"matches": [], "stats": stats}
 
 
-def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_scanned_munis, negative_keywords=None):
-    """Stage 2: Search the pre-fetched Selenium cache for keyword matches.
-
-    For any municipality that Stage 1 couldn't read (not in stage1_scanned_munis),
-    this function checks the cached document text for keyword matches using the
-    same regex word-boundary logic as Stage 1.
-
-    Args:
-        cached_df: DataFrame from cached_portal_docs.csv
-        registry_subset: The target municipalities for this scan
-        keywords: List of keywords to search for
-        stage1_scanned_munis: Set of municipality names that Stage 1 already attempted
-
-    Returns:
-        (list[dict], dict): Matches list and cache stats dict.
-    """
+def _scan_cached_docs(cached_df, registry_subset, keywords, negative_keywords=None):
+    """Stage 2: Search the pre-fetched Selenium cache for keyword matches."""
     if cached_df.empty:
         return [], {"munis_from_cache": 0, "cache_docs_searched": 0, "cache_hits": 0}
 
-    # Get target municipality names
     target_names = set(registry_subset["municipality_name"].str.upper().tolist())
-
-    # Filter cache to municipalities that are in our target set but NOT covered by Stage 1
     cache_muni_col = cached_df["municipality_name"].str.upper()
-    relevant_cache = cached_df[
-        cache_muni_col.isin(target_names) & ~cache_muni_col.isin(
-            {m.upper() for m in stage1_scanned_munis}
-        )
-    ]
+    relevant_cache = cached_df[cache_muni_col.isin(target_names)]
 
     if relevant_cache.empty:
         return [], {"munis_from_cache": 0, "cache_docs_searched": 0, "cache_hits": 0}
@@ -522,11 +584,17 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_scanned_munis
         if not doc_text or len(doc_text.strip()) < 50:
             continue
 
+        # ── 180-Day Recency Filter on Cached Docs ──
+        doc_date = _extract_date_from_text(doc_text[:500] + " " + doc_url)
+        if doc_date and not _is_recent_date(doc_date, max_days=180):
+            continue
+
+        # Validate genuine meeting content
+        if not is_valid_meeting_document(doc_url, doc_text):
+            continue
+
         if negative_keywords:
-            for n_kw in negative_keywords:
-                if n_kw.strip():
-                    pattern = re.compile(re.escape(n_kw.strip()), re.IGNORECASE)
-                    doc_text = pattern.sub(" [IGNORED] ", doc_text)
+            doc_text = apply_negative_keywords(doc_text, negative_keywords)
 
         munis_searched.add(muni_name)
         content_lower = doc_text.lower()
@@ -536,7 +604,6 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_scanned_munis
         if not combined_pattern.search(content_lower):
             continue
 
-        # Look up county/region from the registry
         reg_match = registry_subset[
             registry_subset["municipality_name"].str.upper() == muni_name.upper()
         ]
@@ -547,7 +614,9 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_scanned_munis
             county = first.get("county", "") if "county" in first.index else ""
             region = first.get("region", "") if "region" in first.index else ""
         if not region:
-            region = get_region(muni_name)
+            region = get_region(county, muni_name)
+
+        doc_type = classify_meeting_doc(doc_url, doc_text)
 
         for keyword in keywords:
             pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
@@ -558,22 +627,16 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, stage1_scanned_munis
                     "County / Upper Tier": county,
                     "Region": region,
                     "Date Scanned": datetime.date.today().isoformat(),
+                    "Document Type": doc_type,
                     "Keyword Found": keyword,
                     "Context Snippet": snippet,
                     "Source URL": doc_url,
                     "Scan Method": "🟡 Cached",
                 })
 
-    # De-duplicate
+    # De-duplicate with Minutes-first priority
     if matches:
-        unique = []
-        seen = set()
-        for m in matches:
-            key = (m["Keyword Found"], m["Source URL"])
-            if key not in seen:
-                unique.append(m)
-                seen.add(key)
-        matches = unique
+        matches = _deduplicate_matches(matches)
 
     stats = {
         "munis_from_cache": len(munis_searched),
@@ -631,7 +694,6 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None):
             future = executor.submit(_scan_single_muni, row, keywords, negative_keywords)
             future_to_name[future] = row.get('municipality_name', 'Unknown')
 
-        stage1_with_docs = set()
         for future in as_completed(future_to_name):
             completed += 1
             muni_name = future_to_name[future]
@@ -655,7 +717,6 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None):
                         scan_stats["munis_no_portal"] += 1
                     elif muni_stats.get("docs_scanned", 0) > 0:
                         scan_stats["munis_with_docs"] += 1
-                        stage1_with_docs.add(muni_name)
 
                     # Collect keyword matches
                     res_list = result.get("matches", [])
@@ -699,23 +760,40 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None):
 
         cache_matches, cache_stats = _scan_cached_docs(
             cached_df, registry_subset, keywords,
-            stage1_with_docs, negative_keywords
+            negative_keywords
         )
 
         if cache_matches:
-            results.extend(cache_matches)
-            st.session_state["_scan_results_final"] = results
+            existing_keys = {(r["Municipality"].upper(), r["Keyword Found"].upper()) for r in results}
             for cm in cache_matches:
-                hit_container.info(f"🟡 **CACHED HIT:** {cm['Municipality']} — *{cm['Keyword Found']}*")
+                key = (cm["Municipality"].upper(), cm["Keyword Found"].upper())
+                if key not in existing_keys:
+                    results.append(cm)
+                    hit_container.info(f"🟡 **CACHED HIT:** {cm['Municipality']} — *{cm['Keyword Found']}*")
+                    existing_keys.add(key)
+            st.session_state["_scan_results_final"] = results
 
         status_text.text(
             f"✅ Scan complete — {total} live + {cache_stats['munis_from_cache']} cached municipalities searched.{error_note}"
         )
 
+    # Final meeting-level deduplication across Stage 1 and Stage 2
+    results = _deduplicate_matches(results)
+    st.session_state["_scan_results_final"] = results
+
     scan_stats["cache_stats"] = cache_stats
     st.session_state["_scan_stats"] = scan_stats
 
-    return pd.DataFrame(results), scan_stats
+    res_df = pd.DataFrame(results)
+    if not res_df.empty and "Document Type" in res_df.columns:
+        cols_order = [
+            "Municipality", "County / Upper Tier", "Region", "Date Scanned",
+            "Document Type", "Keyword Found", "Context Snippet", "Source URL", "Scan Method"
+        ]
+        present_cols = [c for c in cols_order if c in res_df.columns]
+        res_df = res_df[present_cols]
+
+    return res_df, scan_stats
 
 
 # --- UI Layout ---
@@ -783,12 +861,10 @@ with tab_health:
 # TAB 1: LIVE TARGET SCANNER  (Fast Scanner Engine)
 # ──────────────────────────────────────────────────────────────────
 with tab_live:
-    st.header("Live Target Scanner")
+    st.header("🔎 Live Municipal Council Scanner")
     st.markdown(
-        "Perform a **concurrent, multi-keyword** scan of municipal council portals. "
-        "Select preset keyword packs and/or enter your own custom keywords. "
-        "The engine scans the **most recent documents** per municipality using a "
-        "concurrent thread pool with strict regex word-boundary matching to eliminate false positives."
+        "Search recent council meeting agendas and minutes across Ontario for any policy issue, keyword, or resolution. "
+        "The scanner reads the **most recent 2026 council documents** using word-boundary pattern matching."
     )
 
     # ── Crash recovery: offer partial results from interrupted scans ──
@@ -819,13 +895,27 @@ with tab_live:
     if registry_df.empty:
         st.warning("Portal Registry not found. Live scanning is unavailable.")
     else:
-        # ── Keyword Selection ──
-        st.subheader("🔑 Keywords")
+        # ── Keyword Selection Header & Clear Button ──
+        kw_hdr1, kw_hdr2 = st.columns([3, 1])
+        with kw_hdr1:
+            st.subheader("🔑 Step 1: Choose Your Keywords")
+        with kw_hdr2:
+            if st.button("🧹 Clear All Keywords", help="Uncheck all preset packs and clear custom keyword text boxes", use_container_width=True):
+                for pack_name in CUSTOM_KEYWORD_PACKS.keys():
+                    st.session_state[f"pack_{pack_name}"] = False
+                st.session_state["custom_kw_input"] = ""
+                st.session_state["negative_kw_input"] = ""
+                st.session_state["_scan_results_df"] = None
+                st.session_state["_scan_stats_data"] = None
+                st.session_state["_scan_has_run"] = False
+                st.session_state["_scan_results_final"] = []
+                st.session_state["_scan_results_partial"] = []
+                st.rerun()
 
         kw_col1, kw_col2, kw_col3 = st.columns([1, 1, 1])
 
         with kw_col1:
-            st.markdown("**Preset Keyword Packs**")
+            st.markdown("**Preset Policy Packs**")
             selected_packs = []
             for pack_name, pack_keywords in CUSTOM_KEYWORD_PACKS.items():
                 if st.checkbox(
@@ -842,20 +932,22 @@ with tab_live:
                 placeholder="e.g.\nSolar Farm\nGreenhouses\nAgri-Tourism",
                 height=120,
                 label_visibility="collapsed",
+                key="custom_kw_input"
             )
-            st.caption("💡 *Click outside or Ctrl+Enter to register.*")
+            st.caption("💡 *Type words or phrases to search.*")
 
         with kw_col3:
-            st.markdown("**Negative Keywords (Exclude)**")
+            st.markdown("**Exclude Words (Negative Keywords)**")
             negative_kw_text = st.text_area(
                 "Enter negative keywords",
                 placeholder="e.g.\ngreenhouse gas\nghg",
                 height=120,
                 label_visibility="collapsed",
+                key="negative_kw_input"
             )
-            st.caption("💡 *Excludes hits triggered by these exact phrases.*")
+            st.caption("💡 *Excludes hits containing these exact phrases.*")
 
-        # Build the final keyword list
+        # Build positive keywords
         all_keywords = []
         for pack_name in selected_packs:
             all_keywords.extend(CUSTOM_KEYWORD_PACKS[pack_name])
@@ -863,9 +955,7 @@ with tab_live:
             custom_kws = [kw.strip() for kw in custom_kw_text.strip().split("\n") if kw.strip()]
             all_keywords.extend(custom_kws)
 
-        # De-duplicate (case-insensitive) while preserving order.
-        # Scanning is case-insensitive, so "Greenhouses" and "greenhouses"
-        # would produce identical results — we keep the first occurrence.
+        # De-duplicate positive keywords (case-insensitive)
         seen_kw = set()
         unique_keywords = []
         removed_dupes = []
@@ -876,11 +966,32 @@ with tab_live:
             else:
                 removed_dupes.append(kw)
 
-        if unique_keywords:
-            st.info(f"**{len(unique_keywords)} keyword(s) selected:** {', '.join(unique_keywords)}")
+        # Parse negative keywords (exclusions)
+        unique_negative_keywords = []
+        if negative_kw_text.strip():
+            seen_neg = set()
+            for kw in negative_kw_text.strip().split("\n"):
+                k_clean = kw.strip()
+                if k_clean and k_clean.lower() not in seen_neg:
+                    unique_negative_keywords.append(k_clean)
+                    seen_neg.add(k_clean.lower())
+
+        # ── Visual Confirmation of Registered Keywords & Exclusions ──
+        if unique_keywords or unique_negative_keywords:
+            if unique_keywords and unique_negative_keywords:
+                k_c1, k_c2 = st.columns(2)
+                with k_c1:
+                    st.info(f"🟢 **{len(unique_keywords)} Search Keyword(s) Registered:**\n\n" + ", ".join(f"`{k}`" for k in unique_keywords))
+                with k_c2:
+                    st.warning(f"🚫 **{len(unique_negative_keywords)} Exclude Phrase(s) Active:**\n\n" + ", ".join(f"`{k}`" for k in unique_negative_keywords))
+            elif unique_keywords:
+                st.info(f"🟢 **{len(unique_keywords)} Search Keyword(s) Registered:**\n\n" + ", ".join(f"`{k}`" for k in unique_keywords))
+            elif unique_negative_keywords:
+                st.warning(f"🚫 **{len(unique_negative_keywords)} Exclude Phrase(s) Active (Please select at least 1 search keyword):**\n\n" + ", ".join(f"`{k}`" for k in unique_negative_keywords))
+
             if removed_dupes:
                 st.caption(
-                    f"ℹ️ {len(removed_dupes)} duplicate(s) removed (matching is case-insensitive): "
+                    f"ℹ️ {len(removed_dupes)} duplicate search keyword(s) removed (matching is case-insensitive): "
                     f"*{', '.join(removed_dupes)}*"
                 )
 
@@ -898,7 +1009,7 @@ with tab_live:
         st.divider()
 
         # ── Municipality Selection ──
-        st.subheader("🏛️ Target Municipalities")
+        st.subheader("🏛️ Step 2: Choose Where to Search")
 
         scan_mode = st.radio(
             "Select scan scope:",
@@ -930,7 +1041,7 @@ with tab_live:
         st.divider()
 
         # ── Run Button ──
-        if st.button("🚀 Launch Scan", type="primary", use_container_width=True):
+        if st.button("🚀 Step 3: Launch Scan", type="primary", use_container_width=True):
             if not unique_keywords:
                 st.error("⚠️ Please select at least one keyword pack or enter a custom keyword.")
             elif not select_all and not selected_munis:
@@ -944,131 +1055,155 @@ with tab_live:
                 target_df['region'] = target_df.apply(
                     lambda row: get_region(row['county'], row['municipality_name']), axis=1
                 )
-
-                unique_negative_keywords = []
-                if negative_kw_text.strip():
-                    unique_negative_keywords = [kw.strip() for kw in negative_kw_text.strip().split("\n") if kw.strip()]
-
                 st.markdown(f"**Scanning {len(target_df)} municipalities for {len(unique_keywords)} keywords...**")
 
                 live_results, scan_stats = run_live_scan(target_df, unique_keywords, unique_negative_keywords)
 
-                # Extract cache stats
-                cache_stats = scan_stats.get("cache_stats", {})
-                munis_from_cache = cache_stats.get("munis_from_cache", 0)
-                cache_docs = cache_stats.get("cache_docs_searched", 0)
-                cache_hits = cache_stats.get("cache_hits", 0)
-                total_coverage = scan_stats["munis_with_docs"] + munis_from_cache
+                # Persist results in session state so they survive downloads and page reruns
+                st.session_state["_scan_results_df"] = live_results
+                st.session_state["_scan_stats_data"] = scan_stats
+                st.session_state["_scan_has_run"] = True
 
-                # ── Scan Coverage Report (always shown) ──
-                st.markdown("---")
-                st.subheader("📡 Scan Coverage Report")
+        # ── Persistent Results Display (Remains visible across downloads & filter changes) ──
+        if st.session_state.get("_scan_has_run") and st.session_state.get("_scan_results_df") is not None:
+            live_results = st.session_state["_scan_results_df"]
+            scan_stats = st.session_state.get("_scan_stats_data", {})
 
-                sc1, sc2, sc3, sc4, sc5, sc6 = st.columns(6)
-                sc1.metric("Municipalities Attempted", scan_stats["munis_attempted"])
-                sc2.metric("🟢 Live HTTP Scanned", scan_stats["munis_with_docs"])
-                sc3.metric("🟡 From Cached Data", munis_from_cache)
-                sc4.metric("Total Documents Read", scan_stats["total_docs_scanned"] + cache_docs)
-                sc5.metric("❌ Errors / Timeouts", scan_stats["munis_errored"])
-                sc6.metric("🚧 No Portal", scan_stats["munis_no_portal"])
+            # Extract cache stats
+            cache_stats = scan_stats.get("cache_stats", {})
+            munis_from_cache = cache_stats.get("munis_from_cache", 0)
+            cache_docs = cache_stats.get("cache_docs_searched", 0)
+            cache_hits = cache_stats.get("cache_hits", 0)
+            total_coverage = scan_stats.get("munis_with_docs", 0) + munis_from_cache
 
-                # Coverage percentage
-                coverage_pct = (
-                    round(total_coverage / scan_stats["munis_attempted"] * 100)
-                    if scan_stats["munis_attempted"] > 0 else 0
-                )
-                st.progress(min(coverage_pct / 100, 1.0))
-                st.caption(
-                    f"**{coverage_pct}% coverage** — "
-                    f"{scan_stats['munis_with_docs']} live + {munis_from_cache} cached = "
-                    f"{total_coverage} municipalities with searchable documents."
-                )
+            # ── Scan Coverage Report (always shown) ──
+            st.markdown("---")
+            st.subheader("📡 Scan Coverage Report")
 
-                # Cache freshness indicator
-                cached_df_info = load_cached_docs()
-                if not cached_df_info.empty and "fetch_date" in cached_df_info.columns:
-                    latest_fetch = cached_df_info["fetch_date"].max()
-                    st.caption(f"📅 Cached data last updated: **{latest_fetch}**")
-                elif munis_from_cache == 0:
-                    st.caption("📅 No cached data available — run `selenium_prefetch.py` locally to cover JS portals.")
+            sc1, sc2, sc3, sc4, sc5, sc6 = st.columns(6)
+            sc1.metric("Municipalities Attempted", scan_stats.get("munis_attempted", 0))
+            sc2.metric("🟢 Live HTTP Scanned", scan_stats.get("munis_with_docs", 0))
+            sc3.metric("🟡 From Cached Data", munis_from_cache)
+            sc4.metric("Total Documents Read", scan_stats.get("total_docs_scanned", 0) + cache_docs)
+            sc5.metric("❌ Errors / Timeouts", scan_stats.get("munis_errored", 0))
+            sc6.metric("🚧 No Portal", scan_stats.get("munis_no_portal", 0))
 
-                with st.expander("📊 Detailed scan breakdown", expanded=False):
-                    st.markdown(f"""
+            # Coverage percentage
+            attempted = scan_stats.get("munis_attempted", 0)
+            coverage_pct = round(total_coverage / attempted * 100) if attempted > 0 else 0
+            st.progress(min(coverage_pct / 100, 1.0))
+            st.caption(
+                f"**{coverage_pct}% coverage** — "
+                f"{scan_stats.get('munis_with_docs', 0)} live + {munis_from_cache} cached = "
+                f"{total_coverage} municipalities with searchable documents."
+            )
+
+            # Cache freshness indicator
+            cached_df_info = load_cached_docs()
+            if not cached_df_info.empty and "fetch_date" in cached_df_info.columns:
+                latest_fetch = cached_df_info["fetch_date"].max()
+                st.caption(f"📅 Cached data last updated: **{latest_fetch}**")
+            elif munis_from_cache == 0:
+                st.caption("📅 No cached data available — run `selenium_prefetch.py` locally to cover JS portals.")
+
+            with st.expander("📊 Detailed scan breakdown", expanded=False):
+                st.markdown(f"""
 | Metric | Count |
 |---|---|
-| Municipalities attempted | **{scan_stats['munis_attempted']}** |
+| Municipalities attempted | **{scan_stats.get('munis_attempted', 0)}** |
 | **Stage 1: Live HTTP** | |
-| — Municipalities with ≥1 doc read | **{scan_stats['munis_with_docs']}** |
-| — PDF documents read | **{scan_stats['total_pdfs_read']}** |
-| — HTML pages read | **{scan_stats['total_html_read']}** |
-| — Total docs scanned | **{scan_stats['total_docs_scanned']}** |
+| — Municipalities with ≥1 doc read | **{scan_stats.get('munis_with_docs', 0)}** |
+| — PDF documents read | **{scan_stats.get('total_pdfs_read', 0)}** |
+| — HTML pages read | **{scan_stats.get('total_html_read', 0)}** |
+| — Total docs scanned | **{scan_stats.get('total_docs_scanned', 0)}** |
 | **Stage 2: Cached Selenium** | |
 | — Municipalities from cache | **{munis_from_cache}** |
 | — Cached documents searched | **{cache_docs}** |
 | — Hits from cache | **{cache_hits}** |
 | **Errors** | |
-| — No portal / no docs | **{scan_stats['munis_no_portal']}** |
-| — Timed out / errored | **{scan_stats['munis_errored']}** |
-                    """)
+| — No portal / no docs | **{scan_stats.get('munis_no_portal', 0)}** |
+| — Timed out / errored | **{scan_stats.get('munis_errored', 0)}** |
+                """)
 
-                if live_results.empty:
-                    st.info("No matches found for the specified keywords in the selected municipalities.")
-                else:
-                    # ── Hit Metrics ──
-                    st.markdown("---")
-                    st.subheader("🎯 Keyword Hits")
-                    m1, m2, m3, m4 = st.columns(4)
-                    m1.metric("Total Hits", len(live_results))
-                    m2.metric("Unique Municipalities", live_results["Municipality"].nunique())
-                    m3.metric("Keywords Matched", live_results["Keyword Found"].nunique())
-                    m4.metric("Regions Covered", live_results["Region"].nunique())
+            if live_results.empty:
+                st.info("No matches found for the specified keywords in the selected municipalities.")
+            else:
+                # ── Hit Metrics ──
+                st.markdown("---")
+                st.subheader("🎯 Keyword Hits")
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("Total Hits", len(live_results))
+                m2.metric("Unique Municipalities", live_results["Municipality"].nunique())
+                m3.metric("Keywords Matched", live_results["Keyword Found"].nunique())
+                m4.metric("Regions Covered", live_results["Region"].nunique())
 
-                    # ── Region filter for results ──
-                    regions_found = sorted(live_results["Region"].unique().tolist())
-                    if len(regions_found) > 1:
-                        region_filter = st.multiselect(
-                            "Filter results by Region",
-                            options=regions_found,
-                            default=regions_found,
-                            key="result_region_filter"
-                        )
-                        display_results = live_results[live_results["Region"].isin(region_filter)]
-                    else:
-                        display_results = live_results
-
-                    # ── Results Table ──
-                    col_config = {
-                        "Source URL": st.column_config.LinkColumn(
-                            "Source URL",
-                            display_text="🔗 Open Document"
-                        ),
-                        "Context Snippet": st.column_config.TextColumn(
-                            "Context Snippet",
-                            width="large"
-                        ),
-                    }
-                    # Only add Scan Method column config if column exists
-                    if "Scan Method" in display_results.columns:
-                        col_config["Scan Method"] = st.column_config.TextColumn(
-                            "Source", width="small"
-                        )
-
-                    st.dataframe(
-                        display_results,
-                        use_container_width=True,
-                        hide_index=True,
-                        column_config=col_config,
+                # ── Region filter for results ──
+                regions_found = sorted(live_results["Region"].unique().tolist())
+                if len(regions_found) > 1:
+                    region_filter = st.multiselect(
+                        "Filter results by Region",
+                        options=regions_found,
+                        default=regions_found,
+                        key="result_region_filter"
                     )
+                    display_results = live_results[live_results["Region"].isin(region_filter)]
+                else:
+                    display_results = live_results
 
-                    # ── CSV Download ──
-                    csv = live_results.to_csv(index=False).encode('utf-8')
+                # ── Prominent Download Toolbar ──
+                d_col1, d_col2 = st.columns(2)
+                excel_data = _to_excel_bytes(live_results, sheet_name="Scan Results")
+                csv_data = live_results.to_csv(index=False).encode('utf-8')
+                scan_date = datetime.date.today().isoformat()
+
+                with d_col1:
                     st.download_button(
-                        label="📥 Download Full Scan Report (CSV)",
-                        data=csv,
-                        file_name=f"multi_keyword_scan_{datetime.date.today().isoformat()}.csv",
+                        label="📊 Download Excel Spreadsheet (.xlsx)",
+                        data=excel_data,
+                        file_name=f"municipal_scan_results_{scan_date}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        type="primary",
+                        use_container_width=True,
+                        key="dl_excel_top"
+                    )
+                with d_col2:
+                    st.download_button(
+                        label="📄 Download CSV File (.csv)",
+                        data=csv_data,
+                        file_name=f"municipal_scan_results_{scan_date}.csv",
                         mime="text/csv",
                         use_container_width=True,
+                        key="dl_csv_top"
                     )
+
+                # ── Results Table ──
+                col_config = {
+                    "Source URL": st.column_config.LinkColumn(
+                        "Source URL",
+                        display_text="🔗 Open Document"
+                    ),
+                    "Document Type": st.column_config.TextColumn(
+                        "Document Type & Status",
+                        width="medium",
+                        help="Indicates whether this is confirmed post-meeting Official Minutes or an Agenda (where minutes may be pending approval)."
+                    ),
+                    "Context Snippet": st.column_config.TextColumn(
+                        "Context Snippet",
+                        width="large"
+                    ),
+                }
+                # Only add Scan Method column config if column exists
+                if "Scan Method" in display_results.columns:
+                    col_config["Scan Method"] = st.column_config.TextColumn(
+                        "Source", width="small"
+                    )
+
+                st.dataframe(
+                    display_results,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config=col_config,
+                )
 
 # ──────────────────────────────────────────────────────────────────
 # TAB 2: Historical Intelligence Database
@@ -1159,13 +1294,29 @@ with tab_history:
         )
         
         if not filtered_df.empty:
+            hd_col1, hd_col2 = st.columns(2)
+            excel_hist = _to_excel_bytes(filtered_df, sheet_name="OFA Intelligence")
             csv_hist = filtered_df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="Download Formatted Database Report (CSV)",
-                data=csv_hist,
-                file_name=f"ofa_bylaw_intelligence_{datetime.date.today().isoformat()}.csv",
-                mime="text/csv"
-            )
+            hist_date = datetime.date.today().isoformat()
+            with hd_col1:
+                st.download_button(
+                    label="📊 Download Excel Spreadsheet (.xlsx)",
+                    data=excel_hist,
+                    file_name=f"ofa_bylaw_intelligence_{hist_date}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    type="primary",
+                    use_container_width=True,
+                    key="dl_hist_excel"
+                )
+            with hd_col2:
+                st.download_button(
+                    label="📄 Download CSV File (.csv)",
+                    data=csv_hist,
+                    file_name=f"ofa_bylaw_intelligence_{hist_date}.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                    key="dl_hist_csv"
+                )
 
 # ──────────────────────────────────────────────────────────────────
 # Instructions / User Guide
@@ -1173,24 +1324,46 @@ with tab_history:
 st.divider()
 
 st.markdown("""
-## 📖 Guide to the Intelligence Scanner
+## 📖 How to Use the Intelligence Scanner
 
-Welcome to the **Intelligence Scanner**! This tool is your early-warning system to see exactly what local municipal councils are talking about—before it becomes a finalized bylaw. 
+The **Intelligence Scanner** is your early-warning tool for municipal council discussions across Ontario. It reads through recent council meeting agendas and minutes to find where specific topics, bylaws, or policy issues are being debated.
 
-Because we track over 400 municipalities, hunting through hundreds of pages of council minutes is exhausting. This tool does the reading for you.
+---
 
-### Tab 1: Live Target Scanner (The "Search Party")
-Use this tab when you hear a rumor about a **new or specific issue** popping up in a few municipalities and you want to investigate it *right now*. 
-1. **Select your targets:** Choose one or a handful of municipalities you want to investigate.
-2. **Type your keyword:** Type the exact phrase you are looking for (like `"Solar Storage"`, `"Eminent Domain"`, or a specific road name).
-3. **Run the scan:** The system will rush out to those local websites, download their most recent council minutes, and quickly "speed read" them looking for your exact word. 
-4. **Read the snippet:** If it finds your word, it will show you a small "snippet" of text so you can see exactly how it's being discussed along with a link to the original document.
+### 🚀 3 Simple Steps to Run a Scan
 
-### Tab 2: Historical Intelligence Database (The "Library")
-Use this tab when you want a broad, immediate overview of the **7 official OFA bylaw categories** (like Development Charges, Stormwater Fees, or Backyard Chickens) across the whole province.
-1. Every week, a master automated system quietly reads thousands of documents looking for official OFA agricultural bylaws and saves whatever it finds in this "library."
-2. **Filter by County:** Select your county to instantly see every single official bylaw update that has hit council desks recently in your area. 
-3. **Filter by Issue:** Select issues like `"Site Alteration"` to see everyone in the province who is actively proposing new fill rules.
-4. **Search inside the snippets:** Use the text box to search for specific words (like `"fee"` or `"exemption"`) *inside* the evidence the automated scanner already saved. 
+1. **Step 1: Choose Your Keywords**
+   * **Preset Topic Packs:** Click any of the checkboxes (like **🚄 ALTO Rail**, **🚜 Fill & Site Alteration**, or **🏗️ Development Charges**) to load common policy terms automatically.
+   * **Custom Keywords:** Want to track a specific project or local topic? Type your words into the *Custom Keywords* box (one phrase per line, e.g. `battery storage`, `farm tax rebate`).
+   * **🧹 Clear Keywords:** Click the **Clear All Keywords** button anytime you want to wipe the slate clean and start a new search.
+
+2. **Step 2: Choose Where to Search**
+   * **Province-Wide (Recommended):** Searches across all 444+ Ontario municipal portals.
+   * **By Region / County:** Focus on specific counties (e.g. *Prescott & Russell*, *Hastings*, *Oxford County*).
+   * **Specific Municipalities:** Choose one or two specific towns to investigate.
+
+3. **Step 3: Click "Launch Scan" & View Results**
+   * Click the red **🚀 Step 3: Launch Scan** button.
+   * As the scanner reads recent 2026 council agendas, matches will appear immediately on your screen.
+
+---
+
+### 📊 How to Read Your Results & Download to Excel
+
+* **Context Snippet:** Shows the exact sentence and agenda item where your keyword was mentioned so you can see how it was debated.
+* **Source URL:** Click **🔗 Open Document** to open the actual council agenda or minutes PDF directly in your browser.
+* **Download to Excel:** Click the **📥 Download Full Scan Report (CSV)** button right below the results table to save the complete findings to your computer.
+
+---
+
+### 💡 Quick Tips & FAQ
+
+* **How recent are the council minutes?**
+  The scanner strictly reads the most recent council meeting packages (from the last 180 days) so you only see active **2026 council discussions**.
+* **What does "🟢 Live" vs "🟡 Cached" mean?**
+  * **🟢 Live:** The scanner connected directly to the municipality's website in real time during the scan.
+  * **🟡 Cached:** The scanner pulled from the pre-fetched meeting cache (used for complex JavaScript calendar portals like eScribe and CivicWeb).
+* **How do I avoid unrelated results?**
+  Use the **Exclude Words (Negative Keywords)** box! For example, typing `greenhouse gas` ensures that a search for `greenhouses` won't pull up climate change or energy reports.
 """)
 

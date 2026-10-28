@@ -38,7 +38,7 @@ scope_choice = st.radio(
     horizontal=True,
 )
 
-conn = get_connection(os.path.join(HERE, "bylaws.db"))
+conn = get_connection()
 
 scope_key = "provincial"
 scope_value = None

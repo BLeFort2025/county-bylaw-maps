@@ -150,7 +150,7 @@ META_BY_LABEL: dict[str, dict[str, str]] = {
     },
     # Site alteration
     "Farm Exemption for SA": {
-        "bylaw_name": "Bylaw Name Sute Alteration",
+        "bylaw_name": "Bylaw Name Site Alteration",
         "bylaw_link": "Link to site alteration & fill bylaw",
         "enacted": "Date Bylaw Enacted4 (Regional)",
         "expiry": "Expiry date 4",

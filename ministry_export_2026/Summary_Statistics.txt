@@ -1,0 +1,78 @@
+======================================================================
+  ONTARIO MUNICIPAL DC FARM EXEMPTION DATA
+  Prepared by the Ontario Federation of Agriculture
+  Generated: September 14, 2026
+======================================================================
+
+DELIVERABLE A: DC FARM BUILDING EXEMPTION SOURCE DATA
+--------------------------------------------------
+Total Ontario municipalities tracked: 444
+
+  Yes                 :  182  ( 41.0%)
+  No                  :   49  ( 11.0%)
+  Not Known           :    8  (  1.8%)
+  N/A                 :    3  (  0.7%)
+  No DC Bylaw         :  202  ( 45.5%)
+  Not Recorded        :    0  (  0.0%)
+
+  Farm exemption rate (Yes / [Yes + No]): 182/231 = 78.8%
+
+  Municipalities with active DC bylaws: 215
+  Municipalities without DC bylaws: 229
+
+  Note: The OFA's December 2025 submission cited approximately 72%.
+  The current verified figure of 78.8% reflects
+  ongoing data verification and corrections completed through
+  September 2026, including the statutory ground-truthing of
+  23 municipalities whose exemption status was confirmed via
+  direct review of enacted bylaw text.
+
+
+DELIVERABLE B: ON-FARM WORKER HOUSING DC TREATMENT
+--------------------------------------------------
+Total municipalities analyzed: 444
+
+  No DC Bylaw                             :  229  ( 51.6%)
+  Silent (Presumed Not Exempt)            :  153  ( 34.5%)
+  No Farm Exemption                       :   44  (  9.9%)
+  Exempt                                  :   12  (  2.7%)
+  Explicitly Excluded                     :    3  (  0.7%)
+  Unknown                                 :    1  (  0.2%)
+  Contradictory (Defeated by Residential Carveout):    1  (  0.2%)
+  N/A                                     :    1  (  0.2%)
+
+  KEY FINDING: Of 182 municipalities with farm building
+  DC exemptions, only 12 (6.6% of exempt municipalities)
+  explicitly extend that exemption to include on-farm worker
+  housing (bunkhouses, farm help quarters, seasonal labourer
+  accommodation).
+
+  3 municipalities explicitly EXCLUDE worker housing
+  from their farm building exemption.
+
+  153 municipalities use standard 'non-residential farm
+  building' language that would NOT cover worker housing because
+  worker housing contains residential occupancy.
+
+
+METHODOLOGY
+--------------------------------------------------
+The OFA Municipal Bylaw Database tracks all 444 Ontario
+municipalities across 7 bylaw categories. DC farm building
+exemption status is determined by direct review of enacted
+bylaw text (the operative exemption sections), not from
+summaries or secondary sources.
+
+Worker housing classification is based on text analysis of
+the recorded statutory wording in the database. Municipalities
+are classified as:
+  - 'Exempt': Operative bylaw text explicitly includes worker
+    housing (bunkhouses, farm help quarters, seasonal labourer
+    accommodation) in the DC exemption.
+  - 'Explicitly Excluded': Operative bylaw text specifically
+    carves out worker housing from the farm building exemption.
+  - 'Silent (Presumed Not Exempt)': Standard 'non-residential
+    farm building' language that does not address worker housing.
+    Under the Ontario Building Code definition, worker housing
+    is classified as residential occupancy and would not qualify
+    as a 'farm building' under this standard language.
