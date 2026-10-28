@@ -80,6 +80,19 @@ KEYWORD_CONFIG = {
 
 
 # ──────────────────────────────────────────────────────────────────
+# CORE OFA BYLAW CATEGORY PACKS (7 core categories tracked on maps)
+# ──────────────────────────────────────────────────────────────────
+OFA_BYLAW_CATEGORY_PACKS = {
+    "🏗️ Development Charges": KEYWORD_CONFIG["DC"],
+    "🌧️ Stormwater Charges": KEYWORD_CONFIG["STORMWATER"],
+    "🚜 Site Alteration & Fill": KEYWORD_CONFIG["SITE_ALT"],
+    "🌲 Tree Cutting & Forestry": KEYWORD_CONFIG["TREES"],
+    "🐔 Backyard Chickens": KEYWORD_CONFIG["CHICKENS"],
+    "🐕 Livestock Guardian Dogs": KEYWORD_CONFIG["LGD"],
+    "🚧 Fence Bylaws": KEYWORD_CONFIG["FENCES"],
+}
+
+# ──────────────────────────────────────────────────────────────────
 # CUSTOM KEYWORD PACKS  (used by live scanner & fast_ad_hoc_scanner)
 # Named presets that group related policy-watch keywords.
 # ──────────────────────────────────────────────────────────────────
@@ -152,6 +165,46 @@ def get_region(county, name):
     return "Unknown"
 
 
+def build_keyword_regex_str(keyword: str) -> str:
+    """Build a regex pattern string for a keyword that treats 'bylaw'/'by-law'/'by law' as interchangeable
+    and safely applies word boundaries only when the keyword starts/ends with a word character."""
+    kw = str(keyword or "").strip()
+    if not kw:
+        return r"(?!)"
+    raw_tokens = re.split(r"[\s\-]+", kw)
+    pattern_tokens = []
+    i = 0
+    while i < len(raw_tokens):
+        tok = raw_tokens[i].lower()
+        if tok in ("bylaw", "bylaws"):
+            pattern_tokens.append(r"by[-\s]?laws?")
+            i += 1
+        elif tok == "by" and (i + 1) < len(raw_tokens) and raw_tokens[i + 1].lower() in ("law", "laws"):
+            pattern_tokens.append(r"by[-\s]?laws?")
+            i += 2
+        else:
+            pattern_tokens.append(re.escape(raw_tokens[i]))
+            i += 1
+
+    core = r"[\s\-]+".join(pattern_tokens)
+    prefix = r"\b" if re.match(r"^\w", kw) else ""
+    suffix = r"\b" if re.search(r"\w$", kw) else ""
+    return f"{prefix}{core}{suffix}"
+
+
+def build_keyword_regex(keyword: str) -> re.Pattern:
+    """Compile a case-insensitive regex pattern for a single keyword."""
+    return re.compile(build_keyword_regex_str(keyword), re.IGNORECASE)
+
+
+def build_combined_keyword_regex(keywords: list[str]) -> re.Pattern:
+    """Compile a single combined fast-exit regex across all keywords."""
+    valid = [build_keyword_regex_str(k) for k in keywords if str(k or "").strip()]
+    if not valid:
+        return re.compile(r"(?!)")
+    return re.compile("|".join(f"(?:{p})" for p in valid), re.IGNORECASE)
+
+
 def extract_readable_snippet(text, keyword, window=250):
     """Extract a context snippet with visible keyword markers for CSV/UI output.
 
@@ -166,18 +219,24 @@ def extract_readable_snippet(text, keyword, window=250):
     text = re.sub(r'[\r\n\t]+', ' ', text)
     text = re.sub(r' {2,}', ' ', text)
 
-    idx = text.lower().find(keyword.lower())
-    if idx == -1:
-        return text[:window].strip()
+    kw_regex = build_keyword_regex(keyword)
+    m = kw_regex.search(text)
+    if m:
+        idx = m.start()
+        match_len = m.end() - m.start()
+    else:
+        idx = text.lower().find(keyword.lower())
+        match_len = len(keyword)
+        if idx == -1:
+            return text[:window].strip()
 
     start = max(0, idx - window)
-    end = min(len(text), idx + len(keyword) + window)
+    end = min(len(text), idx + match_len + window)
 
     snippet = text[start:end].strip()
 
-    # Inject an inline, highly visible marker around the keyword
-    pattern = re.compile(re.escape(keyword), re.IGNORECASE)
-    snippet = pattern.sub(f" [ ** {keyword.upper()} ** ] ", snippet)
+    # Inject an inline, highly visible marker around the matched phrase
+    snippet = kw_regex.sub(lambda match: f" [ ** {match.group(0).upper()} ** ] ", snippet)
 
     return f"... {snippet} ..."
 
@@ -186,9 +245,11 @@ def canon_name(x: str) -> str:
     """Canonical municipality name for consistent matching across data sources."""
     if x is None:
         return ""
-    s = str(x).replace("\u00A0", " ").strip().upper()
+    import unicodedata
+    s = str(x).replace("\u00A0", " ").strip()
+    s = unicodedata.normalize("NFKC", s).upper()
     s = s.replace("&", " AND ").replace("-", " ")
-    s = re.sub(r"[''`]", "", s)
+    s = re.sub(r"[’'`]", "", s)
     s = re.sub(r"[^A-Z0-9 /]", " ", s)
     s = s.replace("/", " ")
     s = re.sub(r"\s+", " ", s).strip()
@@ -199,6 +260,8 @@ def canon_name(x: str) -> str:
         "VILLAGE OF ",
         "MUNICIPALITY OF ",
         "REGIONAL MUNICIPALITY OF ",
+        "DISTRICT MUNICIPALITY OF ",
+        "UNITED COUNTIES OF ",
         "REGION OF ",
         "COUNTY OF ",
         "DISTRICT OF ",
@@ -219,18 +282,30 @@ def canon_name(x: str) -> str:
         if s.endswith(suf):
             s = s[: -len(suf)].strip()
             break
-    s = re.sub(r"\b(CO\.?|CNTY)\b$", "", s).strip()
-    return re.sub(r"\s+", " ", s).strip()
+    s = re.sub(r"\b(CO\.?|CNTY|TP|C|M|T|TV|VL|MU|R)\b$", "", s).strip()
+    s = re.sub(r"\s+", " ", s).strip()
+    aliases = {
+        "ESSEX T": "ESSEX",
+        "PERTH T": "PERTH",
+        "PETERBOROUGH C": "PETERBOROUGH",
+        "RENFREW T": "RENFREW",
+        "WATERLOO C": "WATERLOO",
+        "CHARLTON DACK": "CHARLTON AND DACK",
+        "MATTICE VAL C T": "MATTICE VAL COTE",
+        "THE SOUTH BRUCE PENINSULA": "SOUTH BRUCE PENINSULA",
+        "MACDONALD MEREDITH ET AL": "MACDONALD MEREDITH AND ABERDEEN ADDITIONAL",
+        "NORTHEASTERN MANITOULIN AND THE ISL": "NORTHEASTERN MANITOULIN AND THE ISLANDS",
+    }
+    return aliases.get(s, s)
 
 
 def check_keywords(text: str):
     """Returns (keyword, category) for the first match, or (None, None)."""
     if not text:
         return None, None
-    text_lower = text.lower()
     for cat, phrases in KEYWORD_CONFIG.items():
         for p in phrases:
-            if p.lower() in text_lower:
+            if build_keyword_regex(p).search(text):
                 return p, cat
     return None, None
 
