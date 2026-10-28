@@ -165,11 +165,11 @@ def scan_municipality(row, cached_munis_upper):
         urls_to_scan = _find_recent_doc_links(listing_url, max_links=4)
         if urls_to_scan:
             found_real_docs = True
-    if not urls_to_scan and fallback_url and fallback_url.rstrip("/") != listing_url.rstrip("/"):
+    if not urls_to_scan and fallback_url:
         urls_to_scan = [fallback_url]
-        found_real_docs = True
-    elif not urls_to_scan and fallback_url:
-        urls_to_scan = [fallback_url]
+        fb_low = fallback_url.lower()
+        if any(k in fb_low for k in (".pdf", "filestream", "electronicfile", "meeting.aspx", "meetinginformation.aspx", "agenda=", "postminutes")):
+            found_real_docs = True
 
     found_candidates = []
     seen_cats = set()
@@ -195,8 +195,8 @@ def scan_municipality(row, cached_munis_upper):
                     coverage['status'] = 'pdf_skipped_no_lib'
                     continue
             else:
-                is_meeting_html = any(k in url_low for k in ("meeting.aspx", "meetinginformation.aspx", "agenda=", "postminutes"))
-                if not found_real_docs and not is_meeting_html:
+                is_meeting_html = any(k in url_low for k in ("meeting.aspx", "meetinginformation.aspx", "agenda=", "postminutes")) or (extract_date_from_text(url_low) is not None)
+                if not is_meeting_html:
                     continue
                 soup = BeautifulSoup(response.text, "html.parser")
                 for tag in soup(["script", "style", "nav", "header", "footer"]):
@@ -298,11 +298,13 @@ def main():
     cov_path = os.path.join(OUTPUT_DIR, f"coverage_report_{today_str}.csv")
     pd.DataFrame(coverage_log).to_csv(cov_path, index=False)
 
+    cand_path = os.path.join(OUTPUT_DIR, f"candidates_minutes_{today_str}.csv")
     if candidates:
-        cand_path = os.path.join(OUTPUT_DIR, f"candidates_minutes_{today_str}.csv")
         pd.DataFrame(candidates).to_csv(cand_path, index=False)
         print(f"\nSUCCESS: Found {len(candidates)} candidate hits.")
     else:
+        if os.path.exists(cand_path):
+            os.remove(cand_path)
         print("\nScan complete. No keyword hits found in Stage 1.")
 
 
