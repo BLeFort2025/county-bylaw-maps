@@ -295,18 +295,29 @@ def canon_name(x: str) -> str:
         "THE SOUTH BRUCE PENINSULA": "SOUTH BRUCE PENINSULA",
         "MACDONALD MEREDITH ET AL": "MACDONALD MEREDITH AND ABERDEEN ADDITIONAL",
         "NORTHEASTERN MANITOULIN AND THE ISL": "NORTHEASTERN MANITOULIN AND THE ISLANDS",
+        "SUDBURY": "GREATER SUDBURY",
     }
     return aliases.get(s, s)
 
 
-def check_keywords(text: str):
-    """Returns (keyword, category) for the first match, or (None, None)."""
+def check_all_keywords(text: str) -> list[tuple[str, str]]:
+    """Returns a list of (keyword, category) for every OFA category matched in text."""
     if not text:
-        return None, None
+        return []
+    hits = []
     for cat, phrases in KEYWORD_CONFIG.items():
         for p in phrases:
             if build_keyword_regex(p).search(text):
-                return p, cat
+                hits.append((p, cat))
+                break  # One representative trigger per category per document
+    return hits
+
+
+def check_keywords(text: str):
+    """Returns (keyword, category) for the first match, or (None, None)."""
+    hits = check_all_keywords(text)
+    if hits:
+        return hits[0]
     return None, None
 
 
@@ -317,16 +328,8 @@ def extract_snippet(raw_text: str, trigger_keyword: str, window: int = 200) -> s
     HTML boilerplate), this function:
       1. Strips HTML tags and script/style blocks
       2. Collapses whitespace
-      3. Locates the keyword match
+      3. Locates the keyword match (handling Bylaw / By-law variations)
       4. Returns ±window characters around it
-
-    Args:
-        raw_text:        The full page text (may contain HTML).
-        trigger_keyword: The keyword phrase that was matched.
-        window:          Number of characters on each side of the match.
-
-    Returns:
-        A clean, human-readable snippet (max ~2*window + len(keyword) chars).
     """
     if not raw_text or not trigger_keyword:
         return ""
@@ -347,14 +350,20 @@ def extract_snippet(raw_text: str, trigger_keyword: str, window: int = 200) -> s
     # --- Step 4: Collapse whitespace ---
     text = re.sub(r"\s+", " ", text).strip()
 
-    # --- Step 5: Find the keyword and extract a context window ---
-    idx = text.lower().find(trigger_keyword.lower())
-    if idx == -1:
-        # Keyword not found after stripping — fall back to first 400 clean chars
-        return text[:400].strip()
+    # --- Step 5: Find the keyword using build_keyword_regex ---
+    kw_regex = build_keyword_regex(trigger_keyword)
+    m = kw_regex.search(text)
+    if m:
+        idx = m.start()
+        match_len = m.end() - m.start()
+    else:
+        idx = text.lower().find(trigger_keyword.lower())
+        match_len = len(trigger_keyword)
+        if idx == -1:
+            return text[:400].strip()
 
     start = max(0, idx - window)
-    end = min(len(text), idx + len(trigger_keyword) + window)
+    end = min(len(text), idx + match_len + window)
 
     snippet = text[start:end].strip()
 
@@ -374,8 +383,75 @@ def extract_snippet(raw_text: str, trigger_keyword: str, window: int = 200) -> s
 
 
 # ──────────────────────────────────────────────────────────────────
-# NEGATIVE KEYWORD & DOCUMENT CLASSIFICATION HELPERS
+# DATE PARSING, NEGATIVE KEYWORD & DOCUMENT CLASSIFICATION HELPERS
 # ──────────────────────────────────────────────────────────────────
+
+def extract_date_from_text(text):
+    """Extract a realistic calendar date from link text or URL while ignoring GUIDs and bylaw numbers."""
+    import datetime
+    if not text:
+        return None
+    cleaned = re.sub(
+        r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
+        ' ',
+        str(text),
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.sub(r'[?&]id=[0-9a-f\-]+', ' ', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(
+        r'\b(?:by-?law|report|res(?:olution)?|no\.?|file|item)\s*#?\s*\d{4}[-/]\d{1,4}\b',
+        ' ',
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    months = {
+        'january': 1, 'february': 2, 'march': 3, 'april': 4,
+        'may': 5, 'june': 6, 'july': 7, 'august': 8,
+        'september': 9, 'october': 10, 'november': 11, 'december': 12,
+        'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'jun': 6,
+        'jul': 7, 'aug': 8, 'sep': 9, 'sept': 9, 'oct': 10, 'nov': 11, 'dec': 12,
+        'janvier': 1, 'février': 2, 'fevrier': 2, 'mars': 3, 'avril': 4,
+        'mai': 5, 'juin': 6, 'juillet': 7, 'août': 8, 'aout': 8,
+        'septembre': 9, 'octobre': 10, 'novembre': 11, 'décembre': 12, 'decembre': 12,
+    }
+    text_lower = cleaned.lower()
+    for m_name, m_num in months.items():
+        match = re.search(rf'\b{m_name}\.?\s+(\d{{1,2}})(?:st|nd|rd|th)?,?\s*(20[12]\d)\b', text_lower)
+        if match:
+            try:
+                return datetime.date(int(match.group(2)), m_num, int(match.group(1)))
+            except ValueError:
+                pass
+        match_dmy = re.search(rf'\b(\d{{1,2}})\s+{m_name}\.?,?\s*(20[12]\d)\b', text_lower)
+        if match_dmy:
+            try:
+                return datetime.date(int(match_dmy.group(2)), m_num, int(match_dmy.group(1)))
+            except ValueError:
+                pass
+
+    match = re.search(r'(?<![0-9a-f\-])(20[12]\d)[-/](0?[1-9]|1[0-2])[-/](0?[1-9]|[12]\d|3[01])(?![0-9a-f\-])', text_lower)
+    if match:
+        try:
+            return datetime.date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
+        except ValueError:
+            pass
+    return None
+
+
+def is_recent_date(d, max_days=180):
+    """Check if a date is within max_days (default: 180 days / 6 months) from today."""
+    import datetime
+    if d is None:
+        return True
+    today = datetime.date.today()
+    return (today - d).days <= max_days
+
+
+SOCIAL_JUNK_DOMAINS = (
+    "youtube.com", "youtu.be", "soundcloud.com", "facebook.com", "l.facebook.com",
+    "instagram.com", "twitter.com", "x.com", "linkedin.com", "baidu.com",
+)
+
 
 def apply_negative_keywords(text, negative_keywords):
     """Strips out negative keywords using whitespace/newline-resilient word boundaries.
@@ -395,8 +471,12 @@ def apply_negative_keywords(text, negative_keywords):
 
 
 def is_valid_meeting_document(url, text="", title=""):
-    """Validates that a document is genuine council business and not a static report/plan."""
-    combined = (str(url) + " " + str(text[:500]) + " " + str(title)).lower()
+    """Validates that a document is genuine council business and not a static report/plan or social media page."""
+    url_low = str(url or "").lower()
+    if any(dom in url_low for dom in SOCIAL_JUNK_DOMAINS):
+        return False
+
+    combined = (url_low + " " + str(text[:500]) + " " + str(title)).lower()
     
     # Reject static corporate plans, annual reports, master plans, etc.
     junk_patterns = [
@@ -406,7 +486,8 @@ def is_valid_meeting_document(url, text="", title=""):
         "budget-book", "budget_book", "budget book",
         "official-plan", "official_plan", "official plan",
         "accessibility-plan", "recreation-master", "culture-plan",
-        "community-improvement-plan-guidelines"
+        "community-improvement-plan-guidelines",
+        "watch-midland-council-meetings-live-on-youtube",
     ]
     if any(p in combined for p in junk_patterns):
         # Only allow if it is explicitly an agenda/minutes item

@@ -14,18 +14,27 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shared_config import (
     REGION_MAPPING, get_region, extract_readable_snippet,
-    CUSTOM_KEYWORD_PACKS, apply_negative_keywords, is_valid_meeting_document, classify_meeting_doc,
+    CUSTOM_KEYWORD_PACKS, OFA_BYLAW_CATEGORY_PACKS,
+    apply_negative_keywords, is_valid_meeting_document, classify_meeting_doc,
+    extract_date_from_text as _extract_date_from_text,
+    is_recent_date as _is_recent_date,
+    build_keyword_regex, build_combined_keyword_regex, canon_name,
 )
+
+PDF_SUPPORT = False
+try:
+    import fitz
+    PDF_SUPPORT = True
+except ImportError:
+    fitz = None
 
 try:
     import pdfplumber
     PDF_SUPPORT = True
 except ImportError:
-    PDF_SUPPORT = False
+    pdfplumber = None
 
 import sqlite3
-
-# REGION_MAPPING, get_region, extract_readable_snippet imported from shared_config
 
 from bs4 import BeautifulSoup
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -34,57 +43,42 @@ warnings.simplefilter("ignore")
 # Define paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REGISTRY_PATH = os.path.join(SCRIPT_DIR, "signals", "portal_registry.csv")
+CACHE_PATH = os.path.join(SCRIPT_DIR, "signals", "cached_portal_docs.csv")
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "signals")
 
-# extract_readable_snippet imported from shared_config
-
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 }
 
 # Flatten all keyword packs into a single list for the terminal batch scan
-CUSTOM_KEYWORDS = [kw for pack in CUSTOM_KEYWORD_PACKS.values() for kw in pack]
+CUSTOM_KEYWORDS = list(dict.fromkeys(
+    [kw for pack in OFA_BYLAW_CATEGORY_PACKS.values() for kw in pack] +
+    [kw for pack in CUSTOM_KEYWORD_PACKS.values() for kw in pack]
+))
 
 def extract_text_from_pdf(pdf_bytes):
-    text = ""
-    try:
-        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
-            for page in pdf.pages[:30]:  # Limit pages for speed
-                text += (page.extract_text() or "") + "\n"
-    except Exception as e:
-        return f"[PDF Error: {e}]"
-    return text
-
-def _is_recent_date(d, max_days=180):
-    """Check if a date is within max_days (default: 180 days / 6 months) from today."""
-    if d is None:
-        return True
-    today = datetime.date.today()
-    return (today - d).days <= max_days
-
-def _extract_date_from_text(text):
-    text = text.lower()
-    months = {
-        'january': 1, 'february': 2, 'march': 3, 'april': 4,
-        'may': 5, 'june': 6, 'july': 7, 'august': 8,
-        'september': 9, 'october': 10, 'november': 11, 'december': 12
-    }
-    for m_name, m_num in months.items():
-        match = re.search(rf'{m_name}\s+(\d{{1,2}}),?\s*(\d{{4}})', text)
-        if match:
-            try: return datetime.date(int(match.group(2)), m_num, int(match.group(1)))
-            except ValueError: pass
-
-    match = re.search(r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})', text)
-    if match:
-        try: return datetime.date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
-        except ValueError: pass
-
-    match = re.search(r'(\d{4})[-/](\d{1,2})', text)
-    if match:
-        try: return datetime.date(int(match.group(1)), int(match.group(2)), 1)
-        except ValueError: pass
-    return None
+    if not pdf_bytes or len(pdf_bytes) < 200:
+        return ""
+    if fitz is not None:
+        try:
+            text = ""
+            with fitz.open("pdf", pdf_bytes) as doc:
+                for page in doc[:30]:
+                    text += (page.get_text() or "") + "\n"
+            if text.strip():
+                return text
+        except Exception:
+            pass
+    if pdfplumber is not None:
+        try:
+            text = ""
+            with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+                for page in pdf.pages[:30]:
+                    text += (page.extract_text() or "") + "\n"
+            return text
+        except Exception:
+            return ""
+    return ""
 
 def _spider_civicweb(base_url, soup, headers, max_links=4):
     try:
@@ -234,20 +228,27 @@ def scan_single_muni(row):
         if not urls_to_scan:
             return None
 
+        combined_pattern = build_combined_keyword_regex(CUSTOM_KEYWORDS)
+        kw_patterns = [(kw, build_keyword_regex(kw)) for kw in CUSTOM_KEYWORDS]
+
         matches = []
         for url in urls_to_scan:
             text_content, is_pdf = _fetch_content_and_extract_text(url)
             
-            # Skip HTML portal/listing pages to avoid false positives from menus
-            if not is_pdf and not found_real_docs:
+            url_low = url.lower()
+            is_meeting_html = any(k in url_low for k in ("meeting.aspx", "meetinginformation.aspx", "agenda=", "postminutes"))
+            if not is_pdf and not found_real_docs and not is_meeting_html:
                 continue
 
-            content_lower = text_content.lower()
+            if not text_content or len(text_content.strip()) < 50:
+                continue
+            if not is_valid_meeting_document(url, text_content):
+                continue
+            if not combined_pattern.search(text_content):
+                continue
 
-            for keyword in CUSTOM_KEYWORDS:
-                # Use REGEX boundary to ensure we don't match "Halton" for "ALTO"
-                pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
-                if re.search(pattern, content_lower):
+            for keyword, kw_regex in kw_patterns:
+                if kw_regex.search(text_content):
                     snippet = extract_readable_snippet(text_content, keyword, window=300)
                     matches.append({
                         "Municipality": name,
@@ -259,7 +260,6 @@ def scan_single_muni(row):
                         "Source URL": url
                     })
         
-        # Unique the findings across all URLs to avoid duplicates of same document
         if matches:
             unique_matches = []
             seen = set()
@@ -276,7 +276,7 @@ def scan_single_muni(row):
     return None
 
 def main():
-    print(f"Starting fast concurrent scan for keywords: {CUSTOM_KEYWORDS}")
+    print(f"Starting fast concurrent scan for {len(CUSTOM_KEYWORDS)} keywords...")
     
     if not os.path.exists(REGISTRY_PATH):
         print(f"ERROR: Registry file not found at {REGISTRY_PATH}")
@@ -286,31 +286,45 @@ def main():
     
     # ── Map Counties from the Database ──
     db_path = os.path.join(SCRIPT_DIR, "bylaws.db")
-    county_dict = {}
+    county_dict = {
+        "BURK TMS FALLS": "Parry Sound",
+        "BURKS FALLS": "Parry Sound",
+        "CENTER WELLINGTON": "Wellington",
+        "CENTRE WELLINGTON": "Wellington",
+        "MACDONALD MEREDITH AND ABERDEEN ADDL": "Algoma",
+        "MACDONALD MEREDITH AND ABERDEEN ADDITIONAL": "Algoma",
+        "TARBUTT AND TARBUTT ADDITIONAL": "Algoma",
+        "TARBUTT": "Algoma",
+        "SUDBURY": "Greater Sudbury",
+        "DISTRICT OF SUDBURY": "Greater Sudbury",
+        "TIMISKAMING": "Timiskaming",
+        "DISTRICT OF TIMISKAMING": "Timiskaming",
+        "CHATHAM KENT": "Chatham-Kent",
+    }
     if os.path.exists(db_path):
         try:
             conn = sqlite3.connect(db_path)
-            # We match by standard uppercase name or the lookup_key prefix 
-            # to maximize matches with the registry's municipality_name
             db_df = pd.read_sql_query("SELECT name, geographic_area FROM municipalities", conn)
             for _, r in db_df.iterrows():
                 if pd.notna(r['name']) and pd.notna(r['geographic_area']):
                     c_name = str(r['name']).upper().strip()
-                    county_dict[c_name] = r['geographic_area']
+                    area = str(r['geographic_area']).strip()
+                    county_dict[c_name] = area
+                    county_dict[canon_name(c_name)] = area
             conn.close()
-        except: pass
+        except Exception:
+            pass
 
     def map_county(m_name):
         m_upper = str(m_name).upper().strip()
-        if m_upper in county_dict: return county_dict[m_upper]
-        
-        # Fuzzy match / cleaned match
-        clean_m = re.sub(r'\s+(TP|C|M)$', '', m_upper).strip()
-        if clean_m in county_dict: return county_dict[clean_m]
-        
-        for db_name, area in county_dict.items():
-            if clean_m in db_name or db_name in clean_m:
-                return area
+        if m_upper in county_dict:
+            return county_dict[m_upper]
+        clean_m = re.sub(r'\s+(TP|C|M|T|V)$', '', m_upper).strip()
+        if clean_m in county_dict:
+            return county_dict[clean_m]
+        c_muni = canon_name(clean_m)
+        if c_muni in county_dict:
+            return county_dict[c_muni]
         return m_name
         
     df['county'] = df['municipality_name'].apply(map_county)
@@ -334,6 +348,42 @@ def main():
                 muni_name = res_list[0]['Municipality']
                 found_kws = ", ".join(list(set([r['Keyword Found'] for r in res_list])))
                 print(f"\n[!] HIT FOUND: {muni_name} ({found_kws})\n")
+
+    # Stage 2: Also search cached_portal_docs.csv for municipalities with no live hits
+    if os.path.exists(CACHE_PATH):
+        try:
+            cdf = pd.read_csv(CACHE_PATH)
+            live_munis = {r["Municipality"].upper() for r in results}
+            combined_pattern = build_combined_keyword_regex(CUSTOM_KEYWORDS)
+            kw_patterns = [(kw, build_keyword_regex(kw)) for kw in CUSTOM_KEYWORDS]
+            muni_meta = {
+                str(r["municipality_name"]).upper(): (r["county"], r["region"])
+                for _, r in df.iterrows()
+            }
+            for _, crow in cdf.iterrows():
+                m_name = str(crow.get("municipality_name", "") or "").strip()
+                if not m_name or m_name.upper() in live_munis:
+                    continue
+                d_text = str(crow.get("doc_text", "") or "")
+                d_url = str(crow.get("doc_url", "") or "")
+                if len(d_text) < 50 or not is_valid_meeting_document(d_url, d_text):
+                    continue
+                if not combined_pattern.search(d_text):
+                    continue
+                cty, reg_name = muni_meta.get(m_name.upper(), ("Unknown", "Unknown"))
+                for keyword, kw_regex in kw_patterns:
+                    if kw_regex.search(d_text):
+                        results.append({
+                            "Municipality": m_name,
+                            "County / Upper Tier": cty,
+                            "Region": reg_name,
+                            "Date Scanned": datetime.date.today().isoformat(),
+                            "Keyword Found": keyword,
+                            "Context Snippet": extract_readable_snippet(d_text, keyword, window=300),
+                            "Source URL": d_url,
+                        })
+        except Exception:
+            pass
 
     if results:
         res_df = pd.DataFrame(results)

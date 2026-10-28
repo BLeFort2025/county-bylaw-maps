@@ -60,15 +60,79 @@ def setup_driver():
     return driver
 
 
+def _navigate_escribe(driver, soup, base_url):
+    """Navigate eScribe 2-tier calendar/category accordions to find the latest meeting URL."""
+    try:
+        seen = set()
+        council_cats = []
+        other_cats = []
+        for a in soup.find_all("a", href=True):
+            href = a["href"]
+            text = a.get_text().strip().lower()
+            if "meetingscalendarview.aspx" in href.lower() or "expanded=" in href.lower():
+                full = urllib.parse.urljoin(base_url, href)
+                if full not in seen:
+                    seen.add(full)
+                    if "regular" in text and "council" in text:
+                        council_cats.insert(0, full)
+                    elif "council" in text or "whole" in text:
+                        council_cats.append(full)
+                    else:
+                        other_cats.append(full)
+
+        target_cats = (council_cats + other_cats)[:2] if (council_cats + other_cats) else [base_url]
+        candidates = []
+        seen_guids = set()
+        for cat_url in target_cats:
+            if cat_url != base_url:
+                try:
+                    driver.get(cat_url)
+                    time.sleep(2.5)
+                    soup2 = BeautifulSoup(driver.page_source, "html.parser")
+                except Exception:
+                    continue
+            else:
+                soup2 = soup
+
+            for a in soup2.find_all("a", href=True):
+                href = a["href"]
+                text = a.get_text().strip()
+                if "meeting.aspx" in href.lower():
+                    guid_match = re.search(r"Id=([a-f0-9\-]+)", href, re.IGNORECASE)
+                    if guid_match:
+                        guid = guid_match.group(1).lower()
+                        if guid in seen_guids:
+                            continue
+                        seen_guids.add(guid)
+                        if "postminutes" in href.lower() or "minutes" in text.lower():
+                            full = urllib.parse.urljoin(cat_url, f"/Meeting.aspx?Id={guid}&Agenda=PostMinutes&lang=English")
+                        else:
+                            full = urllib.parse.urljoin(cat_url, f"/Meeting.aspx?Id={guid}&Agenda=Agenda&lang=English")
+                        d_hint = _extract_date(text + " " + full)
+                        if _is_recent_date(d_hint, max_days=180):
+                            candidates.append((full, text, d_hint))
+                            if len(candidates) >= 4:
+                                break
+            if len(candidates) >= 4:
+                break
+
+        if candidates:
+            return _pick_most_recent(candidates)
+    except Exception:
+        pass
+    return None
+
+
 def find_latest_document(driver, listing_url):
     """Universal document finder — works for any portal type.
 
     Uses Selenium to load the page (JS renders), then searches for
     the most recent PDF or document link. Tries multiple strategies:
+      0. eScribe 2-tier calendar/category navigation
       1. Direct PDF links on the page
-      2. Links with meeting/minutes keywords → follow → find PDF
+      2. Links with meeting/minutes keywords → follow → find PDF (or HTML meeting page)
       3. CivicWeb filepro folder navigation
-      4. eScribe meeting page navigation
+      4. Laserfiche WebLink folder navigation
     """
     try:
         driver.get(listing_url)
@@ -76,10 +140,15 @@ def find_latest_document(driver, listing_url):
 
         soup = BeautifulSoup(driver.page_source, "html.parser")
 
+        # ── Strategy 0: eScribe 2-tier navigation ──
+        if "escribe" in listing_url.lower():
+            esc_url = _navigate_escribe(driver, soup, listing_url)
+            if esc_url:
+                return esc_url
+
         # ── Strategy 1: Direct PDF links on the page ──
         pdf_links = _find_pdf_links(soup, listing_url)
         if pdf_links:
-            # Sort by date if possible, return the most recent
             best = _pick_most_recent(pdf_links)
             if best:
                 return best
@@ -94,6 +163,8 @@ def find_latest_document(driver, listing_url):
                 pdf_links = _find_pdf_links(meeting_soup, meeting_url)
                 if pdf_links:
                     return _pick_most_recent(pdf_links)
+                if "meeting.aspx" in meeting_url.lower():
+                    return meeting_url
             except Exception:
                 continue
 
@@ -107,11 +178,10 @@ def find_latest_document(driver, listing_url):
         iframes = soup.find_all("iframe")
         for iframe in iframes:
             src = iframe.get("src", "")
-            if src and "laserfiche" in src.lower() or "weblink" in src.lower():
+            if src and ("laserfiche" in src.lower() or "weblink" in src.lower()):
                 result = _navigate_laserfiche(driver, urllib.parse.urljoin(listing_url, src))
                 if result:
                     return result
-        # Also check if the URL itself is already Laserfiche
         if "weblink/browse.aspx" in listing_url.lower():
             result = _navigate_laserfiche(driver, listing_url)
             if result:
@@ -119,24 +189,23 @@ def find_latest_document(driver, listing_url):
 
         return None
 
-    except Exception as e:
-        # Silencing error print out so it doesn't clutter the Auto-Healing logs
+    except Exception:
         return None
 
 
-def _is_recent_date(d, max_days=180):
-    """Check if a date is within max_days (default: 180 days / 6 months) from today."""
-    if d is None:
-        return True
-    today = datetime.date.today()
-    return (today - d).days <= max_days
-
+from shared_config import (
+    extract_date_from_text as _extract_date,
+    is_recent_date as _is_recent_date,
+    SOCIAL_JUNK_DOMAINS,
+)
 
 JUNK_PATTERNS = [
     'form', 'permit', 'application', 'directory', 'conduct', 'boulevard',
     'gazette', 'investigator', 'guide', 'policy', 'schedule', 'fee-schedule',
     'complaint', 'code-of', 'procedural', 'agreement', 'delegation', 'rental',
-    'strategic-plan', 'budget', 'procurement', 'handbook'
+    'strategic-plan', 'budget', 'procurement', 'handbook',
+    'youtube.com', 'youtu.be', 'soundcloud.com', 'facebook.com', 'instagram.com',
+    'twitter.com', 'x.com', 'linkedin.com', 'baidu.com',
 ]
 
 MEETING_PATTERNS = [
@@ -348,52 +417,23 @@ def _navigate_laserfiche(driver, base_url):
             if doc_links:
                 # Convert DocView.aspx to ElectronicFile.aspx direct PDF link
                 selected = doc_links[0]
-                return selected.replace("DocView.aspx", "ElectronicFile.aspx").replace("docid=", "id=") # Some laserfiche use id= some docid=
-                # Actually ElectronicFile uses docid= but DocView uses id=, so let's do safe replace
-                
-                # Best way is to construct the new URL manually
                 parsed = urllib.parse.urlparse(selected)
                 query = urllib.parse.parse_qs(parsed.query)
-                doc_id = query.get("id", [""])[0]
+                doc_id = query.get("id", query.get("docid", [""]))[0]
                 repo = query.get("repo", [""])[0]
                 dbid = query.get("dbid", ["0"])[0]
-                
-                new_query = urllib.parse.urlencode({
-                    "docid": doc_id,
-                    "dbid": dbid,
-                    "repo": repo
-                })
-                # Construct path
-                new_path = parsed.path.replace("DocView.aspx", "ElectronicFile.aspx")
-                return urllib.parse.urlunparse((parsed.scheme, parsed.netloc, new_path, "", new_query, ""))
+                if doc_id:
+                    new_query = urllib.parse.urlencode({
+                        "docid": doc_id,
+                        "dbid": dbid,
+                        "repo": repo,
+                    })
+                    new_path = parsed.path.replace("DocView.aspx", "ElectronicFile.aspx")
+                    return urllib.parse.urlunparse((parsed.scheme, parsed.netloc, new_path, "", new_query, ""))
+                return selected.replace("DocView.aspx", "ElectronicFile.aspx")
                 
     except Exception as e:
         print(f" Laserfiche error: {e}")
-    return None
-
-
-def _extract_date(text):
-    """Try to extract a date from text for sorting by recency."""
-    text = text.lower()
-    months = {
-        'january': 1, 'february': 2, 'march': 3, 'april': 4,
-        'may': 5, 'june': 6, 'july': 7, 'august': 8,
-        'september': 9, 'october': 10, 'november': 11, 'december': 12
-    }
-    for m_name, m_num in months.items():
-        match = re.search(rf'{m_name}\s+(\d{{1,2}}),?\s*(\d{{4}})', text)
-        if match:
-            try:
-                return datetime.date(int(match.group(2)), m_num, int(match.group(1)))
-            except ValueError:
-                pass
-
-    match = re.search(r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})', text)
-    if match:
-        try:
-            return datetime.date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
-        except ValueError:
-            pass
     return None
 
 
@@ -475,6 +515,8 @@ def _ai_dom_reader_fallback(driver, base_url):
             # Ignore obvious junk to save tokens
             if text and not href.startswith("javascript:") and href != "#":
                 full_url = urllib.parse.urljoin(base_url, href)
+                if any(dom in full_url.lower() for dom in SOCIAL_JUNK_DOMAINS):
+                    continue
                 links.append({"text": text, "url": full_url})
                 
         if not links:
