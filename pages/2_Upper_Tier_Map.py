@@ -80,25 +80,64 @@ def canon_name(x: str) -> str:
 
 
 def load_signals_data():
-    """Loads signals.csv and returns a dict mapping {CanonName -> [list of signal dicts]}"""
-    sig_path = os.path.join(HERE, "signals", "signals.csv")
-    if not os.path.exists(sig_path):
-        return {}
+    """Loads signals from the database scanner_signals table and signals.csv (90-day window)."""
+    frames = []
+
+    # 1. Load from database scanner_signals table
     try:
-        df = pd.read_csv(sig_path)
+        conn = get_connection()
+        db_df = pd.read_sql_query(
+            """
+            SELECT m.name AS munid, s.signal_type, s.discovered_date,
+                   s.trigger_keyword, s.category, s.snippet,
+                   s.ai_summary, s.ai_confidence, s.evidence_url
+            FROM scanner_signals s
+            LEFT JOIN municipalities m ON m.id = s.municipality_id
+            """,
+            conn.conn,
+        )
+        conn.close()
+        if not db_df.empty:
+            frames.append(db_df)
+    except Exception:
+        pass
+
+    # 2. Load from signals/signals.csv fallback/supplement
+    sig_path = os.path.join(HERE, "signals", "signals.csv")
+    if os.path.exists(sig_path):
+        try:
+            csv_df = pd.read_csv(sig_path)
+            if not csv_df.empty:
+                frames.append(csv_df)
+        except Exception:
+            pass
+
+    if not frames:
+        return {}
+
+    try:
+        df = pd.concat(frames, ignore_index=True)
         # Filter to recent signals only (90 days)
-        if 'discovered_date' in df.columns:
-            df['discovered_date'] = pd.to_datetime(df['discovered_date'], errors='coerce')
+        if "discovered_date" in df.columns:
+            df["_dt"] = pd.to_datetime(df["discovered_date"], errors="coerce")
             cutoff = pd.Timestamp.now() - pd.Timedelta(days=90)
-            df = df[df['discovered_date'] >= cutoff]
+            df = df[df["_dt"].isna() | (df["_dt"] >= cutoff)].drop(columns=["_dt"])
+
+        df["_canon"] = df["munid"].astype(str).apply(canon_name)
+        dedup_cols = [c for c in ["_canon", "category", "trigger_keyword", "evidence_url"] if c in df.columns]
+        if dedup_cols:
+            df = df.drop_duplicates(subset=dedup_cols, keep="first")
+
         signals_map = {}
         for _, row in df.iterrows():
-            cname = canon_name(str(row['munid']))
+            cname = row["_canon"]
+            if not cname:
+                continue
             if cname not in signals_map:
                 signals_map[cname] = []
-            signals_map[cname].append(row.to_dict())
+            signals_map[cname].append(row.drop(labels=["_canon"], errors="ignore").to_dict())
         return signals_map
-    except Exception as e:
+    except Exception:
         return {}
 
 @st.cache_data(ttl=300)
@@ -247,13 +286,21 @@ def _safe_series(df: pd.DataFrame, col: str) -> pd.Series:
     return pd.Series([""] * len(df), index=df.index)
 
 
-def add_expiry_signal_columns(gdf: gpd.GeoDataFrame, selected_label: str) -> gpd.GeoDataFrame:
+def add_expiry_signal_columns(gdf: gpd.GeoDataFrame, selected_label: str, direct_only: bool = False) -> gpd.GeoDataFrame:
     meta = META_BY_LABEL.get(selected_label, {})
-    expiry_col = meta.get("expiry", "")
-    bylaw_name_col = meta.get("bylaw_name", "")
-    link_col = meta.get("bylaw_link", "")
+    suffix = "__DIRECT" if direct_only else ""
+    expiry_base = meta.get("expiry", "")
+    enacted_base = meta.get("enacted", "")
+    bylaw_name_base = meta.get("bylaw_name", "")
+    link_base = meta.get("bylaw_link", "")
+
+    expiry_col = f"{expiry_base}{suffix}" if (expiry_base and f"{expiry_base}{suffix}" in gdf.columns) else expiry_base
+    enacted_col = f"{enacted_base}{suffix}" if (enacted_base and f"{enacted_base}{suffix}" in gdf.columns) else enacted_base
+    bylaw_name_col = f"{bylaw_name_base}{suffix}" if (bylaw_name_base and f"{bylaw_name_base}{suffix}" in gdf.columns) else bylaw_name_base
+    link_col = f"{link_base}{suffix}" if (link_base and f"{link_base}{suffix}" in gdf.columns) else link_base
 
     expiry_raw = _safe_series(gdf, expiry_col).fillna("").astype(str).str.strip()
+    enacted_raw = _safe_series(gdf, enacted_col).fillna("").astype(str).str.strip()
     bylaw_name = _safe_series(gdf, bylaw_name_col).fillna("").astype(str).str.strip()
     bylaw_link = _safe_series(gdf, link_col).fillna("").astype(str).str.strip()
 
@@ -269,7 +316,7 @@ def add_expiry_signal_columns(gdf: gpd.GeoDataFrame, selected_label: str) -> gpd
     signal.loc[has_expiry & (days < 0)] = "Expired"
     signal.loc[has_expiry & (days >= 0) & (days <= EXPIRY_SOON_DAYS)] = "Expiring soon"
 
-    expects_expiry = bool(expiry_col)
+    expects_expiry = bool(expiry_base)
     has_bylaw = bylaw_name.ne("")
     signal.loc[expects_expiry & ~has_expiry & has_bylaw] = "Expiry unknown"
 
@@ -283,6 +330,7 @@ def add_expiry_signal_columns(gdf: gpd.GeoDataFrame, selected_label: str) -> gpd
     line_color = signal.apply(_line_color_for_signal)
 
     gdf["__EXPIRY__"] = expiry_display
+    gdf["__ENACTED__"] = enacted_raw
     gdf["__SIGNAL__"] = signal
     gdf["__BYLAW_NAME__"] = bylaw_name
     gdf["__BYLAW_LINK__"] = bylaw_link
@@ -324,6 +372,18 @@ label_to_col = {v: k for k, v in display_labels.items()}
 selected_label = st.sidebar.selectbox("Bylaw", list(display_labels.values()), index=0)
 selected_col = label_to_col[selected_label]
 
+view_mode = st.sidebar.radio(
+    "Jurisdiction mode",
+    ["Combined (County + Lower-Tier Rollup)", "Upper-Tier / Regional Bylaws Only"],
+    index=0,
+    help=(
+        "Combined shows the worst-case rollup across the County/Region and its local municipalities. "
+        "Upper-Tier Only shows bylaws enacted directly by the County, Region, or Single-Tier municipality."
+    ),
+)
+direct_only = view_mode == "Upper-Tier / Regional Bylaws Only"
+active_status_col = f"{selected_col}__DIRECT" if (direct_only and f"{selected_col}__DIRECT" in gdf.columns) else selected_col
+
 # Split filters: Status vs Expiry alerts (signals)
 status_filter = st.sidebar.selectbox("Status", ["All", "YES", "NO", "N/A"], index=0)
 signal_filter = st.sidebar.selectbox(
@@ -347,7 +407,7 @@ st.title(f"Upper Tier Bylaw Exemptions Map – {selected_label}")
 gdf_all = gdf.copy()
 
 gdf_all["__STATUS__"] = (
-    gdf_all[selected_col]
+    gdf_all[active_status_col]
     .fillna("")
     .astype(str)
     .str.strip()
@@ -356,7 +416,7 @@ gdf_all["__STATUS__"] = (
 )
 
 gdf_all["__COLOR__"] = gdf_all["__STATUS__"].apply(status_color)
-gdf_all = add_expiry_signal_columns(gdf_all, selected_label)
+gdf_all = add_expiry_signal_columns(gdf_all, selected_label, direct_only=direct_only)
 
 # ---------- Build match mask ----------
 match_mask = pd.Series(True, index=gdf_all.index)
@@ -507,8 +567,10 @@ layer = pdk.Layer(
 
 view_state = pdk.ViewState(latitude=44.0, longitude=-80.0, zoom=5.8)
 
-st.pydeck_chart(
+event = st.pydeck_chart(
     height=720,
+    on_select="rerun",
+    selection_mode="single-object",
     pydeck_obj=pdk.Deck(
         layers=[layer],
         initial_view_state=view_state,
@@ -523,8 +585,31 @@ st.pydeck_chart(
                 "Link: {__BYLAW_LINK__}"
             )
         },
-    )
+    ),
 )
+
+# --- CLICK HANDLER LOGIC ---
+if event.selection:
+    indices = None
+    objects = event.selection.get("objects")
+
+    if isinstance(objects, dict):
+        indices = list(objects.keys())
+    elif isinstance(objects, list) and objects:
+        indices = objects
+
+    if indices:
+        try:
+            idx = int(list(indices)[0])
+            if idx < len(gdf_view):
+                clicked_muni = gdf_view.iloc[idx][name_field]
+                if st.session_state.get("selected_upper_muni") != clicked_muni:
+                    st.session_state["selected_upper_muni"] = clicked_muni
+                    st.rerun()
+        except Exception as e:
+            st.sidebar.error(f"Click Logic Error: {e}")
+else:
+    st.sidebar.caption("Click a municipality on the map to view details.")
 
 # ---------- Municipality details panel (sidebar) ----------
 detail_row = gdf_all[gdf_all[name_field].astype(str).eq(str(selected_muni))].head(1)

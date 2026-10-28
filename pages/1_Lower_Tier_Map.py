@@ -114,28 +114,65 @@ def canon_name(x: str) -> str:
 
 
 def load_signals_data():
-    """Loads signals.csv, filters for hits in the last 90 days, returns Dict[str, List[Dict]]."""
-    sig_path = os.path.join(HERE, "signals", "signals.csv")
+    """Loads signals from the database scanner_signals table and signals.csv (90-day window)."""
+    frames = []
 
-    if not os.path.exists(sig_path):
+    # 1. Load from database scanner_signals table
+    try:
+        conn = get_connection()
+        db_df = pd.read_sql_query(
+            """
+            SELECT m.name AS munid, s.signal_type, s.discovered_date,
+                   s.trigger_keyword, s.category, s.snippet,
+                   s.ai_summary, s.ai_confidence, s.evidence_url
+            FROM scanner_signals s
+            LEFT JOIN municipalities m ON m.id = s.municipality_id
+            """,
+            conn.conn,
+        )
+        conn.close()
+        if not db_df.empty:
+            frames.append(db_df)
+    except Exception:
+        pass
+
+    # 2. Load from signals/signals.csv fallback/supplement
+    sig_path = os.path.join(HERE, "signals", "signals.csv")
+    if os.path.exists(sig_path):
+        try:
+            csv_df = pd.read_csv(sig_path)
+            if not csv_df.empty:
+                frames.append(csv_df)
+        except Exception:
+            pass
+
+    if not frames:
         return {}
 
     try:
-        df = pd.read_csv(sig_path)
+        df = pd.concat(frames, ignore_index=True)
 
         # --- RECENCY FILTER (90 DAYS) ---
-        if 'discovered_date' in df.columns:
-            df['discovered_date'] = pd.to_datetime(df['discovered_date'])
+        if "discovered_date" in df.columns:
+            df["_dt"] = pd.to_datetime(df["discovered_date"], errors="coerce")
             cutoff = pd.Timestamp.now() - pd.Timedelta(days=90)
-            df = df[df['discovered_date'] > cutoff]
+            df = df[df["_dt"].isna() | (df["_dt"] >= cutoff)].drop(columns=["_dt"])
+
+        # Deduplicate across DB and CSV
+        df["_canon"] = df["munid"].astype(str).apply(canon_name)
+        dedup_cols = [c for c in ["_canon", "category", "trigger_keyword", "evidence_url"] if c in df.columns]
+        if dedup_cols:
+            df = df.drop_duplicates(subset=dedup_cols, keep="first")
 
         # MULTI-CATEGORY SUPPORT: Store as List of Dicts per municipality
         signals_map = {}
         for _, row in df.iterrows():
-            cname = canon_name(str(row['munid']))
+            cname = row["_canon"]
+            if not cname:
+                continue
             if cname not in signals_map:
                 signals_map[cname] = []
-            signals_map[cname].append(row.to_dict())
+            signals_map[cname].append(row.drop(labels=["_canon"], errors="ignore").to_dict())
         return signals_map
     except Exception as e:
         st.error(f"Failed to load signals: {e}")
@@ -261,10 +298,12 @@ def add_expiry_signal_columns(gdf: gpd.GeoDataFrame, selected_label: str) -> gpd
     """Add __EXPIRY__, __SIGNAL__, and __LINE_COLOR__ based on selected label metadata."""
     meta = META_BY_LABEL.get(selected_label, {})
     expiry_col = meta.get("expiry", "")
+    enacted_col = meta.get("enacted", "")
     bylaw_name_col = meta.get("bylaw_name", "")
     link_col = meta.get("bylaw_link", "")
 
     expiry_raw = _safe_series(gdf, expiry_col).fillna("").astype(str).str.strip()
+    enacted_raw = _safe_series(gdf, enacted_col).fillna("").astype(str).str.strip()
     bylaw_name = _safe_series(gdf, bylaw_name_col).fillna("").astype(str).str.strip()
     bylaw_link = _safe_series(gdf, link_col).fillna("").astype(str).str.strip()
 
@@ -301,6 +340,7 @@ def add_expiry_signal_columns(gdf: gpd.GeoDataFrame, selected_label: str) -> gpd
     line_color = signal.apply(_line_color_for_signal)
 
     gdf["__EXPIRY__"] = expiry_display
+    gdf["__ENACTED__"] = enacted_raw
     gdf["__SIGNAL__"] = signal
     gdf["__BYLAW_NAME__"] = bylaw_name
     gdf["__BYLAW_LINK__"] = bylaw_link
