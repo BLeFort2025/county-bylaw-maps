@@ -46,6 +46,7 @@ from shared_config import (
     extract_snippet,
     extract_date_from_text,
     is_recent_date,
+    is_stale_context,
     is_valid_meeting_document,
     SOCIAL_JUNK_DOMAINS,
 )
@@ -207,6 +208,12 @@ def scan_municipality(row, cached_munis_upper):
                 else:
                     continue
 
+            url_date = extract_date_from_text(target_url)
+            if url_date and not is_recent_date(url_date, max_days=180):
+                continue
+            hdr_date = extract_date_from_text(text_content[:600])
+            if hdr_date and not is_recent_date(hdr_date, max_days=180):
+                continue
             if not is_valid_meeting_document(target_url, text_content):
                 continue
 
@@ -215,6 +222,8 @@ def scan_municipality(row, cached_munis_upper):
                 if category not in seen_cats:
                     seen_cats.add(category)
                     snippet = extract_snippet(text_content, trigger)
+                    if is_stale_context(target_url, text_content[:600], snippet, max_days=180):
+                        continue
                     found_candidates.append({
                         'munid': munid,
                         'name': name,
