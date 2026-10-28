@@ -205,13 +205,13 @@ META_BY_LABEL: dict[str, dict[str, str]] = {
         "expiry": "Expiry Date 6",
     },
     "Farm Exemption for Security fencing prohibitions": {
-        "bylaw_name": "",
+        "bylaw_name": "Bylaw Name Fence",
         "bylaw_link": "Link to Fence Bylaw",
         "enacted": "Date Bylaw Enacted 8",
         "expiry": "",
     },
     "Farm Exemption for Electrified fencing prohibitions": {
-        "bylaw_name": "",
+        "bylaw_name": "Bylaw Name Fence",
         "bylaw_link": "Link to Fence Bylaw",
         "enacted": "Date Bylaw Enacted 8",
         "expiry": "",

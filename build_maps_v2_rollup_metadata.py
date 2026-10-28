@@ -104,7 +104,7 @@ def compute_status_columns(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
         ("LGD and HD Exempt from Barking Restrictions", ["LDG and HD Exempt from barking restrictions"], ["Bylaw Name LGD"], False),
         ("Can you Keep Backyard Chickens",         ["Can you Keep Backyard Chickens"],          ["Bylaw Name Backyard Chicken","Bylaw Name Backyard Chickens"], False),
         ("Licence Required",                       ["Licence Required"],                        ["Bylaw Name Backyard Chicken","Bylaw Name Backyard Chickens"], False),
-        ("Welfare Requirements",                   ["Welfare Requirements"],                    ["Bylaw Name Backyard Chicken","Bylaw Name Backyard Chickens"], False),
+        ("Welfare Requirements",                   ["Welfare Requirements"],                    ["Bylaw Name Backyard Chicken","Bylaw Name Backyard Chickens"], True),
         ("Farm Exemption - Tree Cutting Bylaw",    ["Farm Exemption - Tree Cutting Bylaw"],     ["Bylaw Name Forest Conservation","Bylaw Name Tree Cutting","Bylaw Name Forestry","Tree Conservation Bylaw Name"], False),
         ("Farm Exemption for Security fencing prohibitions",  ["Farm Exemption for Security fencing prohibitions"], [], False),
         ("Farm Exemption for Electrified fencing prohibitions", ["Farm Exemption for Electrified fencing prohibitions"], [], False),
