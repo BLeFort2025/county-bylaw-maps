@@ -59,7 +59,22 @@ def canon(x: str) -> str:
             s = s[:-len(suf)].strip()
             break
     s = re.sub(r"\b(CO\.?|CNTY|R)\b$", "", s).strip()
-    return re.sub(r"\s+"," ", s).strip()
+    s = re.sub(r"\b(CO\.?|CNTY|R)\b$", "", s).strip()
+    s = re.sub(r"\s+"," ", s).strip()
+    aliases = {
+        "ESSEX T": "ESSEX",
+        "PERTH T": "PERTH",
+        "PETERBOROUGH C": "PETERBOROUGH",
+        "RENFREW T": "RENFREW",
+        "WATERLOO C": "WATERLOO",
+        "CHARLTON DACK": "CHARLTON AND DACK",
+        "MATTICE VAL C T": "MATTICE VAL COTE",
+        "THE SOUTH BRUCE PENINSULA": "SOUTH BRUCE PENINSULA",
+        "MACDONALD MEREDITH ET AL": "MACDONALD MEREDITH AND ABERDEEN ADDITIONAL",
+        "NORTHEASTERN MANITOULIN AND THE ISL": "NORTHEASTERN MANITOULIN AND THE ISLANDS",
+        "DAWN": "ADDINGTON HIGHLANDS",
+    }
+    return aliases.get(s, s)
 
 YES_SET     = {"YES","Y","TRUE","T","1","ALLOW","ALLOWED","PERMITTED","PERMIT","EXEMPT","EXEMPTION","EXCEPTION","PRESENT","EXISTS"}
 NO_SET      = {"NO","N","FALSE","F","0","2","NOT ALLOWED","PROHIBITED","ABSENT"}
@@ -200,7 +215,8 @@ def _load_live_df(conn=None):
 def overlay_live_lower(gdf: gpd.GeoDataFrame, conn=None) -> gpd.GeoDataFrame:
     """Overlay live database status and metadata columns onto a cached Lower Tier GeoDataFrame."""
     df, status_cols = _load_live_df(conn)
-    df_dedup = df.drop_duplicates("_MUNI_NAME").set_index("_MUNI_NAME")
+    df_lower = df[df["Municipal Status"] != "Upper Tier"] if "Municipal Status" in df.columns else df
+    df_dedup = df_lower.drop_duplicates("_MUNI_NAME").set_index("_MUNI_NAME")
 
     if "_MUNI_NAME" not in gdf.columns:
         name_col = next((c for c in ["Municipality", "MUNICIPA_8", "OFFICIAL_M", "NAME"] if c in gdf.columns), gdf.columns[0])
@@ -218,7 +234,8 @@ def overlay_live_lower(gdf: gpd.GeoDataFrame, conn=None) -> gpd.GeoDataFrame:
 def overlay_live_upper(upper_gdf: gpd.GeoDataFrame, lower_parquet_path: str = LOWER_PARQUET, conn=None) -> gpd.GeoDataFrame:
     """Overlay live database rollup status and metadata columns onto a cached Upper Tier GeoDataFrame."""
     df, status_cols = _load_live_df(conn)
-    df_dedup = df.drop_duplicates("_MUNI_NAME")
+    df_lower = df[df["Municipal Status"] != "Upper Tier"] if "Municipal Status" in df.columns else df
+    df_dedup = df_lower.drop_duplicates("_MUNI_NAME")
 
     low_keys = pd.read_parquet(lower_parquet_path, columns=["_MUNI_NAME", LOWER_TO_UPPER_FIELD])
     tmp = low_keys.merge(df_dedup, on="_MUNI_NAME", how="left")
@@ -318,7 +335,8 @@ def main():
     else:
         g_low["_MUNI_NAME"] = g_low["_AUTO_CANON"]
 
-    lower = g_low.merge(df.drop_duplicates("_MUNI_NAME"), on="_MUNI_NAME", how="left")
+    df_lower = df[df["Municipal Status"] != "Upper Tier"] if "Municipal Status" in df.columns else df
+    lower = g_low.merge(df_lower.drop_duplicates("_MUNI_NAME"), on="_MUNI_NAME", how="left")
 
     # 4. READ UPPER GEOJSON & AGGREGATE
     if not os.path.exists(UPPER_GEO):

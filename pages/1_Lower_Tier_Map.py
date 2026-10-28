@@ -355,7 +355,7 @@ def load_data(path: str):
     gdf = gdf[list(keep_cols)].copy()
 
     # Light geometry simplification to cut JSON size and drawing time.
-    gdf[geom_col] = gdf[geom_col].simplify(tolerance=0.001, preserve_topology=True)
+    gdf[geom_col] = gdf[geom_col].simplify(tolerance=0.00025, preserve_topology=True)
 
     return gdf, status_cols, name_field
 
@@ -720,7 +720,8 @@ event = st.pydeck_chart(
         },
     ),
     on_select="rerun",  # Forces the app to reload immediately on click
-    selection_mode="single-object"
+    selection_mode="single-object",
+    height=720,
 )
 
 # --- CLICK HANDLER LOGIC ---
