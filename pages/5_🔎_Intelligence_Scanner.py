@@ -44,6 +44,7 @@ from shared_config import (
     apply_negative_keywords, is_valid_meeting_document, classify_meeting_doc,
     canon_name, canon_name as _canon_muni,
     build_keyword_regex, build_combined_keyword_regex,
+    extract_date_from_text, is_recent_date, is_stale_context,
 )
 from db_utils import get_connection
 
