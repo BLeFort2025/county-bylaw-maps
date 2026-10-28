@@ -324,16 +324,12 @@ def extract_text_from_pdf(pdf_bytes):
 
 def _is_recent_date(d, max_days=180):
     """Check if a date is within max_days (default: 180 days / 6 months) from today."""
-    if d is None:
-        return True
-    today = datetime.date.today()
-    return (today - d).days <= max_days
+    return is_recent_date(d, max_days=max_days)
 
 
 def _extract_date_from_text(text):
     """Extract a meeting date from link text, header text, or URL (ignoring GUIDs and bylaw numbers)."""
-    if not text:
-        return None
+    return extract_date_from_text(text)
     clean = str(text).lower()
     # 1. Strip query-string GUIDs (e.g. ?Id=1090-04ab-...) and hex UUIDs
     clean = re.sub(r'[?&]id=[a-f0-9\-]+', ' ', clean)
@@ -688,21 +684,34 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
         stats["found_live_docs"] = found_real_docs
 
         combined_pattern = build_combined_keyword_regex(keywords)
-        kw_patterns = [(kw, build_keyword_regex(kw)) for kw in keywords]
+        # Sort longest keywords first so specific phrases (e.g. "Development Charges By-law") match before shorter substrings ("Development Charges")
+        sorted_kws = sorted(keywords, key=lambda k: len(str(k)), reverse=True)
+        kw_patterns = [(kw, build_keyword_regex(kw)) for kw in sorted_kws]
 
         matches = []
         for url in urls_to_scan:
+            # 180-Day Recency Check on URL before downloading
+            url_date = _extract_date_from_text(url)
+            if url_date and not _is_recent_date(url_date, max_days=180):
+                continue
+
             text_content, is_pdf = _fetch_and_extract_text(url, HEADERS)
 
             # Skip generic HTML portal/listing index pages, but allow specific HTML meeting pages
             url_low = url.lower()
-            is_meeting_html = any(k in url_low for k in ("meeting.aspx", "meetinginformation.aspx", "agenda=", "postminutes"))
-            if not is_pdf and not found_real_docs and not is_meeting_html:
+            is_meeting_html = any(k in url_low for k in ("meeting.aspx", "meetinginformation.aspx", "agenda=", "postminutes")) or (url_date is not None)
+            if not is_pdf and not is_meeting_html:
                 continue
 
             # Validate that this is genuine meeting content and not static master/strategic plan
             if not is_valid_meeting_document(url, text_content):
                 continue
+
+            # 180-Day Recency Check on downloaded document header text
+            if text_content:
+                hdr_date = _extract_date_from_text(text_content[:600])
+                if hdr_date and not _is_recent_date(hdr_date, max_days=180):
+                    continue
 
             # Only count as "scanned" if we got meaningful text content
             if text_content and len(text_content.strip()) > 50:
@@ -722,10 +731,17 @@ def _scan_single_muni(row, keywords, negative_keywords=None):
                 continue
 
             doc_type = classify_meeting_doc(url, text_content)
+            matched_kws_this_doc = []
 
             for keyword, kw_regex in kw_patterns:
+                kw_low = keyword.lower()
+                if any(kw_low in prev_kw for prev_kw in matched_kws_this_doc):
+                    continue
                 if kw_regex.search(text_content):
                     snippet = extract_readable_snippet(text_content, keyword, window=300)
+                    if is_stale_context(url, text_content[:600], snippet, max_days=180):
+                        continue
+                    matched_kws_this_doc.append(kw_low)
                     matches.append({
                         "Municipality": name,
                         "County / Upper Tier": county,
@@ -761,7 +777,8 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, negative_keywords=No
         return [], {"munis_from_cache": 0, "cache_docs_searched": 0, "cache_hits": 0}
 
     combined_pattern = build_combined_keyword_regex(keywords)
-    kw_patterns = [(kw, build_keyword_regex(kw)) for kw in keywords]
+    sorted_kws = sorted(keywords, key=lambda k: len(str(k)), reverse=True)
+    kw_patterns = [(kw, build_keyword_regex(kw)) for kw in sorted_kws]
 
     matches = []
     munis_searched = set()
@@ -774,9 +791,12 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, negative_keywords=No
         if not doc_text or len(doc_text.strip()) < 50:
             continue
 
-        # ── 180-Day Recency Filter on Cached Docs ──
-        doc_date = _extract_date_from_text(doc_text[:350] + " " + doc_url)
-        if doc_date and not _is_recent_date(doc_date, max_days=180):
+        # ── 180-Day Recency Filter on Cached Docs (both URL and header text) ──
+        url_date = _extract_date_from_text(doc_url)
+        if url_date and not _is_recent_date(url_date, max_days=180):
+            continue
+        hdr_date = _extract_date_from_text(doc_text[:600])
+        if hdr_date and not _is_recent_date(hdr_date, max_days=180):
             continue
 
         # Validate genuine meeting content
@@ -805,10 +825,17 @@ def _scan_cached_docs(cached_df, registry_subset, keywords, negative_keywords=No
             region = get_region(county, muni_name)
 
         doc_type = classify_meeting_doc(doc_url, doc_text)
+        matched_kws_this_doc = []
 
         for keyword, kw_regex in kw_patterns:
+            kw_low = keyword.lower()
+            if any(kw_low in prev_kw for prev_kw in matched_kws_this_doc):
+                continue
             if kw_regex.search(doc_text):
                 snippet = extract_readable_snippet(doc_text, keyword, window=300)
+                if is_stale_context(doc_url, doc_text[:600], snippet, max_days=180):
+                    continue
+                matched_kws_this_doc.append(kw_low)
                 matches.append({
                     "Municipality": muni_name,
                     "County / Upper Tier": county,

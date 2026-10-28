@@ -8,6 +8,9 @@ from shared_config import (
     canon_name,
     check_all_keywords,
     extract_snippet,
+    extract_date_from_text,
+    is_recent_date,
+    is_stale_context,
     is_valid_meeting_document,
 )
 
@@ -71,6 +74,12 @@ def _scan_cached_docs_for_signals() -> pd.DataFrame:
         if fdate in ("", "nan", "None"):
             fdate = today_iso
         if not muni or len(text) < 50:
+            continue
+        u_dt = extract_date_from_text(url)
+        if u_dt and not is_recent_date(u_dt, max_days=180):
+            continue
+        h_dt = extract_date_from_text(text[:600])
+        if h_dt and not is_recent_date(h_dt, max_days=180):
             continue
         if not is_valid_meeting_document(url, text):
             continue
@@ -167,6 +176,9 @@ def generate_signals():
 
     full_df = full_df[
         full_df["trigger_keyword"].fillna("").astype(str).str.strip().str.upper().isin(valid_keywords_upper)
+    ].copy()
+    full_df = full_df[
+        ~full_df.apply(lambda r: is_stale_context(str(r.get("found_url", "")), "", str(r.get("snippet", "")) + " " + str(r.get("ai_summary", "")), max_days=180), axis=1)
     ].copy()
 
     # Prefer rows with AI summaries first, then newest found_date

@@ -42,6 +42,8 @@ KEYWORD_CONFIG = {
         "Development Charge Exemption",
         "Agricultural Development Charge",
         "Farm Building Exemption",
+        "Development Charges",
+        "Development Charge",
     ],
     "STORMWATER": [
         "Stormwater Management By-law",
@@ -424,10 +426,83 @@ def extract_snippet(raw_text: str, trigger_keyword: str, window: int = 200) -> s
 # ──────────────────────────────────────────────────────────────────
 
 def extract_date_from_text(text):
-    """Extract a realistic calendar date from link text or URL while ignoring GUIDs and bylaw numbers."""
+    """Extract a realistic calendar date from link text, URL, or document header while ignoring GUIDs and bylaw numbers."""
     import datetime
     if not text:
         return None
+    cleaned = re.sub(
+        r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
+        ' ',
+        str(text),
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.sub(r'[?&]id=[0-9a-f\-]+', ' ', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(
+        r'\b(?:by[-\s]?law|règlement|reglement|report|res(?:olution)?|motion|policy|file|item|no\.?|#)\s*(?:no\.?\s*|#\s*)?[a-z]*\s*\d{1,4}[-/]\d{1,4}(?![-/\d])\b',
+        ' ',
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    months = {
+        'january': 1, 'february': 2, 'march': 3, 'april': 4,
+        'may': 5, 'june': 6, 'july': 7, 'august': 8,
+        'september': 9, 'october': 10, 'november': 11, 'december': 12,
+        'janvier': 1, 'février': 2, 'fevrier': 2, 'mars': 3, 'avril': 4,
+        'mai': 5, 'juin': 6, 'juillet': 7, 'août': 8, 'aout': 8,
+        'septembre': 9, 'octobre': 10, 'novembre': 11, 'décembre': 12, 'decembre': 12,
+        'sept': 9,
+        'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'jun': 6,
+        'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
+    }
+    text_lower = cleaned.lower()
+    today = datetime.date.today()
+    max_valid_date = today + datetime.timedelta(days=90)
+    found_dates = []
+
+    def _add(y, m, d, pos):
+        try:
+            dt = datetime.date(int(y), int(m), int(d))
+            if datetime.date(2015, 1, 1) <= dt <= max_valid_date:
+                found_dates.append((pos, dt))
+        except ValueError:
+            pass
+
+    for m_name, m_num in months.items():
+        # 1. Month DD, YYYY or Month-DD-YYYY or MonthDDYYYY (e.g. DEC142020, Oct_13_2022)
+        for m in re.finditer(rf'(?<![a-z]){m_name}\.?[\s\-_]*(\d{{1,2}})(?:st|nd|rd|th)?[,.\s\-_]*(20[12]\d)(?!\d)', text_lower):
+            _add(m.group(2), m_num, m.group(1), m.start())
+        # 2. DD Month YYYY or DDMonthYYYY (e.g. 14Oct2026, 16 Dec 2024)
+        for m in re.finditer(rf'(?<!\d)(\d{{1,2}})(?:st|nd|rd|th)?[\s\-_]*{m_name}\.?[,.\s\-_]*(20[12]\d)(?!\d)', text_lower):
+            _add(m.group(2), m_num, m.group(1), m.start())
+        # 3. MonthDD-YY or Month DD/YY (2-digit year with separator, e.g. Dec11-24, Jan 8th/25)
+        for m in re.finditer(rf'(?<![a-z]){m_name}\.?[\s\-_]*(\d{{1,2}})(?:st|nd|rd|th)?[\-/](2[0-9])(?!\d)', text_lower):
+            _add(2000 + int(m.group(2)), m_num, m.group(1), m.start())
+        # 4. YYMonthDD compact (e.g. 26may12_councilagenda.pdf)
+        for m in re.finditer(rf'(?<!\d)(2[0-9]){m_name}(\d{{1,2}})(?!\d)', text_lower):
+            _add(2000 + int(m.group(1)), m_num, m.group(2), m.start())
+
+    # 5. ISO YYYY-MM-DD or YYYY/MM/DD
+    for m in re.finditer(r'(?<!\d)(20[12]\d)[-/](0?[1-9]|1[0-2])[-/](0?[1-9]|[12]\d|3[01])(?!\d)', text_lower):
+        _add(m.group(1), m.group(2), m.group(3), m.start())
+
+    # 6. YY-MM-DD in filenames (e.g. 23-08-16-Special-Meeting-Notice.pdf)
+    for m in re.finditer(r'(?:^|[/\\_])(2[0-9])-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])(?=[-_.\s])', text_lower):
+        _add(2000 + int(m.group(1)), m.group(2), m.group(3), m.start())
+
+    if found_dates:
+        return max(dt for _, dt in found_dates)
+
+    # 7. Fallback: /uploads/YYYY/MM/ path
+    m_up = re.search(r'/(?:uploads|files|media)/(20[12]\d)[-/](0?[1-9]|1[0-2])(?:/|\b)', text_lower)
+    if m_up:
+        try:
+            dt = datetime.date(int(m_up.group(1)), int(m_up.group(2)), 15)
+            if dt <= max_valid_date:
+                return dt
+        except ValueError:
+            pass
+
+    return None
     cleaned = re.sub(
         r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
         ' ',
@@ -483,6 +558,23 @@ def is_recent_date(d, max_days=180):
     today = datetime.date.today()
     return (today - d).days <= max_days
 
+def is_stale_context(url: str, text_header: str, snippet: str = "", max_days: int = 180) -> bool:
+    """Return True if URL, document header, or an archive snippet indicates the item is older than max_days."""
+    u_dt = extract_date_from_text(url)
+    if u_dt and not is_recent_date(u_dt, max_days=max_days):
+        return True
+    h_dt = extract_date_from_text(text_header[:600] if text_header else "")
+    if h_dt and not is_recent_date(h_dt, max_days=max_days):
+        return True
+    if snippet:
+        s_dt = extract_date_from_text(snippet)
+        if s_dt and not is_recent_date(s_dt, max_days=max_days):
+            # If snippet itself only has old dates (e.g. a 2016/2017 sidebar archive list), reject it
+            if u_dt is None or not is_recent_date(u_dt, max_days=max_days):
+                return True
+    return False
+
+
 
 SOCIAL_JUNK_DOMAINS = (
     "youtube.com", "youtu.be", "soundcloud.com", "facebook.com", "l.facebook.com",
@@ -515,7 +607,7 @@ def is_valid_meeting_document(url, text="", title=""):
 
     # Always reject static governance documents (Procedural Bylaws, Terms of Reference, multi-year highlight archives)
     static_doc_url_patterns = (
-        "procedural%20bylaw", "procedural-bylaw", "procedural_bylaw", "procedure%20by-law",
+        "procedural%20bylaw", "procedural-bylaw", "procedural_bylaw", "procedure%20by-law", "procedure-by-law", "procedure_by_law", "procedure-bylaw",
         "terms%20of%20reference", "terms-of-reference", "terms_of_reference",
         "/council-highlights",
     )
