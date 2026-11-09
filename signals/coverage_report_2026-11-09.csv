@@ -1,0 +1,445 @@
+munid,name,scan_date,status,error,target_url
+AMARANTH TP,AMARANTH,2026-11-09,covered_by_prefetch_cache,,https://pub-amaranth.escribemeetings.com/
+ADJALA TOSORONTIO TP,ADJALA TOSORONTIO,2026-11-09,covered_by_prefetch_cache,,https://adjala-tosorontio.civicweb.net/filepro/documents/4448
+AURORA TP,AURORA,2026-11-09,covered_by_prefetch_cache,,https://www.aurora.ca/your-government/council-and-committees/agendas-and-minutes/
+ADDINGTON HIGHLANDS TP,ADDINGTON HIGHLANDS,2026-11-09,covered_by_prefetch_cache,,https://addingtonhighlands.civicweb.net/filepro/documents/5341
+ASPHODEL NORWOOD TP,ASPHODEL NORWOOD,2026-11-09,covered_by_prefetch_cache,,https://www.antownship.ca/media/lmkhfsi0/2026-council-meeting-and-office-closure-calendar.pdf
+ATIKOKAN TP,ATIKOKAN,2026-11-09,covered_by_prefetch_cache,,https://atikokan.civicweb.net/filepro/documents/191
+ALGONQUIN HIGHLANDS TP,ALGONQUIN HIGHLANDS,2026-11-09,covered_by_prefetch_cache,,https://www.algonquinhighlands.ca/municipal-services/council/agendas-and-minutes/
+ADELAIDE METCALFE TP,ADELAIDE METCALFE,2026-11-09,covered_by_prefetch_cache,,https://pub-adelaidemetcalfe.escribemeetings.com/
+AUGUSTA TP,AUGUSTA,2026-11-09,covered_by_prefetch_cache,,https://pub-augusta.escribemeetings.com:443/Meeting.aspx?Id=48f61641-bb84-484b-a753-f8d52c41b602&Agenda=Agenda&lang=English
+AMHERSTBURG TP,AMHERSTBURG,2026-11-09,covered_by_prefetch_cache,,https://pub-amherstburg.escribemeetings.com:443/Meeting.aspx?Id=6f1f68fd-0b85-46d8-a1eb-5c2c5497c622&Agenda=Agenda&lang=English
+ALNWICK HALDIMAND TP,ALNWICK HALDIMAND,2026-11-09,covered_by_prefetch_cache,,https://alnwickhaldimand.civicweb.net/filepro/documents/155534
+ALFRED AND PLANTAGENET TP,ALFRED AND PLANTAGENET,2026-11-09,covered_by_prefetch_cache,,https://pub-alfred-plantagenet.escribemeetings.com/FileStream.ashx?DocumentId=4856
+ARMSTRONG TP,ARMSTRONG,2026-11-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B09D374D0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+BANCROFT TP,BANCROFT,2026-11-09,covered_by_prefetch_cache,,https://www.bancroft.ca/
+BARRIE C,BARRIE,2026-11-09,covered_by_prefetch_cache,,https://pub-barrie.escribemeetings.com/FileStream.ashx?DocumentId=39165
+ARNPRIOR TP,ARNPRIOR,2026-11-09,skipped,,https://www.arnprior.ca/en/town-hall/council.aspx
+AJAX TP,AJAX,2026-11-09,skipped,,https://www.ajax.ca/en/inside-townhall/council-and-standing-committees.aspx
+BELLEVILLE C,BELLEVILLE,2026-11-09,covered_by_prefetch_cache,,https://www.belleville.ca/en/city-hall/council.aspx
+BILLINGS TP,BILLINGS,2026-11-09,skipped,,https://events.billingstwp.ca
+BAYHAM M,BAYHAM,2026-11-09,skipped,,https://laserfiche.bayham.on.ca/WebLink/ElectronicFile.aspx?id=621499&dbid=0&repo=BAYHAM
+BLANDFORD BLENHEIM TP,BLANDFORD BLENHEIM,2026-11-09,covered_by_prefetch_cache,,https://pub-blandfordblenheim.escribemeetings.com/FileStream.ashx?DocumentId=2168
+BLIND RIVER T,BLIND RIVER,2026-11-09,covered_by_prefetch_cache,,https://www.blindriver.ca/media/xmfnhphh/municipal-freedom.pdf
+BLUEWATER M,BLUEWATER,2026-11-09,covered_by_prefetch_cache,,https://www.municipalityofbluewater.ca/media/qkrbwxx5/acc-20260730-cs-2026-council-meeting-dates-for-website.pdf
+AYLMER TP,AYLMER,2026-11-09,skipped,,https://aylmer.civicweb.net/filepro/documents/7
+ASSIGINACK TP,ASSIGINACK,2026-11-09,skipped,,https://pub-assiginack.escribemeetings.com/
+BRACEBRIDGE TP,BRACEBRIDGE,2026-11-09,covered_by_prefetch_cache,,https://bracebridge.civicweb.net/filepro/documents/11
+BRADFORD WEST GWILLIMBURY TP,BRADFORD WEST GWILLIMBURY,2026-11-09,error,"HTTPSConnectionPool(host='westgrey.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B0A5405D0>: Failed to resolve 'westgrey.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://westgrey.civicweb.net/Portal/
+BRAMPTON C,BRAMPTON,2026-11-09,covered_by_prefetch_cache,,https://pub-brampton.escribemeetings.com/FileStream.ashx?DocumentId=175788
+BRANT,BRANT,2026-11-09,covered_by_prefetch_cache,,https://pub-brant.escribemeetings.com:443/Meeting.aspx?Id=a3770570-877b-47e4-b70a-5c7608cc11fa&Agenda=Agenda&lang=English
+BRANTFORD C,BRANTFORD,2026-11-09,covered_by_prefetch_cache,,https://pub-brantford.escribemeetings.com/
+BRETHOUR TP,BRETHOUR,2026-11-09,no_url_in_registry,,
+BRIGHTON M,BRIGHTON,2026-11-09,covered_by_prefetch_cache,,https://brighton.civicweb.net/Portal/
+BROCK TP,BROCK,2026-11-09,covered_by_prefetch_cache,,https://pub-townshipofbrock.escribemeetings.com/
+BROCKTON M,BROCKTON,2026-11-09,covered_by_prefetch_cache,,https://pub-brockton.escribemeetings.com/filestream.ashx?DocumentId=33838
+BROCKVILLE C,BROCKVILLE,2026-11-09,covered_by_prefetch_cache,,https://brockville.civicweb.net/filepro/documents/7
+BALDWIN TP,BALDWIN,2026-11-09,skipped,,https://baldwin.ca/wp-content/uploads/2026/08/4.1.-Regular-Minutes.pdf
+BLACK RIVER MATHESON TP,BLACK RIVER MATHESON,2026-11-09,skipped,,http://www.twpbrm.ca/your-township-government/agendas-minutes-and-recordings/
+ARRAN ELDERSLIE M,ARRAN ELDERSLIE,2026-11-09,scanned_pdf,,https://www.arran-elderslie.ca/government/council-and-administration/agendas-and-minutes/
+BECKWITH TP,BECKWITH,2026-11-09,skipped,,https://beckwith.civicweb.net/filepro/documents/95
+BURLINGTON C,BURLINGTON,2026-11-09,covered_by_prefetch_cache,,https://www.burlington.ca/en/by-laws-and-animal-services/resources/By-laws/By-law-Search/Consolidated-By-laws/Consolidated-Procedure-By-law-059-2024.pdf
+ADMASTON BROMLEY TP,ADMASTON BROMLEY,2026-11-09,scanned_pdf,,https://admastonbromley.com/committee-agendas-minutes/
+CALEDON TP,CALEDON,2026-11-09,covered_by_prefetch_cache,,https://pub-caledon.escribemeetings.com/
+BONFIELD TP,BONFIELD,2026-11-09,scanned_html,,"http://events.bonfieldtownship.com/FileManager/Township%20of%20Bonfield/11413a1c-35a8-4edb-9447-b44200f22a69/Content/Agenda - LNOPPDB May 5th, 2026 FULL.pdf"
+ASHFIELD COLBORNE WAWANOSH TP,ASHFIELD COLBORNE WAWANOSH,2026-11-09,scanned_pdf,,http://www.acwtownship.ca/content/government/agendas-minutes/august-2026.pdf
+ALBERTON TP,ALBERTON,2026-11-09,scanned_pdf,,https://alberton.ca/wp-content/uploads/2026/10/October-15-2026-Regular-Meeting-Agenda.pdf
+CARLETON PLACE TP,CARLETON PLACE,2026-11-09,covered_by_prefetch_cache,,https://pub-carletonplace.escribemeetings.com/FileStream.ashx?DocumentId=17876
+BRUCE MINES T,BRUCE MINES,2026-11-09,skipped,,https://brucemines.ca/documents/assets/uploads/files/en/october_5_agenda_regular_meeting.pdf
+BONNECHERE VALLEY TP,BONNECHERE VALLEY,2026-11-09,skipped,,https://www.bonnecherevalleytwp.com/download.php?dl=YToyOntzOjI6ImlkIjtzOjQ6IjI3NjkiO3M6Mzoia2V5IjtpOjE7fQ==
+CALVIN M,CALVIN,2026-11-09,skipped,,https://calvintownship.ca/uploads/November%2025%20Approved%20Minutes.pdf
+CASSELMAN M,CASSELMAN,2026-11-09,covered_by_prefetch_cache,,https://pub-casselman.escribemeetings.com/FileStream.ashx?DocumentId=1112
+CAVAN MONAGHAN TP,CAVAN MONAGHAN,2026-11-09,covered_by_prefetch_cache,,https://www.cavanmonaghan.net/local-government/council/agendas-and-minutes/
+CENTER WELLINGTON TP,CENTER WELLINGTON,2026-11-09,covered_by_prefetch_cache,,https://centrewellington.civicweb.net/Portal/
+CENTRAL ELGIN M,CENTRAL ELGIN,2026-11-09,covered_by_prefetch_cache,,https://centralelgin.civicweb.net/Portal/
+CAMBRIDGE C,CAMBRIDGE,2026-11-09,skipped,,https://pub-cambridge.escribemeetings.com/
+CENTRAL HURON M,CENTRAL HURON,2026-11-09,covered_by_prefetch_cache,,https://www.centralhuron.ca/en/your-municipal-government/council.aspx
+CARLING TP,CARLING,2026-11-09,scanned_pdf,,https://muniserv.ca/wp-content/uploads/muniServ-Media-Kit.pdf
+CENTRE HASTINGS M,CENTRE HASTINGS,2026-11-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B0A959D90>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+CENTRAL FRONTENAC TP,CENTRAL FRONTENAC,2026-11-09,skipped,,https://media-001-ca.cdn.govstack.com/southfrontenac-006-ca/media/ubkjgmxc/el17b-notice-of-additional-nominations.pdf
+CHAMPLAIN TP,CHAMPLAIN,2026-11-09,covered_by_prefetch_cache,,https://pub-champlain.escribemeetings.com/filestream.ashx?DocumentId=14669
+CARLOW MAYO TP,CARLOW MAYO,2026-11-09,skipped,,https://carlowmayo.civicweb.net/Portal/
+CHAPPLE TP,CHAPPLE,2026-11-09,covered_by_prefetch_cache,,https://chapple.civicweb.net/filepro/documents/4239
+CASEY TP,CASEY,2026-11-09,scanned_pdf,,https://casey.ca/wp-content/uploads/2026/10/1.-Adoption-of-Agenda.pdf
+CHATHAM KENT M,CHATHAM KENT,2026-11-09,covered_by_prefetch_cache,,https://pub-chatham-kent.escribemeetings.com/
+ATHENS TP,ATHENS,2026-11-09,scanned_pdf,,https://athenstownship.ca/wp-content/uploads/2026/10/agenda-October-2026.pdf
+CHAMBERLAIN TP,CHAMBERLAIN,2026-11-09,scanned_pdf,,https://www.chamberlaintownship.com/
+CALLANDER M,CALLANDER,2026-11-09,scanned_pdf,,https://callander.civicweb.net/FileStorage/B1990BBE70C2421084293A26229187C7-List%20of%20Recommendations%20on%20Consent%20Agenda%20Items.pdf
+CENTRAL MANITOULIN M,CENTRAL MANITOULIN,2026-11-09,scanned_pdf,,https://media-001-ca.cdn.govstack.com/centralmanitoulin-003-ca/media/qwgb2vka/notice_cancellation_council_01082020.pdf
+CHATSWORTH TP,CHATSWORTH,2026-11-09,scanned_pdf,,https://chatsworth.ca/wp-content/uploads/2026/05/Multi-Use-Community-Recreation-Joint-Committee-Agenda-May-26-2026.pdf
+CLARENCE ROCKLAND C,CLARENCE ROCKLAND,2026-11-09,skipped,,https://cr-pub.escribemeetings.com/FileStream.ashx?DocumentId=15277
+COBOURG TP,COBOURG,2026-11-09,covered_by_prefetch_cache,,https://www.cobourg.ca/our-government/mayor-council/council-meetings/
+CLARINGTON M,CLARINGTON,2026-11-09,skipped,,https://pub-clarington.escribemeetings.com/FileStream.ashx?DocumentId=66045
+BURPEE AND MILLS TP,BURPEE AND MILLS,2026-11-09,skipped,,https://www.burpeemills.com/app/download/13261543187/AGENDA+January+7%2C+2026.docx?t=1791403021
+CHISHOLM TP,CHISHOLM,2026-11-09,scanned_pdf,,https://www.chisholm.ca/uploads/2026-09-01 Special Meeting - Tender Chiswick.pdf
+BURK TMS FALLS TP,BURK TMS FALLS,2026-11-09,scanned_pdf,,https://irp.cdn-website.com/55929d1f/files/uploaded/05-2025_Rules_Proceedings_of_Council.pdf
+COCHRANE TP,COCHRANE,2026-11-09,scanned_pdf,,https://www.cochrane.ca/sites/default/files/2026-09/Regular%20Council%20Meeting%20Highlights%20-%20Sept%2021%2C%202026.pdf
+CLEARVIEW TP,CLEARVIEW,2026-11-09,skipped,,https://pub-clearview.escribemeetings.com:443/Meeting.aspx?Id=542f25ad-d4a2-40aa-9a42-174b8e399c5d&Agenda=Agenda&lang=English
+CRAMAHE TP,CRAMAHE,2026-11-09,covered_by_prefetch_cache,,https://pub-cramahe.escribemeetings.com:443/FileStream.ashx?DocumentId=34147
+CORNWALL C,CORNWALL,2026-11-09,skipped,,https://www.cornwall.ca/en/city-hall/council-meetings.aspx
+BRUDENELL LYNDOCH AND RAGLAN TP,BRUDENELL LYNDOCH AND RAGLAN,2026-11-09,scanned_pdf,,https://blrtownship.ca/wp-content/uploads/2026/10/October-7th-2026-Regular-Agenda-1.pdf
+DEEP RIVER TP,DEEP RIVER,2026-11-09,skipped,,https://deepriver.civicweb.net/filepro/documents/32369
+CHAPLEAU TP,CHAPLEAU,2026-11-09,scanned_pdf,,https://www.chapleau.ca/township/administration/council-agenda-minutes/
+COBALT TP,COBALT,2026-11-09,scanned_pdf,,https://cobalt.ca/wp-content/uploads/2026/09/September-15-2026-Agenda-Package-Public.pdf
+COLLINGWOOD TP,COLLINGWOOD,2026-11-09,skipped,,https://pub-collingwood.escribemeetings.com/FileStream.ashx?DocumentId=11705
+DORION TP,DORION,2026-11-09,skipped,,https://doriontownship.ca/township/council/agendas-minutes
+DRYDEN C,DRYDEN,2026-11-09,covered_by_prefetch_cache,,https://pub-dryden.escribemeetings.com/Meeting.aspx?Id=d4d181d9-b0ad-48f4-8dbe-8eafc2e04b9d&Agenda=Agenda&lang=English
+COCKBURN ISLAND TP,COCKBURN ISLAND,2026-11-09,scanned_pdf,,https://cockburnisland.ca/docs/2026/Minutes_260513.pdf
+DAWSON TP,DAWSON,2026-11-09,scanned_pdf,,https://www.dawsontownship.ca/wp-content/uploads/2026/10/Dawson-council-minutes-October-7-2026.pdf
+DYSART ET AL M,DYSART ET AL,2026-11-09,covered_by_prefetch_cache,,https://dysartetal.civicweb.net/filepro/document/427861/By-Law%202025-21%20-%20Appointment%20By-Law.pdf
+DUTTON DUNWICH M,DUTTON DUNWICH,2026-11-09,skipped,,https://www.duttondunwich.on.ca/public/download/files/270264
+EAST FERRIS M,EAST FERRIS,2026-11-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B0A6E8E50>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+CONMEE TP,CONMEE,2026-11-09,scanned_pdf,,https://www.conmee.com/Home/DownloadMeeting/80eb5098-7be3-4111-bc26-ca54e5533c43?isEnglish=True
+EAST GWILLIMBURY TP,EAST GWILLIMBURY,2026-11-09,covered_by_prefetch_cache,,https://www.eastgwillimbury.ca/en/living-in-eg/newresidents.aspx
+DOURO DUMMER TP,DOURO DUMMER,2026-11-09,skipped,,https://pub-douro-dummer.escribemeetings.com/FileStream.ashx?DocumentId=24602
+EAST ZORRA TAVISTOCK TP,EAST ZORRA TAVISTOCK,2026-11-09,covered_by_prefetch_cache,,https://www.zorra.ca/our-township/council/council-meetings/
+EDWARDSBURGH CARDINAL TP,EDWARDSBURGH CARDINAL,2026-11-09,covered_by_prefetch_cache,,https://pub-twpec.escribemeetings.com/FileStream.ashx?DocumentId=22276
+ELIZABETHTOWN KITLEY TP,ELIZABETHTOWN KITLEY,2026-11-09,covered_by_prefetch_cache,,https://elizabethtownkitley.civicweb.net/filepro/documents/3505
+ELLIOT LAKE C,ELLIOT LAKE,2026-11-09,covered_by_prefetch_cache,,https://events.elliotlake.ca/council?_mid_=48276
+EAR FALLS TP,EAR FALLS,2026-11-09,skipped,,https://ear-falls.com/wp-content/uploads/2026/07/August-5-2026-Agenda-Proposed-Motions.pdf
+DRUMMOND NORTH ELMSLEY TP,DRUMMOND NORTH ELMSLEY,2026-11-09,scanned_pdf,,https://drummondnorthelmsley.civicweb.net/Portal/
+EAST GARAFRAXA TP,EAST GARAFRAXA,2026-11-09,scanned_html,,https://pub-eastgarafraxa.escribemeetings.com/Meeting.aspx?Id=8380ee02-795a-40b5-9a3e-7322d9905a48&Agenda=Agenda&lang=English
+ERIN TP,ERIN,2026-11-09,covered_by_prefetch_cache,,https://pub-erin.escribemeetings.com:443/Meeting.aspx?Id=aab555c3-9585-4b3d-ae1d-82467bf14638&Agenda=Agenda&lang=English
+ESPANOLA TP,ESPANOLA,2026-11-09,covered_by_prefetch_cache,,https://pub-espanola.escribemeetings.com/filestream.ashx?DocumentId=14097
+DAWN EUPHEMIA TP,DAWN EUPHEMIA,2026-11-09,scanned_pdf,,https://dawneuphemia.ca/council-committees/council-meeting-agendas-and-minutes/
+ESSEX TP,"Essex, T",2026-11-09,covered_by_prefetch_cache,,https://townofessex-pub.escribemeetings.com/FileStream.ashx?DocumentId=29702
+EVANTUREL TP,EVANTUREL,2026-11-09,skipped,,https://evanturel.com/council/minutes-agendas/#mainContent
+FARADAY TP,FARADAY,2026-11-09,covered_by_prefetch_cache,,https://faraday.civicweb.net/filepro/documents/3669
+FAUQUIER STRICKLAND TP,FAUQUIER STRICKLAND,2026-11-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B09BEC790>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+FORT ERIE TP,FORT ERIE,2026-11-09,covered_by_prefetch_cache,,https://pub-forterie.escribemeetings.com/FileStream.ashx?DocumentId=38348
+FORT FRANCES TP,FORT FRANCES,2026-11-09,covered_by_prefetch_cache,,https://fortfrances.civicweb.net/filepro/documents/148095
+FRENCH RIVER M,FRENCH RIVER,2026-11-09,covered_by_prefetch_cache,,https://frenchriver.ca/p/council-minutes-agendas#downloadOurApp
+BROOKE ALVINSTON M,BROOKE ALVINSTON,2026-11-09,scanned_pdf,,https://brookealvinston.com/wp-content/uploads/2026/10/Special-October-23-2026.pdf
+FRONTENAC ISLANDS TP,FRONTENAC ISLANDS,2026-11-09,covered_by_prefetch_cache,,https://frontenac.civicweb.net/FileStorage/60B9219B5EF1457E988EE5D7893B80D6-June%2012%20Meeting%20Minutes.pdf
+ENGLEHART TP,ENGLEHART,2026-11-09,skipped,,https://englehart.civicweb.net/filepro/documents/35
+GAUTHIER TP,GAUTHIER,2026-11-09,no_url_in_registry,,
+GEORGIAN BAY TP,Georgian Bay,2026-11-09,covered_by_prefetch_cache,,https://georgianbay.civicweb.net/filepro/documents
+GEORGIAN BLUFFS TP,Georgian Bluffs,2026-11-09,covered_by_prefetch_cache,,https://pub-georgianbluffs.escribemeetings.com/
+GEORGINA T,Georgina,2026-11-09,covered_by_prefetch_cache,,https://pub-georgina.escribemeetings.com/FileStream.ashx?DocumentId=22735
+DESERONTO TP,DESERONTO,2026-11-09,skipped,,https://www.deseronto.ca/council-minutes
+ESSA TP,ESSA,2026-11-09,skipped,,https://calendar.essatownship.on.ca/default/Download?StartDate=08/01/2026&EndDate=08/31/2026
+FRONT OF YONGE TP,FRONT OF YONGE,2026-11-09,skipped,,https://mallorytown.ca/township-services/council/agendas-minutes/
+GORE BAY T,Gore Bay,2026-11-09,covered_by_prefetch_cache,,https://www.gorebay.ca/our-government/council-and-council-meetings/
+GRAND VALLEY T,Grand Valley,2026-11-09,covered_by_prefetch_cache,,https://pub-townofgrandvalley.escribemeetings.com/
+GRAVENHURST T,Gravenhurst,2026-11-09,covered_by_prefetch_cache,,https://www.gravenhurst.ca/media/hdwfmnnv/procedure-public-electronic-meeting-participation.pdf
+GREATER MADAWASKA TP,Greater Madawaska,2026-11-09,covered_by_prefetch_cache,,https://greatermadawaska.civicweb.net/Portal/Welcome.aspx
+GREATER NAPANEE T,Greater Napanee,2026-11-09,covered_by_prefetch_cache,,https://greaternapanee.civicweb.net/document/229941
+GREATER SUDBURY C,Greater Sudbury,2026-11-09,covered_by_prefetch_cache,,https://pub-greatersudbury.escribemeetings.com:443/Meeting.aspx?Id=48511e9e-1af4-4c8d-91d9-ffb5bc8c1f8f&Agenda=Agenda&lang=English
+GREENSTONE M,Greenstone,2026-11-09,covered_by_prefetch_cache,,https://greenstone.civicweb.net/Portal/Welcome.aspx
+GREY HIGHLANDS M,Grey Highlands,2026-11-09,covered_by_prefetch_cache,,https://greyhighlands.civicweb.net/filepro/document/388562/Consolidated By-law No. 2024-097 - Procedure By-law - Pdf.pdf
+GRIMSBY T,Grimsby,2026-11-09,covered_by_prefetch_cache,,https://pub-grimsby.escribemeetings.com/
+GUELPH C,Guelph,2026-11-09,covered_by_prefetch_cache,,https://pub-guelph.escribemeetings.com/
+GILLIES TP,Gillies,2026-11-09,skipped,,https://www.gilliestownship.com/en/our-government/agendas-and-minutes.aspx
+HALDIMAND COUNTY,Haldimand County,2026-11-09,covered_by_prefetch_cache,,https://pub-haldimandcounty.escribemeetings.com/
+HALTON HILLS T,Halton Hills,2026-11-09,covered_by_prefetch_cache,,https://pub-haltonhills.escribemeetings.com:443/Meeting.aspx?Id=609d5f2d-7bd2-47d4-8715-2f3581ade18a&Agenda=Agenda&lang=English
+HAMILTON C,"Hamilton, C",2026-11-09,covered_by_prefetch_cache,,https://pub-hamilton.escribemeetings.com/FileStream.ashx?DocumentId=510555
+HAMILTON TP,"Hamilton, Tp",2026-11-09,skipped,,https://hamiltontownship.civicweb.net/Portal/
+HANOVER T,Hanover,2026-11-09,covered_by_prefetch_cache,,https://pub-hanover.escribemeetings.com:443/FileStream.ashx?DocumentId=7577
+ENNISKILLEN TP,ENNISKILLEN,2026-11-09,scanned_pdf,,https://www.enniskillen.ca/wp-content/uploads/2026/09/Agenda-Council-September-21-2026.pdf
+COLEMAN TP,COLEMAN,2026-11-09,skipped,,https://www.colemantownship.ca/
+HASTINGS HIGHLANDS M,Hastings Highlands,2026-11-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B09ECA310>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+HARLEY TP,Harley,2026-11-09,skipped,,http://harley.ca/council-meetings/
+EAST HAWKESBURY TP,EAST HAWKESBURY,2026-11-09,skipped,,https://pub-easthawkesbury.escribemeetings.com/Meeting.aspx?Id=89fed6ce-ff43-427c-a9ec-6afa44aa0b7c&Agenda=Agenda&lang=English
+HARRIS TP,Harris,2026-11-09,skipped,,https://www.temiskaming.com/page.php?id=57
+HEARST T,HEARST,2026-11-09,covered_by_prefetch_cache,,http://www.hearst.ca/wp-content/uploads/2025/12/By-law-79-2025.pdf
+HIGHLANDS EAST M,HIGHLANDS EAST,2026-11-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B0A5B3A50>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+HAVELOCK BELMONT METHUEN TP,HAVELOCK BELMONT METHUEN,2026-11-09,skipped,,https://www.hbmtwp.ca/en/municipal-government/agendas-and-minutes.aspx
+GORDON/BARRIE ISLAND M,Gordon/Barrie Island,2026-11-09,skipped,,https://www.gordonbarrieisland.ca/app/download/20013243825/Agenda+July+8+2025.pdf?t=1784810713
+GUELPH/ERAMOSA TP,Guelph/Eramosa,2026-11-09,skipped,,https://www.get.on.ca/township-services/council/agendas-and-minutes
+HORNEPAYNE TP,HORNEPAYNE,2026-11-09,covered_by_prefetch_cache,,https://www.hornepayne.ca/media/mufch2by/rfp-no-2026-07-30-townhall-renovations.pdf
+HAWKESBURY T,HAWKESBURY,2026-11-09,skipped,,https://pub-hawkesbury.escribemeetings.com/FileStream.ashx?DocumentId=669
+GODERICH T,Goderich,2026-11-09,skipped,,https://pub-goderich.escribemeetings.com/FileStream.ashx?DocumentId=65309
+HILTON BEACH V,HILTON BEACH,2026-11-09,skipped,,https://hiltonbeach.com/documents/agenda-march-11-2026-council-meeting/
+HUNTSVILLE T,HUNTSVILLE,2026-11-09,covered_by_prefetch_cache,,https://huntsvilleon.civicweb.net/Portal/
+HORTON TP,HORTON,2026-11-09,skipped,,https://www.sdgcounties.ca/node/9771
+HURON KINLOSS TP,HURON KINLOSS,2026-11-09,covered_by_prefetch_cache,,https://pub-huronkinloss.escribemeetings.com/Meeting.aspx?Id=9d8e5588-84f8-44e3-8b3a-f09457a401ba&Agenda=Agenda&lang=English
+HURON SHORES M,HURON SHORES,2026-11-09,covered_by_prefetch_cache,,https://huronshores.ca/your-government/council/minutes/
+HILTON TP,HILTON,2026-11-09,skipped,,https://www.hiltontownship.ca/agenda-archive/
+INGERSOLL T,INGERSOLL,2026-11-09,covered_by_prefetch_cache,,https://ingersoll.civicweb.net/Portal/
+INNISFIL T,INNISFIL,2026-11-09,covered_by_prefetch_cache,,https://innisfil.ca/en/building-and-development/resources/Fence-By-law-052-05-as-amended.pdf
+IROQUOIS FALLS T,IROQUOIS FALLS,2026-11-09,covered_by_prefetch_cache,,https://iroquoisfalls.civicweb.net/Portal/
+IGNACE TP,IGNACE,2026-11-09,skipped,,https://ignace.civicweb.net/Portal/
+HURON EAST M,HURON EAST,2026-11-09,scanned_pdf,,https://media-003-ca.cdn.govstack.com/huroneast-018-ca/media/fhzblnt1/2026-council-calendar.pdf
+HEAD CLARA AND MARIA TP,HEAD CLARA AND MARIA,2026-11-09,skipped,,https://townshipsofheadclaramaria.ca/userfiles/file/Committee%20of%20the%20Whole%20Terms%20of%20Reference%20-%20Final.pdf
+EMO TP,EMO,2026-11-09,scanned_pdf,,https://emo.ca/wp-content/uploads/2026/06/3-Regular-Council-Meeting-Minutes-February-13-2024.pdf
+KAPUSKASING T,KAPUSKASING,2026-11-09,covered_by_prefetch_cache,,https://kapuskasing.civicweb.net/Portal/
+KAWARTHA LAKES C,KAWARTHA LAKES,2026-11-09,covered_by_prefetch_cache,,https://pub-kawarthalakes.escribemeetings.com/FileStream.ashx?DocumentId=92808
+HILLIARD TP,HILLIARD,2026-11-09,scanned_pdf,,https://townshipofhilliard.ca/wp-content/uploads/2026/09/agenda-2026-09-16.pdf
+KENORA C,KENORA,2026-11-09,covered_by_prefetch_cache,,https://pub-kenora.escribemeetings.com:443/FileStream.ashx?DocumentId=4469
+JAMES TP,JAMES,2026-11-09,scanned_pdf,,https://elklake.ca/index.asp?SEC=03F31890-A9C6-4F60-84FB-B97AC8332241
+KEARNEY TP,KEARNEY,2026-11-09,skipped,,https://townofkearney.ca/council/council-meetings/
+KERNS TP,KERNS,2026-11-09,skipped,,https://kerns.ca/council-minutes/
+KINCARDINE M,KINCARDINE,2026-11-09,covered_by_prefetch_cache,,https://media-001-ca.cdn.govstack.com/kincardine-005-ca/media/tfhpjdk5/2022-2026-council-declaration-of-interest.pdf
+KING TP,KING,2026-11-09,covered_by_prefetch_cache,,https://www.king.ca/sites/default/files/docs/local-government/Committees%2C%20Boards%2C%20and%20Task%20Forces/Appointment%20of%20Deputy%20Mayors%202023-2026%20(2).pdf
+JOCELYN TP,JOCELYN,2026-11-09,skipped,,https://jocelyn.ca/township-office/council-minutes/
+KINGSVILLE TP,KINGSVILLE,2026-11-09,covered_by_prefetch_cache,,https://kingsville-pub.escribemeetings.com/
+KIRKLAND LAKE TP,KIRKLAND LAKE,2026-11-09,covered_by_prefetch_cache,,https://kirklandlake.civicweb.net/filepro/documents/
+KITCHENER C,KITCHENER,2026-11-09,covered_by_prefetch_cache,,https://pub-kitchener.escribemeetings.com/FileStream.ashx?DocumentId=38633
+KINGSTON C,KINGSTON,2026-11-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B1379C150>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+KILLARNEY M,KILLARNEY,2026-11-09,skipped,,https://www.killarney.ca/p/meeting-minutes#downloadOurApp
+JOLY TP,JOLY,2026-11-09,scanned_pdf,,https://townshipofjoly.com/uploads/Catalis Meeting Management agenda.pdf
+KILLALOE HAGARTY AND RICHARDS TP,KILLALOE HAGARTY AND RICHARDS,2026-11-09,scanned_pdf,,https://www.killaloe-hagarty-richards.ca/sites/25/files/2026-10/September%2015%202026%20Regular%20Meeting%20Minutes.pdf
+LAKESHORE M,LAKESHORE,2026-11-09,covered_by_prefetch_cache,,https://pub-lakeshore.escribemeetings.com/
+LAMBTON SHORES M,LAMBTON SHORES,2026-11-09,covered_by_prefetch_cache,,https://pub-lambtonshores.escribemeetings.com/
+CHARLTON AND DACK M,CHARLTON AND DACK,2026-11-09,scanned_pdf,,https://www.charltonafc.com/
+HUDSON TP,HUDSON,2026-11-09,scanned_pdf,,https://www.microsoft.com/silverlight/downloads.aspx
+LASALLE TP,LASALLE,2026-11-09,covered_by_prefetch_cache,,https://pub-lasalle.escribemeetings.com/FileStream.ashx?DocumentId=28692
+LA VALLEE TP,LA VALLEE,2026-11-09,skipped,,https://lavallee.ca/wp-content/uploads/2026/08/Agenda-August-12-2026.pdf
+LAURENTIAN HILLS TP,LAURENTIAN HILLS,2026-11-09,error,"HTTPSConnectionPool(host='laurentianhills.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B0F7D8A50>: Failed to resolve 'laurentianhills.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://laurentianhills.civicweb.net/Portal/
+LAURENTIAN VALLEY TP,LAURENTIAN VALLEY,2026-11-09,error,"HTTPSConnectionPool(host='laurentianvalley.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B0F921ED0>: Failed to resolve 'laurentianvalley.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://laurentianvalley.civicweb.net/Portal/
+LEAMINGTON M,LEAMINGTON,2026-11-09,covered_by_prefetch_cache,,https://www.leamington.ca/media/xhvmje3f/26may12_councilagenda.pdf
+LEEDS AND THE THOUSAND ISLANDS TP,LEEDS AND THE THOUSAND ISLANDS,2026-11-09,covered_by_prefetch_cache,,https://pub-leeds1000islands.escribemeetings.com/FileStream.ashx?DocumentId=14017
+ARMOUR TP,ARMOUR,2026-11-09,scanned_pdf,,https://irp.cdn-website.com/20e551fd/files/uploaded/1.+January+13+2026+Council+Agenda+Package-01f1d036.pdf
+LARDER LAKE TP,LARDER LAKE,2026-11-09,skipped,,https://www.larderlake.ca/events
+LIMERICK TP,LIMERICK,2026-11-09,skipped,,https://limerick.civicweb.net/Portal/
+LAIRD TP,LAIRD,2026-11-09,scanned_pdf,,https://lairdtownship.ca/wp-content/uploads/2026/05/05-May-21-2026-Regular-Agenda-57.pdf
+LUCAN BIDDULPH TP,LUCAN BIDDULPH,2026-11-09,covered_by_prefetch_cache,,https://www.lucanbiddulph.on.ca/town-hall/council-agendas-minutes
+MACDONALD MEREDITH AND ABERDEEN ADDL TP,MACDONALD MEREDITH AND ABERDEEN ADDL,2026-11-09,skipped,,https://echobay.ca/council-minutes/
+HOWICK TP,HOWICK,2026-11-09,scanned_pdf,,https://howick.nyc3.cdn.digitaloceanspaces.com/Agendas-Minutes/September-15-Council-Agenda-Package-Compressed_2026-09-11-204000_abhy.pdf
+LATCHFORD TP,LATCHFORD,2026-11-09,skipped,,http://www.latchford.ca/budget.pdf
+MACHAR TP,MACHAR,2026-11-09,skipped,,https://www.townshipofmachar.ca/en/municipal-services/meetings-agendas.aspx
+LANARK HIGHLANDS TP,LANARK HIGHLANDS,2026-11-09,skipped,,https://pub-lanarkhighlands.escribemeetings.com/FileStream.ashx?DocumentId=15437
+MACHIN M,MACHIN,2026-11-09,skipped,,https://visitmachin.com/council/minutes/
+LAKE OF BAYS TP,LAKE OF BAYS,2026-11-09,scanned_pdf,,https://lakeofbays.civicweb.net/FileStorage/F75E5EF1319A4C2FBAF976F907BB4E6E-2025-147%20-%20Council%20Remuneration.pdf
+MANITOUWADGE TP,MANITOUWADGE,2026-11-09,covered_by_prefetch_cache,,https://manitouwadge.civicweb.net/Portal/
+LAKE OF THE WOODS TP,LAKE OF THE WOODS,2026-11-09,scanned_pdf,,https://www.lakeofthewoods.ca/wp-content/uploads/2026/10/LOW-Council-Minutes-October-6-2026.pdf
+MALAHIDE TP,MALAHIDE,2026-11-09,skipped,,https://www.malahide.ca/council-meetings
+MARKHAM C,MARKHAM,2026-11-09,covered_by_prefetch_cache,,https://pub-markham.escribemeetings.com/FileStream.ashx?DocumentId=118689
+LONDON C,LONDON,2026-11-09,skipped,,https://pub-london.escribemeetings.com/FileStream.ashx?DocumentId=126789
+MARMORA AND LAKE M,MARMORA AND LAKE,2026-11-09,covered_by_prefetch_cache,,https://marmoraandlake.civicweb.net/Portal/
+LOYALIST TP,LOYALIST,2026-11-09,skipped,,https://www.loyalist.ca/en/living-in-loyalist/resources/Documents/Renewable-Energy-Vibrancy-Review-Committee-Terms-of-Reference.pdf
+MADAWASKA VALLEY TP,MADAWASKA VALLEY,2026-11-09,skipped,,http://www.madawaskavalley.ca/deptdocs/Madawaska%20Valley%20-%20The%20Path%20Forward%202015-2019%20Strategic%20Plan.pdf
+LINCOLN TP,LINCOLN,2026-11-09,scanned_html,,https://pub-lincolncity.escribemeetings.com/FileStream.ashx?DocumentId=4683
+MADOC TP,MADOC,2026-11-09,skipped,,https://madoc.civicweb.net/Portal/
+MAPLETON TP,MAPLETON,2026-11-09,skipped,,https://mapleton.civicweb.net/Portal/
+MCKELLAR TP,MCKELLAR,2026-11-09,covered_by_prefetch_cache,,https://calendar.mckellar.ca/default/Download?StartDate=05/01/2026&EndDate=05/31/2026
+MATTAWAN M,MATTAWAN,2026-11-09,error,"HTTPConnectionPool(host='23060801-draftagendajune8.pdf', port=80): Max retries exceeded with url: / (Caused by NameResolutionError(""<urllib3.connection.HTTPConnection object at 0x0000025B0A1BD190>: Failed to resolve '23060801-draftagendajune8.pdf' ([Errno 11001] getaddrinfo failed)""))",http://23060801-DraftagendaJune8.pdf
+MAGNETAWAN M,MAGNETAWAN,2026-11-09,scanned_html,,https://magnetawan.com/content/government/agendas-minutes/10-07-2026-council-agenda.pdf
+MEAFORD M,MEAFORD,2026-11-09,covered_by_prefetch_cache,,https://meaford.civicweb.net/document/187422/2025-28%20-%20To%20Establish%20the%20Heritage%20Advisory%20Committee%20(Updated%20Terms%20of%20Reference).pdf
+DUBREUILVILLE TP,DUBREUILVILLE,2026-11-09,scanned_pdf,,https://dubreuilville.ca/wp-content/uploads/2026/09/2026-07-08-Minutes.pdf
+MARKSTAY WARREN M,MARKSTAY WARREN,2026-11-09,skipped,,https://pub-markstay-warren.escribemeetings.com:443/Meeting.aspx?Id=0b5ac6b1-ae8b-47e0-a19e-cc14c2d5e087&Agenda=Agenda&lang=English
+MIDDLESEX CENTRE M,MIDDLESEX CENTRE,2026-11-09,covered_by_prefetch_cache,,https://pub-middlesexcentre.escribemeetings.com/
+MIDLAND TP,MIDLAND,2026-11-09,covered_by_prefetch_cache,,https://www.midland.ca/media/lrsfx3ag/procedure-bylaw.pdf
+MILTON TP,MILTON,2026-11-09,covered_by_prefetch_cache,,https://pub-milton.escribemeetings.com/
+MINDEN HILLS TP,MINDEN HILLS,2026-11-09,covered_by_prefetch_cache,,https://mindenhills.civicweb.net/Portal/
+MINTO TP,MINTO,2026-11-09,covered_by_prefetch_cache,,https://town.minto.on.ca/town-hall/council/council-agenda-minutes
+MISSISSAUGA C,MISSISSAUGA,2026-11-09,covered_by_prefetch_cache,,https://pub-mississauga.escribemeetings.com/FileStream.ashx?DocumentId=90858
+MISSISSIPPI MILLS M,MISSISSIPPI MILLS,2026-11-09,covered_by_prefetch_cache,,https://www.mississippimills.ca/municipal-hall/mayor-and-council/archive-of-agendas-and-minutes/
+MELANCTHON TP,MELANCTHON,2026-11-09,skipped,,https://melancthontownship.ca/council/agendas-minutes/
+MONTAGUE TP,MONTAGUE,2026-11-09,covered_by_prefetch_cache,,https://montague.civicweb.net/FileStorage/8D54E126E1C7470D9147818D68354020-Lanark%20County%20Media%20Release%20March%2026%202025.pdf
+MCNAB BRAESIDE TP,MCNAB BRAESIDE,2026-11-09,scanned_pdf,,https://mcnabbraeside.civicweb.net/Portal/
+MOONBEAM TP,MOONBEAM,2026-11-09,scanned_pdf,,https://vplus-documents.s3.ca-central-1.amazonaws.com/moonbeam/_publication/fichiers/Calendrier%20des%20runions%20du%20conseil%20municipal_2026(1).pdf
+MCDOUGALL TP,MCDOUGALL,2026-11-09,skipped,,https://mcdougall.ca/p/agendas-minutes#downloadOurApp
+MONO TP,MONO,2026-11-09,scanned_pdf,,"https://mono.civicweb.net/FileStorage/A23802FCE2124A4A8199667B861B919B-Motion%20by%20Mayor%20Creelman,%20Hwy%20Highway%2010%20and%20Count.pdf"
+MATTAWA TP,MATTAWA,2026-11-09,scanned_pdf,,https://mattawa.ca/uploads/request-to-present-to-council.pdf
+MUSKOKA LAKES TP,MUSKOKA LAKES,2026-11-09,covered_by_prefetch_cache,,https://muskokalakes.civicweb.net/Portal/
+MATTICE VAL C T TP,MATTICE VAL COTE,2026-11-09,scanned_pdf,,https://www.matticevalcote.ca/en/_files/ugd/93a5a9_82259ed2a14245e98923d020fa014aca.pdf
+MCGARRY TP,MCGARRY,2026-11-09,skipped,,https://mcgarry.ca/uploads/dm/40084/Communication20240625.pdf
+NEW TECUMSETH TP,NEW TECUMSETH,2026-11-09,covered_by_prefetch_cache,,https://newtecumseth.civicweb.net/document/99201
+NEEBING M,NEEBING,2026-11-09,skipped,,https://www.neebing.org/en/your-local-government/resources/By-Laws-and-Policies/2019-007-amd-procedure-bylaw.pdf
+NEWMARKET TP,NEWMARKET,2026-11-09,covered_by_prefetch_cache,,https://pub-newmarket.escribemeetings.com/FileStream.ashx?DocumentId=58440
+MERRICKVILLE WOLFORD TP,MERRICKVILLE WOLFORD,2026-11-09,skipped,,https://pub-merrickville-wolford.escribemeetings.com:443/FileStream.ashx?DocumentId=5796
+NIAGARA ON THE LAKE TP,NIAGARA ON THE LAKE,2026-11-09,covered_by_prefetch_cache,,https://www.notl.com/council-government/meetings-agendas-minutes
+MORRIS TURNBERRY M,MORRIS TURNBERRY,2026-11-09,scanned_html,,https://morristurnberry.ca/content/government/agendas-minutes/morris-turnberry-meeting-calendar-2026.pdf
+NAIRN AND HYMAN TP,NAIRN AND HYMAN,2026-11-09,skipped,,https://nairncentre.ca/council/minutes/
+NORFOLK,NORFOLK,2026-11-09,covered_by_prefetch_cache,,https://pub-norfolkcounty.escribemeetings.com/FileStream.ashx?DocumentId=22936
+MORLEY TP,MORLEY,2026-11-09,scanned_pdf,,https://townshipofmorley.ca/wp-content/uploads/2026/09/7.-JULY-7-2025.pdf
+NIAGARA FALLS C,NIAGARA FALLS,2026-11-09,skipped,,https://pub-niagararegion.escribemeetings.com:443/FileStream.ashx?DocumentId=49205
+NIPISSING TP,NIPISSING,2026-11-09,skipped,,https://nipissingtownship.com/council/minutes/
+NORTH DUNDAS TP,NORTH DUNDAS,2026-11-09,covered_by_prefetch_cache,,https://pub-northdundas.escribemeetings.com/
+NORTH FRONTENAC TP,NORTH FRONTENAC,2026-11-09,covered_by_prefetch_cache,,https://northfrontenac.civicweb.net/Portal/
+NORTH GLENGARRY TP,NORTH GLENGARRY,2026-11-09,covered_by_prefetch_cache,,https://media-002-ca.cdn.govstack.com/northglengarry-010-ca/media/ojlb0tip/minutes.pdf
+NORTH ALGONA WILBERFORCE TP,NORTH ALGONA WILBERFORCE,2026-11-09,skipped,,http://nalgonawil.com/council-2/
+NORTH HURON TP,NORTH HURON,2026-11-09,covered_by_prefetch_cache,,https://calendar.northhuron.ca/?_mid_=78865
+NORTH KAWARTHA TP,NORTH KAWARTHA,2026-11-09,covered_by_prefetch_cache,,https://www.northkawartha.ca/your-local-government/council-meeting-information/agendas-and-minutes/
+NORTH MIDDLESEX M,NORTH MIDDLESEX,2026-11-09,covered_by_prefetch_cache,,https://pub-northmiddlesex.escribemeetings.com:443/FileStream.ashx?DocumentId=20850
+NORTH PERTH M,NORTH PERTH,2026-11-09,covered_by_prefetch_cache,,https://media-001-ca.cdn.govstack.com/northperth-003-ca/media/wxjcfnbc/closed-meeting-investigation-report-jul-212009.pdf
+NEWBURY TP,NEWBURY,2026-11-09,scanned_pdf,,https://www.thecounty.ca/government/council-committee-meetings/
+NORTH STORMONT TP,NORTH STORMONT,2026-11-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B0A3C2090>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+NORTHERN BRUCE PENINSULA M,NORTHERN BRUCE PENINSULA,2026-11-09,covered_by_prefetch_cache,,https://www.northbrucepeninsula.ca/government/council-committees/
+NORWICH TP,NORWICH,2026-11-09,covered_by_prefetch_cache,,"https://norwich.civicweb.net/FileStorage/8168EB35A78B4B3288615EA2023E5B8E-Minutes%20-%20September%2023,%202025%20-A.pdf"
+NORTH DUMFRIES TP,NORTH DUMFRIES,2026-11-09,scanned_pdf,,https://media-002-ca.cdn.govstack.com/northdumfries-015-ca/media/3e4dygku/leisure-lifestyle-committee-terms-of-reference.pdf
+OAKVILLE TP,OAKVILLE,2026-11-09,covered_by_prefetch_cache,,https://pub-oakville.escribemeetings.com/FileStream.ashx?DocumentId=103290
+MARATHON TP,MARATHON,2026-11-09,skipped,,https://www.marathontownship.com/files/marathon/1/file/Minutes/Agenda/agenda 14 october.pdf
+OLIVER PAIPOONGE M,OLIVER PAIPOONGE,2026-11-09,covered_by_prefetch_cache,,https://oliverpaipoonge.civicweb.net/Portal/
+NORTHEASTERN MANITOULIN AND THE ISLANDS TP,NORTHEASTERN MANITOULIN AND THE ISLANDS,2026-11-09,scanned_pdf,,https://www.townofnemi.on.ca/Home/DownloadMeeting/f318a854-3a6d-49a7-b7f8-c4f59ba5faa9?isEnglish=True
+ORANGEVILLE TP,ORANGEVILLE,2026-11-09,covered_by_prefetch_cache,,https://calendar.orangeville.ca/meetings
+ORILLIA C,ORILLIA,2026-11-09,covered_by_prefetch_cache,,https://orillia.civicweb.net/Portal/
+ORO MEDONTE TP,ORO MEDONTE,2026-11-09,covered_by_prefetch_cache,,https://oromedonte.civicweb.net/Portal/MeetingInformation.aspx?Org=Cal&Id=1442
+OSHAWA C,OSHAWA,2026-11-09,covered_by_prefetch_cache,,https://pub-oshawa.escribemeetings.com/
+OTONABEE SOUTH MONAGHAN TP,OTONABEE SOUTH MONAGHAN,2026-11-09,error,"HTTPSConnectionPool(host='otonabee.civicweb.net', port=443): Max retries exceeded with url: /document/32200 (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B0A3BAE50>: Failed to resolve 'otonabee.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://otonabee.civicweb.net/document/32200
+OTTAWA C,OTTAWA,2026-11-09,covered_by_prefetch_cache,,https://pub-ottawa.escribemeetings.com/
+OWEN SOUND C,OWEN SOUND,2026-11-09,covered_by_prefetch_cache,,https://pub-owensound.escribemeetings.com/
+MULMUR TP,MULMUR,2026-11-09,scanned_pdf,,https://mulmur.ca/content/town-hall/agendas-minutes/mansfield-parks-advisory-committee/2026-09-22-parks-minutes.pdf
+PARRY SOUND TP,PARRY SOUND,2026-11-09,covered_by_prefetch_cache,,https://media-001-ca.cdn.govstack.com/parrysound-001-ca/media/g3wbsvzw/2026-10-20-advertise-committee-appointments.pdf
+PAPINEAU CAMERON TP,PAPINEAU CAMERON,2026-11-09,skipped,,https://papineaucameron.ca/council/minutes-agendas/
+PELHAM TP,PELHAM,2026-11-09,covered_by_prefetch_cache,,https://www.pelham.ca/pelham-government/council/council-meetings/
+PEMBROKE C,PEMBROKE,2026-11-09,covered_by_prefetch_cache,,http://calendar.pembroke.ca/default/Download?StartDate=04/01/2026&EndDate=04/30/2026
+PENETANGUISHENE TP,PENETANGUISHENE,2026-11-09,covered_by_prefetch_cache,,https://penetanguishene.civicweb.net/Portal/
+NIPIGON TP,NIPIGON,2026-11-09,scanned_pdf,,https://www.nipigon.net/town-hall/municipal-government/council-committee-minutes
+PERTH EAST TP,PERTH EAST,2026-11-09,covered_by_prefetch_cache,,https://pub-pertheast.escribemeetings.com:443/Meeting.aspx?Id=1967826b-bf65-4a3b-b139-2707c8ac6b61&Agenda=Agenda&lang=English
+O TMCONNOR TP,O'CONNOR,2026-11-09,scanned_pdf,,"https://oconnortownship.ca/uploads/documents/Agendas/December%2015,%202014%20a.pdf"
+PERTH TP,"Perth, T",2026-11-09,covered_by_prefetch_cache,,https://www.perth.ca/media/krvd5yix/2026-council-_-committee-calendar.pdf
+PETAWAWA TP,PETAWAWA,2026-11-09,covered_by_prefetch_cache,,https://petawawa.ca/town-hall/council-and-committees/
+PETERBOROUGH C,"Peterborough, C",2026-11-09,covered_by_prefetch_cache,,https://pub-peterborough.escribemeetings.com/filestream.ashx?DocumentId=43155
+PETROLIA TP,PETROLIA,2026-11-09,covered_by_prefetch_cache,,https://petrolia.civicweb.net/Portal/
+PICKERING C,PICKERING,2026-11-09,covered_by_prefetch_cache,,https://pub-pickering.escribemeetings.com/
+PERTH SOUTH TP,PERTH SOUTH,2026-11-09,error,"HTTPSConnectionPool(host='pertheast.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B09DA39D0>: Failed to resolve 'pertheast.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://pertheast.civicweb.net/Portal/
+NORTH BAY C,NORTH BAY,2026-11-09,skipped,,https://pub-northbay.escribemeetings.com:443/FileStream.ashx?DocumentId=39641
+PLYMPTON WYOMING TP,PLYMPTON WYOMING,2026-11-09,covered_by_prefetch_cache,,https://www.plympton-wyoming.com/media/cuiayndc/important-notice-to-residents-start-of-construction.pdf
+NORTH GRENVILLE M,NORTH GRENVILLE,2026-11-09,skipped,,https://pub-northgrenville.escribemeetings.com:443/Meeting.aspx?Id=cb634162-06b5-4aec-96ec-ed88051dd067&Agenda=Agenda&lang=English
+PORT COLBORNE C,PORT COLBORNE,2026-11-09,covered_by_prefetch_cache,,https://www.portcolborne.ca/en/resourcesGeneral/Documents/CouncilAgendasandMinutes/2020/Agenda/12-14-20-36%20regular%20addendum.pdf
+PORT HOPE M,PORT HOPE,2026-11-09,covered_by_prefetch_cache,,https://pub-porthope.escribemeetings.com/
+POWASSAN M,POWASSAN,2026-11-09,covered_by_prefetch_cache,,https://www.powassan.net/Uploads/Documents/MunicipalServices/Council/2023 Council Remuneration.pdf
+PRESCOTT TP,PRESCOTT,2026-11-09,covered_by_prefetch_cache,,https://www.prescott.ca/media/mxrgytsf/2026-council-calendar-final.pdf
+PRINCE EDWARD,PRINCE EDWARD,2026-11-09,error,"HTTPSConnectionPool(host='pub-pec.escribemeetings.com', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B09DEAE50>: Failed to resolve 'pub-pec.escribemeetings.com' ([Errno 11001] getaddrinfo failed)""))",https://pub-pec.escribemeetings.com/
+PELEE TP,PELEE,2026-11-09,skipped,,https://www.pelee.org/local-government/council-minutes/
+PUSLINCH TP,PUSLINCH,2026-11-09,covered_by_prefetch_cache,,https://puslinch.ca/government/council/
+QUINTE WEST C,QUINTE WEST,2026-11-09,covered_by_prefetch_cache,,https://quintewest.civicweb.net/Portal/
+GANANOQUE TP,GANANOQUE,2026-11-09,scanned_pdf,,https://s3.ca-central-1.amazonaws.com/gananoque.ca/s3fs-public/meetings/agendas/Agenda-Council-25-With Paperclips-14Oct2026-Special.pdf
+RAMARA TP,RAMARA,2026-11-09,covered_by_prefetch_cache,,https://www.ramara.ca/municipal-office/council/council-and-committee-meetings/
+RED LAKE M,RED LAKE,2026-11-09,skipped,,https://pub-redlake.escribemeetings.com/
+PLUMMER ADDITIONAL TP,PLUMMER ADDITIONAL,2026-11-09,scanned_pdf,,https://plummertownship.ca/wp-content/uploads/2026/09/Agenda-2026-09-16.pdf
+MOOSONEE TP,MOOSONEE,2026-11-09,scanned_pdf,,https://www.moosonee.ca/wp-content/uploads/2026/10/REGULAR-COUNCIL-MEETING-AGENDA.pdf
+RICHMOND HILL C,RICHMOND HILL,2026-11-09,covered_by_prefetch_cache,,https://pub-richmondhill.escribemeetings.com/filestream.ashx?DocumentId=75405
+RIDEAU LAKES TP,RIDEAU LAKES,2026-11-09,covered_by_prefetch_cache,,https://pub-rideaulakes.escribemeetings.com/FileStream.ashx?DocumentId=15911
+RUSSELL TP,RUSSELL,2026-11-09,covered_by_prefetch_cache,,https://russell.civicweb.net/Portal/
+OPASATIKA TP,OPASATIKA,2026-11-09,skipped,,https://www.opasatika.net/en/_files/ugd/3e1323_d04e03980ca5421d907f59631ba0a8db.pdf
+OIL SPRINGS TP,OIL SPRINGS,2026-11-09,scanned_pdf,,http://calendar.oilsprings.ca/meetings/Download?StartDate=08/01/2026&EndDate=08/31/2026
+SARNIA C,SARNIA,2026-11-09,covered_by_prefetch_cache,,https://sarnia.civicweb.net/Portal/
+SAUGEEN SHORES TP,SAUGEEN SHORES,2026-11-09,covered_by_prefetch_cache,,https://pub-saugeenshores.escribemeetings.com/
+RAINY RIVER TP,RAINY RIVER,2026-11-09,scanned_pdf,,https://www.rainyriver.ca/uploads/meetings-agendas/2026/cotw9-september-8-26.pdf
+SCHREIBER TP,SCHREIBER,2026-11-09,covered_by_prefetch_cache,,https://schreiber.ca/council-meetings/
+SCUGOG TP,SCUGOG,2026-11-09,covered_by_prefetch_cache,,https://www.scugog.ca/council-and-administration/mayor-and-council/
+SEGUIN TP,SEGUIN,2026-11-09,covered_by_prefetch_cache,,https://cityofseguintx.legistar.com/View.ashx?M=A&ID=1454688&GUID=C16296E1-948C-414A-A874-89349F261CFD
+SELWYN TP,SELWYN,2026-11-09,covered_by_prefetch_cache,,https://media-002-ca.cdn.govstack.com/selwyntownship-012-ca/media/o3pdfa5z/communicator2026_highres.pdf
+SEVERN TP,SEVERN,2026-11-09,covered_by_prefetch_cache,,https://severn.civicweb.net/Portal/
+RYERSON TP,RYERSON,2026-11-09,skipped,,https://ryersontownship.ca/council/agendas-minutes
+RENFREW TP,"Renfrew, T",2026-11-09,scanned_pdf,,https://www.renfrew.ca/en/town-hall/council-committees/councilmeetings
+SIOUX LOOKOUT M,SIOUX LOOKOUT,2026-11-09,covered_by_prefetch_cache,,https://d2wxwk5ilzon84.cloudfront.net/siouxlookout/115872722cfa6b10e7b025e364e668e70.pdf
+RED ROCK TP,RED ROCK,2026-11-09,skipped,,https://www.redrocktownship.com/town-hall/council/minutes-agendas
+SMITHS FALLS TP,SMITHS FALLS,2026-11-09,covered_by_prefetch_cache,,https://pub-smithsfalls.escribemeetings.com/FileStream.ashx?DocumentId=3223
+SABLES SPANISH RIVERS TP,SABLES SPANISH RIVERS,2026-11-09,skipped,,https://sables-spanish.ca/council/council-meetings
+SAULT STE MARIE C,SAULT STE MARIE,2026-11-09,skipped,,https://saultstemarie.ca/government/city-council/council-agendas-minutes-and-schedule/
+SOUTH BRUCE M,SOUTH BRUCE,2026-11-09,covered_by_prefetch_cache,,"https://southbrucepeninsula.civicweb.net/FileStorage/F6E92F6084DA47E7AA4D7FF470690E07-Unfinished%20Business%20August%206,%202024.pdf"
+SOUTH BRUCE PENINSULA TP,SOUTH BRUCE PENINSULA,2026-11-09,covered_by_prefetch_cache,,"https://southbrucepeninsula.civicweb.net/FileStorage/F6E92F6084DA47E7AA4D7FF470690E07-Unfinished%20Business%20August%206,%202024.pdf"
+SOUTH DUNDAS M,SOUTH DUNDAS,2026-11-09,covered_by_prefetch_cache,,https://www.southdundas.com/municipal-centre/council
+SOUTH FRONTENAC TP,SOUTH FRONTENAC,2026-11-09,covered_by_prefetch_cache,,https://media-001-ca.cdn.govstack.com/southfrontenac-006-ca/media/xqoda35i/by-law-2023-04-committee-by-law-master-2025.pdf
+SOUTH GLENGARRY TP,SOUTH GLENGARRY,2026-11-09,covered_by_prefetch_cache,,https://media-002-ca.cdn.govstack.com/southglengarry-015-ca/media/in3avil4/agenda-typed.pdf
+SOUTH HURON M,SOUTH HURON,2026-11-09,covered_by_prefetch_cache,,https://pub-southhuron.escribemeetings.com/
+PERRY TP,PERRY,2026-11-09,scanned_pdf,,https://townshipofperry.ca/wp-content/uploads/2026/10/2026-10-07-Agenda-Cover.pdf
+SOUTH STORMONT TP,SOUTH STORMONT,2026-11-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B14E0BED0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+POINT EDWARD TP,POINT EDWARD,2026-11-09,scanned_pdf,,https://www.thecounty.ca/government/council-committee-meetings/
+PRINCE TP,PRINCE,2026-11-09,scanned_pdf,,https://www.thecounty.ca/government/council-committee-meetings/
+SMOOTH ROCK FALLS TP,SMOOTH ROCK FALLS,2026-11-09,skipped,,https://docs.google.com/viewer?url=https%3A%2F%2Fsmoothrockfalls.ca%2Fwp-admin%2Fadmin-ajax.php%3Fjuwpfisadmin%3Dfalse%26action%3Dwpfd%26task%3Dfile.download%26wpfd_category_id%3D133%26wpfd_file_id%3D01BFZNUC2COH5MHIHMFNE3IPI3HZ27ECTH%26token%3Dbd5f527dbd6810bad11d43dd80fa49d8%26preview%3D1&embedded=true
+SOUTHGATE TP,SOUTHGATE,2026-11-09,skipped,,https://pub-southgate.escribemeetings.com/
+SPANISH TP,SPANISH,2026-11-09,scanned_pdf,,https://www.townofspanish.com/wp-content/uploads/2026/10/18.-October-7-2026.pdf
+SPRINGWATER TP,SPRINGWATER,2026-11-09,covered_by_prefetch_cache,,https://springwater.civicweb.net/Portal/
+ST CATHARINES C,ST CATHARINES,2026-11-09,covered_by_prefetch_cache,,https://pub-stcatharines.escribemeetings.com/FileStream.ashx?DocumentId=446
+ST CHARLES M,ST CHARLES,2026-11-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B141A7610>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+SOUTH RIVER TP,SOUTH RIVER,2026-11-09,scanned_pdf,,https://southriver.ca/uploads/Oct-13-2026.pdf
+SOUTHWEST MIDDLESEX M,SOUTHWEST MIDDLESEX,2026-11-09,scanned_pdf,,https://www.southwestmiddlesex.ca/sites/default/files/2026-09/2026%2009%2002%20-%20Regular%20Council%20Meeting%20Minutes.pdf
+ST MARYS T,ST MARYS,2026-11-09,covered_by_prefetch_cache,,https://www.townofstmarys.com/town-government/agendas-minutes/
+ST THOMAS C,ST THOMAS,2026-11-09,covered_by_prefetch_cache,,https://pub-stthomas.escribemeetings.com/FileStream.ashx?DocumentId=6077
+STIRLING RAWDON TP,STIRLING RAWDON,2026-11-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B14EA8F90>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+STONE MILLS TP,STONE MILLS,2026-11-09,covered_by_prefetch_cache,,https://media-001-ca.cdn.govstack.com/stonemills-006-ca/media/ltjmtcoe/council-recap-2026-09-28.pdf
+STRATFORD C,STRATFORD,2026-11-09,covered_by_prefetch_cache,,https://stratford.civicweb.net/Portal/
+STRATHROY CARADOC M,STRATHROY CARADOC,2026-11-09,covered_by_prefetch_cache,,https://pub-strathroy-caradoc.escribemeetings.com/filestream.ashx?DocumentId=35622
+STRONG TP,STRONG,2026-11-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B09E4B290>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+SOUTH WEST OXFORD TP,SOUTH WEST OXFORD,2026-11-09,scanned_pdf,,https://www.swox.org/media/m2xdof5z/2026-09-15-council-highlights.pdf
+MCMURRICH MONTEITH TP,MCMURRICH MONTEITH,2026-11-09,scanned_pdf,,https://irp.cdn-website.com/af131183/files/uploaded/Agenda+Package+-+January+20-+2026+Items+1-+9.pdf
+TAY TP,TAY,2026-11-09,covered_by_prefetch_cache,,https://tay.civicweb.net/Portal/
+TAY VALLEY TP,TAY VALLEY,2026-11-09,covered_by_prefetch_cache,,https://tay.civicweb.net/document/22455/Agricultural%20Advisory%20Committee%20Terms%20of%20Reference.pdf
+TECUMSEH TP,TECUMSEH,2026-11-09,covered_by_prefetch_cache,,https://tecumseh-pub.escribemeetings.com/
+JOHNSON TP,JOHNSON,2026-11-09,scanned_pdf,,https://www.johnsontownship.ca/meetings/
+TEMAGAMI M,TEMAGAMI,2026-11-09,covered_by_prefetch_cache,,https://www.temagami.ca/public/download/files/317468
+TEMISKAMING SHORES C,TEMISKAMING SHORES,2026-11-09,covered_by_prefetch_cache,,https://media-003-ca.cdn.govstack.com/temiskamingshores-017-ca/media/lv5gr0hz/00-03-21-2023-agenda-addendum.pdf
+TERRACE BAY TP,TERRACE BAY,2026-11-09,covered_by_prefetch_cache,,https://www.terracebay.ca/wp-content/uploads/2026/09/Terrace-Bay-Compliance-Audit-Committee-Ad.pdf
+THAMES CENTRE M,THAMES CENTRE,2026-11-09,covered_by_prefetch_cache,,https://pub-thamescentre.escribemeetings.com/
+THE ARCHIPELAGO TP,THE ARCHIPELAGO,2026-11-09,covered_by_prefetch_cache,,https://pub-thearchipelago.escribemeetings.com:443/FileStream.ashx?DocumentId=11968
+THE BLUE MOUNTAINS TP,THE BLUE MOUNTAINS,2026-11-09,covered_by_prefetch_cache,,https://pub-bluemountains.escribemeetings.com/FileStream.ashx?DocumentId=34587
+TEHKUMMAH TP,TEHKUMMAH,2026-11-09,skipped,,https://tehkummah.ca/meetings/
+SIOUX NARROWS NESTOR FALLS TP,SIOUX NARROWS NESTOR FALLS,2026-11-09,scanned_pdf,,https://www.snnf.ca/api/media/file/Agenda%20Special%20Session%20October%2013%2C%202026.pdf
+ST JOSEPH TP,ST JOSEPH,2026-11-09,scanned_pdf,,https://stjosephtownship.com/documents/assets/uploads/files/en/2026_tax_rates.pdf
+THORNLOE TP,THORNLOE,2026-11-09,skipped,,https://thornloe.ca/council/minutes/
+THOROLD C,THOROLD,2026-11-09,covered_by_prefetch_cache,,https://pub-thorold.escribemeetings.com/
+THUNDER BAY C,THUNDER BAY,2026-11-09,covered_by_prefetch_cache,,https://pub-thunderbay.escribemeetings.com:443/FileStream.ashx?DocumentId=12692
+TILLSONBURG TP,TILLSONBURG,2026-11-09,covered_by_prefetch_cache,,https://pub-tillsonburg.escribemeetings.com/FileStream.ashx?DocumentId=41866
+TINY TP,TINY,2026-11-09,covered_by_prefetch_cache,,https://www.tiny.ca/township-hall/council-committees/agendas-minutes
+TORONTO C,TORONTO,2026-11-09,skipped,,https://www.toronto.ca/legdocs/municode/1184_027.pdf
+TRENT HILLS M,TRENT HILLS,2026-11-09,covered_by_prefetch_cache,,https://trenthills.civicweb.net/Portal/
+TRENT LAKES M,TRENT LAKES,2026-11-09,covered_by_prefetch_cache,,https://www.trentlakes.ca/media/0hlps3im/2026-council-committee-and-board-meeting-calendar.pdf
+THE NORTH SHORE TP,THE NORTH SHORE,2026-11-09,skipped,,https://townshipofthenorthshore.ca/documents/assets/uploads/files/en/sept_16_minutes.pdf
+TWEED M,TWEED,2026-11-09,covered_by_prefetch_cache,,https://pub-tweed.escribemeetings.com/FileStream.ashx?DocumentId=14752
+TYENDINAGA TP,TYENDINAGA,2026-11-09,covered_by_prefetch_cache,,https://zoom.us/download
+UXBRIDGE TP,UXBRIDGE,2026-11-09,covered_by_prefetch_cache,,https://www.uxbridge.ca/public/download/files/311425
+THE NATION,THE NATION,2026-11-09,skipped,,https://pub-thenation.escribemeetings.com:443/Meeting.aspx?Id=7a8acf50-bce4-480b-9ed2-8b9ddc571568&Agenda=Agenda&lang=English
+TARBUTT AND TARBUTT ADDITIONAL TP,TARBUTT AND TARBUTT ADDITIONAL,2026-11-09,skipped,,https://tarbutt.ca/wp-content/uploads/2026/10/October-7-2026-Council-AGENDA-package.pdf
+WAINFLEET TP,WAINFLEET,2026-11-09,covered_by_prefetch_cache,,https://www.wainfleet.ca/town-hall/council
+TUDOR AND CASHEL TP,TUDOR AND CASHEL,2026-11-09,skipped,,https://tudorandcashel.civicweb.net/Portal/
+WASAGA BEACH TP,WASAGA BEACH,2026-11-09,covered_by_prefetch_cache,,https://pub-wasagabeach.escribemeetings.com:443/Meeting.aspx?Id=c49998d2-73f7-4ad7-8ac1-89218d7e4d82&Agenda=Agenda&lang=English
+SOUTH ALGONQUIN TP,SOUTH ALGONQUIN,2026-11-09,scanned_pdf,,https://www.southalgonquin.ca/article/waste-collection-calendar/
+WAWA M,WAWA,2026-11-09,covered_by_prefetch_cache,,https://www.wawa.cc/your-government/agendas-and-minutes/
+WELLAND C,WELLAND,2026-11-09,covered_by_prefetch_cache,,https://pub-welland.escribemeetings.com:443/FileStream.ashx?DocumentId=5977
+WARWICK TP,WARWICK,2026-11-09,skipped,,https://warwick.civicweb.net/Portal/
+WELLINGTON NORTH TP,WELLINGTON NORTH,2026-11-09,covered_by_prefetch_cache,,https://www.wellington-north.com/government/council-committees
+WEST ELGIN M,WEST ELGIN,2026-11-09,covered_by_prefetch_cache,,https://www.westelgin.net/public/download/files/347350
+WEST GREY M,WEST GREY,2026-11-09,covered_by_prefetch_cache,,https://media-002-ca.cdn.govstack.com/westgrey-012-ca/media/vdekml0a/2026-council-calendar.pdf
+WEST LINCOLN TP,WEST LINCOLN,2026-11-09,error,"HTTPSConnectionPool(host='westgrey.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B0A5F7AD0>: Failed to resolve 'westgrey.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://westgrey.civicweb.net/Portal/
+WEST NIPISSING M,WEST NIPISSING,2026-11-09,error,"HTTPSConnectionPool(host='westgrey.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B0A490450>: Failed to resolve 'westgrey.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://westgrey.civicweb.net/Portal/
+WEST PERTH M,WEST PERTH,2026-11-09,error,"HTTPSConnectionPool(host='westgrey.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B0A4CC950>: Failed to resolve 'westgrey.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://westgrey.civicweb.net/Portal/
+WESTPORT TP,WESTPORT,2026-11-09,error,"HTTPSConnectionPool(host='westgrey.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B0E3DBE10>: Failed to resolve 'westgrey.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://westgrey.civicweb.net/Portal/
+WHITBY TP,WHITBY,2026-11-09,covered_by_prefetch_cache,,https://pub-whitby.escribemeetings.com/FileStream.ashx?DocumentId=45515
+WHITCHURCH STOUFFVILLE TP,WHITCHURCH STOUFFVILLE,2026-11-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B1432ABD0>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+SHUNIAH M,SHUNIAH,2026-11-09,scanned_pdf,,https://www.shuniah.org/wp-content/uploads/2026/06/New-Comprehensive-Zoning-By-law-Notice-for-Public-Open-House.pdf
+WHITESTONE M,WHITESTONE,2026-11-09,covered_by_prefetch_cache,,https://www.whitestone.ca/p/council-agendas-and-minutes#downloadOurApp
+WHITEWATER REGION TP,WHITEWATER REGION,2026-11-09,covered_by_prefetch_cache,,https://whitewaterregion.civicweb.net/Portal/
+THESSALON TP,THESSALON,2026-11-09,scanned_pdf,,https://thessalon.ca/wp-content/uploads/2026/09/September-21-Contents-Page.pdf
+SHELBURNE TP,SHELBURNE,2026-11-09,scanned_pdf,,https://www.municipalityofshelburne.ca/wp-content/uploads/2026/10/2026.10.14_Council-Package.pdf
+WOLLASTON TP,WOLLASTON,2026-11-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B0A76F950>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+WOODSTOCK C,WOODSTOCK,2026-11-09,covered_by_prefetch_cache,,https://pub-woodstock.escribemeetings.com/
+WOOLWICH TP,WOOLWICH,2026-11-09,covered_by_prefetch_cache,,https://pub-woolwich.escribemeetings.com/
+ZORRA TP,ZORRA,2026-11-09,covered_by_prefetch_cache,,https://zorra.civicweb.net/Portal/MeetingType/1
+BRUCE,BRUCE,2026-11-09,covered_by_prefetch_cache,,https://www.brucecounty.on.ca/sites/default/files/03.14.22%20Accessibility%20Advisory%20Committee%20Agenda.pdf
+DURHAM,DURHAM,2026-11-09,covered_by_prefetch_cache,,https://pub-durhamregion.escribemeetings.com/FileStream.ashx?DocumentId=11061
+ELGIN,ELGIN,2026-11-09,covered_by_prefetch_cache,,https://www.elgincounty.ca/wp-content/uploads/2026/05/MWidner-Conflict-of-Interest-May262026.pdf
+ST CLAIR TP,ST CLAIR,2026-11-09,skipped,,https://www.stclairtownship.ca/government/council/minutes/
+FRONTENAC,County of Frontenac,2026-11-09,skipped,,https://frontenaccounty.civicweb.net/Portal/MeetingInformation.aspx?Type=1
+GREY,Grey County,2026-11-09,covered_by_prefetch_cache,,https://pub-grey.escribemeetings.com/filestream.ashx?DocumentId=1000
+WATERLOO C,"Waterloo, C",2026-11-09,skipped,,https://www.waterloo.ca/council-and-committees/council-and-committee-meetings/
+HASTINGS,Hastings County,2026-11-09,error,"HTTPSConnectionPool(host='stclair.civicweb.net', port=443): Max retries exceeded with url: /Portal/ (Caused by NameResolutionError(""<urllib3.connection.HTTPSConnection object at 0x0000025B103ED990>: Failed to resolve 'stclair.civicweb.net' ([Errno 11001] getaddrinfo failed)""))",https://stclair.civicweb.net/Portal/
+WINDSOR C,WINDSOR,2026-11-09,scanned_pdf,,https://www.citywindsor.ca/documents/city-hall/city-council-meetings/Council-2026/2026Calendar.pdf
+ESSEX,"Essex, Co",2026-11-09,skipped,,https://www.countyofessex.ca/county-government/county-council/agendas-and-minutes/
+LANARK,Lanark County,2026-11-09,covered_by_prefetch_cache,,https://lanarkcounty.civicweb.net/document/148097/Closed%20Meeting%20Investigation%20Report%20-%20Lanark%20County%20(CSC).pdf
+LEEDS AND GRENVILLE,United Counties of Leeds and Grenville,2026-11-09,covered_by_prefetch_cache,,https://pub-uclg.escribemeetings.com:443/FileStream.ashx?DocumentId=12345
+MUSKOKA,District Municipality of Muskoka,2026-11-09,covered_by_prefetch_cache,,https://muskoka.civicweb.net/Portal/
+WHITE RIVER TP,WHITE RIVER,2026-11-09,scanned_pdf,,https://cdn.prod.website-files.com/5dbda997c2ce781a775497bd/6a08c601f7f39f63abd0bcd4_051826%20Agenda.pdf
+NORTHUMBERLAND,Northumberland County,2026-11-09,covered_by_prefetch_cache,,https://pub-northumberland.escribemeetings.com/FileStream.ashx?DocumentId=16297
+WELLESLEY TP,WELLESLEY,2026-11-09,scanned_pdf,,https://www.wellesley.ca/council-and-administration/council/
+VAUGHAN C,VAUGHAN,2026-11-09,skipped,,https://pub-vaughan.escribemeetings.com/filestream.ashx?DocumentId=236814
+PERTH,"Perth, Co",2026-11-09,covered_by_prefetch_cache,,https://perthcounty.civicweb.net/Portal/
+PETERBOROUGH,"Peterborough, Co",2026-11-09,covered_by_prefetch_cache,,https://peterboroughcounty.civicweb.net/Portal/
+PRESCOTT AND RUSSELL,United Counties of Prescott and Russell,2026-11-09,covered_by_prefetch_cache,,https://prescott.ca/government/agendas-minutes/
+RENFREW,"Renfrew, Co",2026-11-09,covered_by_prefetch_cache,,https://www.countyofrenfrew.on.ca/en/county-government/resources/Documents/153-24-Procedure-By-lawFINALAccessible.pdf
+SIMCOE,County of Simcoe,2026-11-09,covered_by_prefetch_cache,,https://simcoe.civicweb.net/
+WATERLOO,"Waterloo, R",2026-11-09,covered_by_prefetch_cache,,https://www.regionofwaterloo.ca/en/regional-government/resources/Documents/How_to_Change_your_Browser_Preferences_so_it_uses_Acrobat_or_Reader_PDF_Viewer.pdf
+WELLINGTON,Wellington County,2026-11-09,covered_by_prefetch_cache,,https://pub-wellington.escribemeetings.com/filestream.ashx?DocumentId=1000
+WILMOT TP,WILMOT,2026-11-09,skipped,,https://pub-wilmot.escribemeetings.com/FileStream.ashx?DocumentId=17022
+TIMMINS C,TIMMINS,2026-11-09,covered_by_prefetch_cache,,https://timmins.civicweb.net/Portal/
+SUNDRIDGE TP,SUNDRIDGE,2026-11-09,scanned_pdf,,https://irp.cdn-website.com/2213ca44/files/uploaded/2026+09+29+Bi-Council+Agenda+-+Final.pdf
+HALIBURTON,County of Haliburton,2026-11-09,covered_by_prefetch_cache,,https://haliburton.civicweb.net/Portal/
+NIAGARA,Niagara Region,2026-11-09,skipped,,https://pub-niagararegion.escribemeetings.com:443/FileStream.ashx?DocumentId=49205
+LENNOX AND ADDINGTON,County of Lennox and Addington,2026-11-09,skipped,,https://www.lennox-addington.on.ca/
+DUFFERIN,County of Dufferin,2026-11-09,skipped,,https://www.dufferincounty.ca/council-meetings/
+YORK,York Region,2026-11-09,skipped,,https://yorkpublishing.escribemeetings.com:443/FileStream.ashx?DocumentId=51404
+HURON,Huron County,2026-11-09,scanned_pdf,,https://www.huroncounty.ca/minutes-and-agendas/
+PEEL,Region of Peel,2026-11-09,scanned_pdf,,https://peelregion.ca/about/peel-region-council/agendas-minutes-reports
+HALTON,Halton Region,2026-11-09,skipped,,https://edmweb.halton.ca/OnBaseAgendaOnline/Documents/Downloadfile/REGULAR_MEETING_OF_REGIONAL_COUNCIL_08-26_4638_Agenda_2026-11-04_9_30_00_AM.pdf?documentType=1&meetingId=4638
+OXFORD,Oxford County,2026-11-09,skipped,,https://pub-oxfordcounty.escribemeetings.com/FileStream.ashx?DocumentId=13620
+STORMONT DUNDAS AND GLENGARRY,"United Counties of Stormont, Dundas and Glengarry",2026-11-09,skipped,,https://www.sdgcounties.ca/
+MIDDLESEX,County of Middlesex,2026-11-09,scanned_pdf,,https://pub-middlesexcounty.escribemeetings.com/FileStream.ashx?DocumentId=19166
+MATACHEWAN TP,MATACHEWAN,2026-11-09,skipped,,https://www.matachewan.com/
+VAL RITA HARTY TP,VAL RITA HARTY,2026-11-09,scanned_pdf,,https://valharty.ca/wp-content/uploads/2026/09/Agenda-Package-Regular-Council-Meeting-September-22-2026.pdf
+LAMBTON,County of Lambton,2026-11-09,scanned_pdf,,https://calendar.lambtononline.ca/meetings
+PICKLE LAKE TP,PICKLE LAKE,2026-11-09,error,"HTTPSConnectionPool(host='picklelake.ca', port=443): Read timed out. (read timeout=15)",https://picklelake.ca/wp-content/uploads/2026/08/2026.08.11-Regular-Meeting-of-Council-Agenda-Pkg.pdf
+SOUTHWOLD TP,SOUTHWOLD,2026-11-09,error,"HTTPSConnectionPool(host='calendar.southwold.ca', port=443): Read timed out. (read timeout=15)",https://calendar.southwold.ca/default/Download?StartDate=08/01/2026&EndDate=08/31/2026
