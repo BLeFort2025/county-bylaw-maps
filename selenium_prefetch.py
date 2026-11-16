@@ -20,6 +20,7 @@ import os
 import sys
 import time
 import re
+import socket
 import argparse
 import datetime
 import pandas as pd
@@ -74,8 +75,27 @@ def _clean_url(val):
     return "" if s.lower() in ("", "nan", "none", "null") else s
 
 
+_DNS_CACHE: dict[str, bool] = {}
+
+
+def _dns_resolves(url):
+    try:
+        host = (urllib.parse.urlparse(str(url).strip()).hostname or "").lower()
+        if not host:
+            return False
+        if host not in _DNS_CACHE:
+            try:
+                socket.getaddrinfo(host, 443)
+                _DNS_CACHE[host] = True
+            except Exception:
+                _DNS_CACHE[host] = False
+        return _DNS_CACHE[host]
+    except Exception:
+        return False
+
+
 def select_best_portal_url(row):
-    """Select the best listing/portal URL, preferring JS portals in council_listing_url when needed."""
+    """Select the best resolving listing/portal URL, preferring live JS portals in council_listing_url when needed."""
     pt = str(row.get("portal_type", "") or "").strip().lower()
     m_url = _clean_url(row.get("minutes_listing_url", ""))
     c_url = _clean_url(row.get("council_listing_url", ""))
@@ -85,13 +105,14 @@ def select_best_portal_url(row):
     if pt in JS_PORTAL_TYPES:
         m_is_js = any(dom in m_url.lower() for dom in JS_HOST_DOMAINS)
         c_is_js = any(dom in c_url.lower() for dom in JS_HOST_DOMAINS)
-        if not m_is_js and c_is_js:
+        if not m_is_js and c_is_js and _dns_resolves(c_url):
             return c_url
 
-    for candidate in (m_url, c_url, a_url, ex_url):
-        if candidate:
+    candidates = [c for c in (m_url, c_url, a_url, ex_url) if c]
+    for candidate in candidates:
+        if _dns_resolves(candidate):
             return candidate
-    return ""
+    return candidates[0] if candidates else ""
 
 
 def setup_driver():
