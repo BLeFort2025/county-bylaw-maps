@@ -41,3 +41,4 @@ bylaws_backup_*.db
 geckodriver.log
 chromedriver.log
 logs/
+signals/morning_briefing_draft.html

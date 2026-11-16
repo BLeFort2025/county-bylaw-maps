@@ -146,6 +146,24 @@ DIRECT_FIXES: dict[str, dict[str, str]] = {
     },
     "ADJALA TOSORONTIO": {"council_listing_url": "https://adjala-tosorontio.civicweb.net/Portal/"},
     "BRANT": {"portal_type": "escribe"},
+    "SEGUIN": {
+        "portal_type": "custom_html_pdf",
+        "council_listing_url": "https://www.seguin.ca/council-and-committee-calendar",
+        "minutes_listing_url": "https://www.seguin.ca/council-and-committee-calendar",
+        "agenda_listing_url": "https://www.seguin.ca/council-and-committee-calendar",
+    },
+    "TAY VALLEY": {
+        "portal_type": "custom_html_pdf",
+        "council_listing_url": "https://www.tayvalleytwp.ca/municipal-government/council/council-committee-meetings/",
+        "minutes_listing_url": "https://www.tayvalleytwp.ca/municipal-government/council/council-committee-meetings/",
+        "agenda_listing_url": "https://www.tayvalleytwp.ca/municipal-government/council/council-committee-meetings/",
+    },
+    "THORNLOE": {
+        "portal_type": "NOT_FOUND",
+        "council_listing_url": "",
+        "minutes_listing_url": "",
+        "agenda_listing_url": "",
+    },
 }
 
 DEAD_HOSTS_GLOBAL = (
@@ -154,6 +172,9 @@ DEAD_HOSTS_GLOBAL = (
     "otonabee.civicweb.net",
     "pub-pec.escribemeetings.com",
     "frontenaccounty.civicweb.net",
+    "cityofseguintx.legistar.com",
+    "seguintexas.gov",
+    "thornloe.ca",
 )
 
 JS_TYPES = {"escribe", "(escribe)", "civicweb", "granicus_legistar"}
@@ -197,6 +218,8 @@ def main() -> None:
         if name == "PERTH SOUTH" and "pertheast.civicweb.net" in ex_url:
             is_dead = True
         if name == "SOUTH BRUCE" and "southbrucepeninsula.civicweb.net" in ex_url:
+            is_dead = True
+        if name == "TAY VALLEY" and "tay.civicweb.net" in ex_url:
             is_dead = True
         if is_dead:
             df.at[idx, "example_recent_minutes_url"] = ""
@@ -268,6 +291,22 @@ def main() -> None:
         dead_js_c = [h for h, ok in zip(js_c_hosts, ex.map(_dns_ok, js_c_hosts)) if not ok]
     print(f"Dead DNS hosts in JS minutes_listing_url: {len(dead_js_m)} {dead_js_m}")
     print(f"Dead DNS hosts in JS council_listing_url: {len(dead_js_c)} {dead_js_c}")
+
+    all_m_hosts = sorted({
+        (urllib.parse.urlparse(str(u).strip()).hostname or "").lower()
+        for u in df["minutes_listing_url"].dropna()
+        if str(u).strip()
+    })
+    all_c_hosts = sorted({
+        (urllib.parse.urlparse(str(u).strip()).hostname or "").lower()
+        for u in df["council_listing_url"].dropna()
+        if str(u).strip()
+    })
+    with ThreadPoolExecutor(max_workers=24) as ex:
+        dead_all_m = [h for h, ok in zip(all_m_hosts, ex.map(_dns_ok, all_m_hosts)) if not ok]
+        dead_all_c = [h for h, ok in zip(all_c_hosts, ex.map(_dns_ok, all_c_hosts)) if not ok]
+    print(f"Dead DNS hosts across ALL 444 minutes_listing_url: {len(dead_all_m)} {dead_all_m}")
+    print(f"Dead DNS hosts across ALL 444 council_listing_url: {len(dead_all_c)} {dead_all_c}")
 
 
 if __name__ == "__main__":

@@ -1,102 +1,160 @@
+import argparse
+import datetime
+import html
 import os
 import smtplib
+import tomllib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
 import pandas as pd
-import datetime
 
 # --- CONFIG ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SIGNALS_FILE = os.path.join(SCRIPT_DIR, "signals", "signals.csv")
+SECRETS_FILE = os.path.join(SCRIPT_DIR, ".streamlit", "secrets.toml")
+DRAFT_FILE = os.path.join(SCRIPT_DIR, "signals", "morning_briefing_draft.html")
 
-# Environment variables for email credentials
-SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.office365.com")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
-SMTP_USER = os.environ.get("SMTP_USER", "")
-SMTP_PASS = os.environ.get("SMTP_PASS", "")
-EMAIL_TO = os.environ.get("EMAIL_TO", "ben.lefort@ofa.on.ca")
 
-def generate_morning_briefing():
+def _load_smtp_config() -> tuple[str, int, str, str, str]:
+    """Load SMTP settings from env vars, falling back to .streamlit/secrets.toml."""
+    server = os.environ.get("SMTP_SERVER", "").strip()
+    port_raw = os.environ.get("SMTP_PORT", "").strip()
+    user = os.environ.get("SMTP_USER", "").strip()
+    password = os.environ.get("SMTP_PASS", "").strip()
+    email_to = os.environ.get("EMAIL_TO", "ben.lefort@ofa.on.ca").strip()
+
+    if password == "YOUR_APP_PASSWORD_HERE":
+        password = ""
+
+    if (not password or not user or not server) and os.path.exists(SECRETS_FILE):
+        try:
+            with open(SECRETS_FILE, "rb") as fh:
+                secrets = tomllib.load(fh)
+            smtp_tbl = secrets.get("smtp", {})
+            if isinstance(smtp_tbl, dict):
+                server = server or str(smtp_tbl.get("server", "")).strip()
+                if not port_raw and smtp_tbl.get("port") is not None:
+                    port_raw = str(smtp_tbl.get("port")).strip()
+                user = user or str(smtp_tbl.get("username", "")).strip()
+                if not password:
+                    password = str(smtp_tbl.get("password", "")).strip()
+        except Exception:
+            pass
+
+    server = server or "smtp.office365.com"
+    try:
+        port = int(port_raw) if port_raw else 587
+    except ValueError:
+        port = 587
+    return server, port, user, password, email_to
+
+
+def generate_morning_briefing(dry_run: bool = False) -> None:
     print("--- Generating Morning Intelligence Briefing ---")
-    
+
     if not os.path.exists(SIGNALS_FILE):
         print("No signals file found to report on.")
         return
 
     df = pd.read_csv(SIGNALS_FILE)
-    
-    # Filter to only show AI-verified hits with high confidence (e.g., > 50) from the last 24 hours
-    if 'ai_confidence' in df.columns:
-        df = df[df['ai_confidence'] >= 50]
-        
+    if df.empty:
+        print("Signals file is empty. No email sent.")
+        return
+
+    # Include deterministic scanner_hit signals as well as AI-verified hits (>= 50 confidence)
+    sig_type = df["signal_type"].fillna("").astype(str) if "signal_type" in df.columns else pd.Series("", index=df.index)
+    ai_conf = pd.to_numeric(df["ai_confidence"], errors="coerce").fillna(0) if "ai_confidence" in df.columns else pd.Series(0, index=df.index)
+    df = df[(sig_type == "scanner_hit") | (ai_conf >= 50)].copy()
+
     # Filter to recent (last 7 days since this runs weekly)
     today = datetime.datetime.now()
     seven_days_ago = today - datetime.timedelta(days=7)
-    
-    if 'discovered_date' in df.columns:
-        df['discovered_date'] = pd.to_datetime(df['discovered_date'])
-        df = df[df['discovered_date'] >= seven_days_ago]
+
+    if "discovered_date" in df.columns:
+        df["discovered_date"] = pd.to_datetime(df["discovered_date"], errors="coerce")
+        df = df[df["discovered_date"] >= seven_days_ago]
 
     if df.empty:
-        print("No new verified AI hits in the last 48 hours. No email sent.")
+        print("No new verified hits in the last 7 days. No email sent.")
         return
 
-    print(f"Found {len(df)} new AI-verified hits. Preparing email...")
+    print(f"Found {len(df)} recent hits. Preparing briefing...")
 
     # Build HTML Email
-    html_content = f"""
+    html_content = """
     <html>
       <body style="font-family: Arial, sans-serif; color: #333;">
-        <h2 style="color: #2c3e50;">🔎 OFA Municipal Intelligence: Morning Briefing</h2>
-        <p>Your overnight AI scanner has completed its run. Here are the most recent verified bylaw developments:</p>
+        <h2 style="color: #2c3e50;">OFA Municipal Intelligence: Weekly Briefing</h2>
+        <p>Your weekly municipal bylaw intelligence scanner has completed its run. Here are the latest developments:</p>
         <hr style="border: 1px solid #eee;">
     """
 
     for _, row in df.iterrows():
-        name = row.get('munid', 'Unknown Municipality')
-        category = row.get('category', 'Unknown')
-        snippet = row.get('ai_summary', row.get('snippet', 'No summary available.'))
-        url = row.get('evidence_url', '#')
-        
+        name = html.escape(str(row.get("munid") or "Unknown Municipality"))
+        category = html.escape(str(row.get("category") or "Unknown"))
+        raw_sum = row.get("ai_summary")
+        raw_snip = row.get("snippet")
+        snippet = (
+            str(raw_sum).strip()
+            if pd.notna(raw_sum) and str(raw_sum).strip()
+            else (str(raw_snip).strip() if pd.notna(raw_snip) and str(raw_snip).strip() else "No summary available.")
+        )
+        snippet_safe = html.escape(snippet)
+        raw_url = row.get("evidence_url")
+        url = str(raw_url).strip() if pd.notna(raw_url) and str(raw_url).strip() else "#"
+        url_safe = html.escape(url, quote=True)
+
         html_content += f"""
         <div style="margin-bottom: 20px; padding: 15px; border-left: 4px solid #3498db; background-color: #f9f9f9;">
             <h3 style="margin-top: 0; color: #2980b9;">{name} - {category}</h3>
-            <p style="font-size: 14px; line-height: 1.5;">{snippet}</p>
-            <a href="{url}" style="color: #e67e22; text-decoration: none; font-weight: bold;">[View Source Document]</a>
+            <p style="font-size: 14px; line-height: 1.5;">{snippet_safe}</p>
+            <a href="{url_safe}" style="color: #e67e22; text-decoration: none; font-weight: bold;">[View Source Document]</a>
         </div>
         """
 
     html_content += """
         <p style="font-size: 12px; color: #7f8c8d; margin-top: 30px;">
-            This is an automated report generated by the Ontario Federation of Agriculture's AI Intelligence Scanner.
+            This is an automated report generated by the Ontario Federation of Agriculture's Municipal Intelligence Scanner.
         </p>
       </body>
     </html>
     """
 
-    if not SMTP_USER or not SMTP_PASS:
-        print("Skipping SMTP send (No credentials configured). Saving to disk instead.")
-        with open(os.path.join(SCRIPT_DIR, "signals", "morning_briefing_draft.html"), "w", encoding='utf-8') as f:
-            f.write(html_content)
+    smtp_server, smtp_port, smtp_user, smtp_pass, email_to = _load_smtp_config()
+    creds_configured = bool(smtp_user and smtp_pass)
+
+    if dry_run or not creds_configured:
+        with open(DRAFT_FILE, "w", encoding="utf-8") as fh:
+            fh.write(html_content)
+        mode_note = "Dry run" if dry_run else "Missing SMTP credentials"
+        print(
+            f"{mode_note}: formatted {len(df)} hits -> {DRAFT_FILE} "
+            f"(smtp_configured={creds_configured})"
+        )
         return
 
     # Send Email
     try:
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = f"OFA Intelligence Briefing: {len(df)} New Bylaw Actions"
-        msg['From'] = SMTP_USER
-        msg['To'] = EMAIL_TO
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"OFA Intelligence Briefing: {len(df)} New Bylaw Actions"
+        msg["From"] = smtp_user
+        msg["To"] = email_to
 
-        msg.attach(MIMEText(html_content, 'html'))
+        msg.attach(MIMEText(html_content, "html"))
 
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server = smtplib.SMTP(smtp_server, smtp_port)
         server.starttls()
-        server.login(SMTP_USER, SMTP_PASS)
-        server.sendmail(SMTP_USER, EMAIL_TO.split(','), msg.as_string())
+        server.login(smtp_user, smtp_pass)
+        server.sendmail(smtp_user, [e.strip() for e in email_to.split(",") if e.strip()], msg.as_string())
         server.quit()
         print("Morning Briefing email sent successfully.")
     except Exception as e:
         print(f"Failed to send email: {e}")
 
+
 if __name__ == "__main__":
-    generate_morning_briefing()
+    parser = argparse.ArgumentParser(description="Send or preview the OFA Weekly Municipal Intelligence Briefing.")
+    parser.add_argument("--dry-run", action="store_true", help="Write HTML draft only without sending email")
+    args = parser.parse_args()
+    generate_morning_briefing(dry_run=args.dry_run)
