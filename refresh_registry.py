@@ -34,7 +34,7 @@ from dotenv import load_dotenv
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Load environment variables from .env file
-load_dotenv()
+load_dotenv(override=True)
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -553,10 +553,9 @@ def _ai_dom_reader_fallback(driver, base_url):
         if cur_root and base_root and cur_root != base_root and "escribemeetings.com" not in cur_host and "civicweb.net" not in cur_host:
             return None
 
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        
+        from google import genai
+        client = genai.Client(api_key=api_key)
+
         soup = BeautifulSoup(driver.page_source, "html.parser")
         links = []
         for a in soup.find_all("a", href=True):
@@ -592,8 +591,20 @@ def _ai_dom_reader_fallback(driver, base_url):
         # Adding a small sleep to ensure we don't hit rate limits, since this is a fallback
         time.sleep(2) 
         
-        response = model.generate_content(prompt)
-        result_url = response.text.strip().strip('"').strip("'")
+        response = None
+        last_err = None
+        for model_id in ("gemini-3.5-flash-lite", "gemini-3.8-flash"):
+            try:
+                response = client.models.generate_content(model=model_id, contents=prompt)
+                break
+            except Exception as me:
+                last_err = me
+                if any(c in str(me) for c in ("503", "UNAVAILABLE", "404", "NOT_FOUND")):
+                    continue
+                raise
+        if response is None and last_err is not None:
+            raise last_err
+        result_url = (response.text or "").strip().strip('"').strip("'")
         
         if result_url and result_url != "NONE" and "http" in result_url and _url_resolves(result_url):
             return result_url
