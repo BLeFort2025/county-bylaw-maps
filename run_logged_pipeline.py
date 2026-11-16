@@ -34,10 +34,44 @@ HISTORY_PATH = os.path.join(LOGS_DIR, "run_history.jsonl")
 
 WEEKLY_WAIT_TIMEOUT_S = 45 * 60
 LOCK_POLL_INTERVAL_S = 10
+DUPLICATE_WEEKLY_GUARD_HOURS = 12
 
 
 def _now_iso() -> str:
     return datetime.datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def _recent_completed_weekly_run(hours: float = DUPLICATE_WEEKLY_GUARD_HOURS) -> str | None:
+    if not os.path.exists(HISTORY_PATH):
+        return None
+    now = datetime.datetime.now().astimezone()
+    recent_id: str | None = None
+    try:
+        with open(HISTORY_PATH, "r", encoding="utf-8") as fh:
+            for raw in fh:
+                raw = raw.strip()
+                if not raw:
+                    continue
+                try:
+                    entry = json.loads(raw)
+                except Exception:
+                    continue
+                if entry.get("mode") != "weekly" or entry.get("status") != "completed":
+                    continue
+                finished_raw = entry.get("finished_at")
+                if not finished_raw:
+                    continue
+                try:
+                    finished_dt = datetime.datetime.fromisoformat(str(finished_raw))
+                    if finished_dt.tzinfo is None:
+                        finished_dt = finished_dt.replace(tzinfo=now.tzinfo)
+                    if (now - finished_dt).total_seconds() < hours * 3600:
+                        recent_id = str(entry.get("run_id") or "")
+                except Exception:
+                    continue
+    except Exception:
+        return None
+    return recent_id
 
 
 def _configure_stdio() -> None:
@@ -461,7 +495,18 @@ def main() -> int:
     _configure_stdio()
     parser = argparse.ArgumentParser(description="Logged OFA Municipal Intelligence pipeline runner.")
     parser.add_argument("--mode", choices=["weekly", "daily-heal"], required=True)
+    parser.add_argument("--force", action="store_true", help="Run weekly scan even if completed within 12h")
     args = parser.parse_args()
+
+    if args.mode == "weekly" and not args.force:
+        recent_id = _recent_completed_weekly_run()
+        if recent_id:
+            print(
+                f"Weekly scan already completed within last {DUPLICATE_WEEKLY_GUARD_HOURS}h ({recent_id}); "
+                "skipping duplicate scheduled trigger.",
+                flush=True,
+            )
+            return 0
 
     if not _acquire_lock(args.mode):
         return 0

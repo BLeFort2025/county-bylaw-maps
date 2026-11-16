@@ -224,9 +224,24 @@ def main() -> None:
             except Exception as exc:
                 print(f"  WARN: {row['municipality_name']} council_listing_url check failed: {exc}")
 
+    # 3b. Replace any dead-DNS council_listing_url with the row's live minutes_listing_url
+    cleaned_council = 0
+    for idx, row in df.iterrows():
+        c_url = str(row.get("council_listing_url", "") or "").strip() if pd.notna(row.get("council_listing_url")) else ""
+        m_url = str(row.get("minutes_listing_url", "") or "").strip() if pd.notna(row.get("minutes_listing_url")) else ""
+        c_host = (urllib.parse.urlparse(c_url).hostname or "").lower()
+        m_host = (urllib.parse.urlparse(m_url).hostname or "").lower()
+        if c_host and not _dns_ok(c_host) and m_host and _dns_ok(m_host):
+            df.at[idx, "council_listing_url"] = m_url
+            cleaned_council += 1
+            print(f"  Replaced dead council_listing_url for {row['municipality_name']}: {c_url} -> {m_url}")
+
     assert len(df) == 444, f"Row count changed to {len(df)}"
     df.to_csv(REGISTRY_PATH, index=False)
-    print(f"Saved registry: direct_field_updates={direct_updates}, scrubbed_examples={scrubbed}, promoted_js={promoted}")
+    print(
+        f"Saved registry: direct_field_updates={direct_updates}, "
+        f"scrubbed_examples={scrubbed}, promoted_js={promoted}, cleaned_dead_council={cleaned_council}"
+    )
 
     # 4. Verification: duplicates and dead DNS hosts
     non_empty_m = df["minutes_listing_url"].dropna().astype(str).str.strip()
@@ -238,14 +253,21 @@ def main() -> None:
         print(dups)
 
     js_rows = df[df["portal_type"].astype(str).str.lower().isin(JS_TYPES)]
-    js_hosts = sorted({
+    js_m_hosts = sorted({
         (urllib.parse.urlparse(str(u).strip()).hostname or "").lower()
         for u in js_rows["minutes_listing_url"].dropna()
         if str(u).strip()
     })
+    js_c_hosts = sorted({
+        (urllib.parse.urlparse(str(u).strip()).hostname or "").lower()
+        for u in js_rows["council_listing_url"].dropna()
+        if str(u).strip()
+    })
     with ThreadPoolExecutor(max_workers=24) as ex:
-        dead_js = [h for h, ok in zip(js_hosts, ex.map(_dns_ok, js_hosts)) if not ok]
-    print(f"Dead DNS hosts in JS minutes_listing_url: {len(dead_js)} {dead_js}")
+        dead_js_m = [h for h, ok in zip(js_m_hosts, ex.map(_dns_ok, js_m_hosts)) if not ok]
+        dead_js_c = [h for h, ok in zip(js_c_hosts, ex.map(_dns_ok, js_c_hosts)) if not ok]
+    print(f"Dead DNS hosts in JS minutes_listing_url: {len(dead_js_m)} {dead_js_m}")
+    print(f"Dead DNS hosts in JS council_listing_url: {len(dead_js_c)} {dead_js_c}")
 
 
 if __name__ == "__main__":
