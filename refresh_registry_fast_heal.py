@@ -439,11 +439,18 @@ def _fast_pattern_guess_url(muni_name):
 
 
 
+AI_QUOTA_EXHAUSTED = False
+
+
 def _ai_dom_reader_fallback(driver, base_url):
     """Uses Gemini 2.5 Flash to parse the DOM links and find the best PDF URL.
     This acts as a bulletproof fallback when the rigid HTML parser fails.
     """
+    global AI_QUOTA_EXHAUSTED
     import json
+    if AI_QUOTA_EXHAUSTED:
+        print("[AI Skip: Disabled]", end=" ")
+        return None
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         print("[AI Skip: No API Key]", end=" ")
@@ -497,7 +504,12 @@ def _ai_dom_reader_fallback(driver, base_url):
             return result_url
             
     except Exception as e:
-        print(f"[AI Error: {e}]", end=" ")
+        error_msg = str(e)
+        if any(k in error_msg for k in ("Quota exceeded", "429", "403", "Permission denied", "CONSUMER_SUSPENDED", "ACCESS_DENIED")):
+            AI_QUOTA_EXHAUSTED = True
+            print("[AI Disabled: API key quota/permission error for rest of run]", end=" ")
+        else:
+            print(f"[AI Error: {e}]", end=" ")
         
     return None
 

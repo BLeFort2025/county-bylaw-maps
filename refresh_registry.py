@@ -600,9 +600,9 @@ def _ai_dom_reader_fallback(driver, base_url):
             
     except Exception as e:
         error_msg = str(e)
-        if "Quota exceeded" in error_msg or "429" in error_msg:
+        if any(k in error_msg for k in ("Quota exceeded", "429", "403", "Permission denied", "CONSUMER_SUSPENDED", "ACCESS_DENIED")):
             AI_QUOTA_EXHAUSTED = True
-            print(f"[AI Error: 429 Quota Exceeded. Disabling AI for rest of run]", end=" ")
+            print("[AI Disabled: API key quota/permission error for rest of run]", end=" ")
         else:
             print(f"[AI Error: {e}]", end=" ")
         
