@@ -44,9 +44,7 @@ except ImportError:
     sys.exit(1)
 
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -58,6 +56,7 @@ OUTPUT_PATH = os.path.join(SCRIPT_DIR, "signals", "cached_portal_docs.csv")
 
 # Portal types that require Selenium (JS rendering)
 JS_PORTAL_TYPES = {"civicweb", "escribe", "(escribe)", "granicus_legistar"}
+JS_HOST_DOMAINS = ("escribemeetings.com", "civicweb.net", "legistar.com")
 
 # Maximum text length to store per document (controls CSV file size)
 MAX_TEXT_LENGTH = 25000  # ~25KB per doc, retains full council meeting minutes + key attachments
@@ -68,8 +67,35 @@ HEADERS = {
 }
 
 
+def _clean_url(val):
+    if pd.isna(val):
+        return ""
+    s = str(val).strip()
+    return "" if s.lower() in ("", "nan", "none", "null") else s
+
+
+def select_best_portal_url(row):
+    """Select the best listing/portal URL, preferring JS portals in council_listing_url when needed."""
+    pt = str(row.get("portal_type", "") or "").strip().lower()
+    m_url = _clean_url(row.get("minutes_listing_url", ""))
+    c_url = _clean_url(row.get("council_listing_url", ""))
+    a_url = _clean_url(row.get("agenda_listing_url", ""))
+    ex_url = _clean_url(row.get("example_recent_minutes_url", ""))
+
+    if pt in JS_PORTAL_TYPES:
+        m_is_js = any(dom in m_url.lower() for dom in JS_HOST_DOMAINS)
+        c_is_js = any(dom in c_url.lower() for dom in JS_HOST_DOMAINS)
+        if not m_is_js and c_is_js:
+            return c_url
+
+    for candidate in (m_url, c_url, a_url, ex_url):
+        if candidate:
+            return candidate
+    return ""
+
+
 def setup_driver():
-    """Configure headless Chrome optimized for fast page loads."""
+    """Configure headless Chrome via Selenium 4 Selenium Manager."""
     options = Options()
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
@@ -79,9 +105,7 @@ def setup_driver():
     options.page_load_strategy = "eager"
     options.add_argument(f"user-agent={HEADERS['User-Agent']}")
 
-    driver = webdriver.Chrome(
-        service=Service(ChromeDriverManager().install()), options=options
-    )
+    driver = webdriver.Chrome(options=options)
     driver.set_page_load_timeout(45)
     return driver
 
@@ -231,6 +255,22 @@ def find_document_links(driver, soup, base_url):
                         if _is_recent_date(d_hint, max_days=180):
                             links.append((full, d_hint))
 
+        # Fallback inside CivicWeb portals: calendar/list MeetingInformation.aspx links
+        if not links:
+            for a in soup.find_all("a", href=True):
+                href = a["href"]
+                text = a.get_text().strip()
+                text_low = text.lower()
+                if "meetinginformation.aspx" in href.lower():
+                    if any(j in href.lower() or j in text_low for j in JUNK_PATTERNS):
+                        continue
+                    full = urllib.parse.urljoin(base_url, href)
+                    if full not in seen:
+                        seen.add(full)
+                        d_hint = extract_date_from_text(text + " " + full)
+                        if _is_recent_date(d_hint, max_days=180):
+                            links.append((full, d_hint))
+
     # ── Tier 3: General Portals ──
     if not links:
         for a in soup.find_all("a", href=True):
@@ -344,18 +384,27 @@ def prefetch_single_muni(driver, row):
     """
     name = row.get("municipality_name", "Unknown")
     portal_type = str(row.get("portal_type", "unknown"))
-    listing_url = row.get("minutes_listing_url", "")
+    listing_url = select_best_portal_url(row)
 
-    if pd.isna(listing_url) or not str(listing_url).strip():
+    if not listing_url:
         return []
 
-    listing_url = str(listing_url).strip()
     results = []
 
     try:
+        # Clear prior page DOM so a failed navigation never leaks prior municipality content
+        try:
+            driver.get("about:blank")
+        except Exception:
+            pass
+
         # Step 1: Load the listing page with Selenium (JS renders)
         driver.get(listing_url)
         time.sleep(3.5)
+
+        cur_url = (driver.current_url or "").lower()
+        if not cur_url.startswith(("http://", "https://")) or cur_url.startswith("chrome-error://"):
+            return []
 
         soup = BeautifulSoup(driver.page_source, "html.parser")
 
@@ -470,6 +519,7 @@ def main():
     all_results = []
     success = 0
     failed = 0
+    registry_updated = 0
 
     try:
         for count, (idx, row) in enumerate(targets.iterrows(), 1):
@@ -499,6 +549,9 @@ def main():
             if docs:
                 all_results.extend(docs)
                 success += 1
+                df.at[idx, "example_recent_minutes_url"] = docs[0]["doc_url"]
+                df.at[idx, "example_recent_minutes_date"] = datetime.date.today().isoformat()
+                registry_updated += 1
                 print(f"OK ({len(docs)} doc{'s' if len(docs) != 1 else ''})")
             else:
                 failed += 1
@@ -508,6 +561,10 @@ def main():
         print("\nInterrupted by user. Saving partial results...")
     finally:
         driver.quit()
+
+    if registry_updated > 0:
+        df.to_csv(REGISTRY_PATH, index=False)
+        print(f"\nSynchronized {registry_updated} recent document URLs back to {REGISTRY_PATH}")
 
     # Save results
     if all_results:

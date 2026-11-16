@@ -39,3 +39,4 @@ bylaws_backup_*.db
 # Selenium / scanner artifacts
 geckodriver.log
 chromedriver.log
+logs/

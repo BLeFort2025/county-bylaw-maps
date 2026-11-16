@@ -4,9 +4,7 @@ import datetime
 import time
 import glob
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 
 # --- CONFIG ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,7 +18,7 @@ from shared_config import (
     extract_snippet,
     is_valid_meeting_document,
 )
-from selenium_prefetch import prefetch_single_muni
+from selenium_prefetch import prefetch_single_muni, select_best_portal_url
 
 
 def find_latest_report():
@@ -38,7 +36,7 @@ def find_latest_report():
 
 
 def setup_driver():
-    """Configures a headless Chrome browser."""
+    """Configures a headless Chrome browser via Selenium 4 Selenium Manager."""
     options = Options()
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
@@ -47,7 +45,7 @@ def setup_driver():
     options.add_argument("--log-level=3")
     options.page_load_strategy = "eager"
     options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    driver = webdriver.Chrome(options=options)
     driver.set_page_load_timeout(45)
     return driver
 
@@ -56,7 +54,7 @@ def scan_with_selenium(driver, row):
     """Spider and scan a failed municipality's portal with Selenium, returning a list of candidate hits."""
     munid = row['munid']
     name = row['municipality_name']
-    url = row.get('minutes_listing_url') or row.get('example_recent_minutes_url', '')
+    url = select_best_portal_url(row)
 
     coverage = {
         'munid': munid,
@@ -97,8 +95,11 @@ def scan_with_selenium(driver, row):
                             'keywords_detected': True
                         })
         else:
-            driver.get(str(url).strip())
-            time.sleep(3)
+            cur_u = (driver.current_url or "").lower()
+            if cur_u.startswith("chrome-error://") or cur_u in ("", "about:blank"):
+                coverage['status'] = 'error'
+                coverage['error'] = f"Navigation failed ({cur_u or 'about:blank'})"
+                return found_candidates, coverage
             page_text = driver.find_element("tag name", "body").text
             coverage['status'] = 'scanned_selenium'
             if is_valid_meeting_document(url, page_text):
@@ -158,12 +159,21 @@ def main():
     candidates = []
 
     try:
-        for index, row in target_data.iterrows():
-            print(f"Scanning: {row['municipality_name']}...", end="\r")
+        total_targets = len(target_data)
+        for count, (_, row) in enumerate(target_data.iterrows(), 1):
+            ptype = str(row.get('portal_type', '?') or '?')
+            print(f"[{count}/{total_targets}] Scanning {row['municipality_name']} ({ptype})...", end=" ", flush=True)
             cands, cov = scan_with_selenium(driver, row)
+            if cov['status'] == 'error':
+                err_short = str(cov.get('error', '')).replace('\n', ' ')[:80]
+                print(f"FAILED ({err_short})", flush=True)
+            elif cands:
+                print(f"OK ({len(cands)} hit{'s' if len(cands) != 1 else ''})", flush=True)
+            else:
+                print("OK (no hits)", flush=True)
             for cand in cands:
                 candidates.append(cand)
-                print(f"  [!] HIT: {row['municipality_name']} -> {cand['category']} ({cand['trigger_keyword']})")
+                print(f"  [!] HIT: {row['municipality_name']} -> {cand['category']} ({cand['trigger_keyword']})", flush=True)
     except KeyboardInterrupt:
         print("\nStopping scan...")
     finally:

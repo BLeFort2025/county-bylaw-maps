@@ -21,23 +21,53 @@ import os
 import sys
 import time
 import re
+import socket
 import argparse
 import datetime
 import pandas as pd
 import urllib.parse
+import requests
+import urllib3
 from bs4 import BeautifulSoup
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REGISTRY_PATH = os.path.join(SCRIPT_DIR, "signals", "portal_registry.csv")
 
 
+def _url_resolves(url):
+    try:
+        parsed = urllib.parse.urlparse(str(url).strip())
+        if parsed.scheme not in ("http", "https") or not parsed.hostname:
+            return False
+        socket.getaddrinfo(parsed.hostname, 443)
+        return True
+    except Exception:
+        return False
+
+
+def _url_is_alive(url):
+    if not _url_resolves(url):
+        return False
+    try:
+        r = requests.get(
+            str(url).strip(),
+            timeout=6,
+            allow_redirects=True,
+            verify=False,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"},
+        )
+        return r.status_code < 400
+    except Exception:
+        return False
+
+
 def setup_driver():
-    """Configure headless Chrome for fast page loads."""
+    """Configure headless Chrome via Selenium 4 Selenium Manager."""
     options = Options()
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
@@ -49,9 +79,7 @@ def setup_driver():
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     )
-    driver = webdriver.Chrome(
-        service=Service(ChromeDriverManager().install()), options=options
-    )
+    driver = webdriver.Chrome(options=options)
     driver.set_page_load_timeout(30)
     return driver
 
@@ -67,8 +95,16 @@ def find_latest_document(driver, listing_url):
       4. eScribe meeting page navigation
     """
     try:
+        try:
+            driver.get("about:blank")
+        except Exception:
+            pass
         driver.get(listing_url)
         time.sleep(5)  # Wait for JS to render
+
+        cur_url = (driver.current_url or "").lower()
+        if not cur_url.startswith(("http://", "https://")) or cur_url.startswith("chrome-error://"):
+            return None
 
         soup = BeautifulSoup(driver.page_source, "html.parser")
 
@@ -414,6 +450,9 @@ def _ai_dom_reader_fallback(driver, base_url):
         return None
         
     try:
+        cur_url = (driver.current_url or "").lower()
+        if not cur_url.startswith(("http://", "https://")) or cur_url.startswith("chrome-error://"):
+            return None
         import google.generativeai as genai
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-2.5-flash')
@@ -454,7 +493,7 @@ def _ai_dom_reader_fallback(driver, base_url):
         response = model.generate_content(prompt)
         result_url = response.text.strip().strip('"').strip("'")
         
-        if result_url and result_url != "NONE" and "http" in result_url:
+        if result_url and result_url != "NONE" and "http" in result_url and _url_resolves(result_url):
             return result_url
             
     except Exception as e:
@@ -470,6 +509,8 @@ def main():
                         help="Limit number of municipalities to process (0 = all)")
     parser.add_argument("--all", action="store_true",
                         help="Refresh ALL municipalities, not just stale ones")
+    parser.add_argument("--non-js", action="store_true",
+                        help="Exclude JS portals (eScribe/CivicWeb/Legistar)")
     args = parser.parse_args()
 
     if not os.path.exists(REGISTRY_PATH):
@@ -499,6 +540,12 @@ def main():
         stale_date = df["example_recent_minutes_date"].fillna("") < cutoff
 
         targets = df[same_url | stale_date]
+
+    if getattr(args, "non_js", False):
+        js_mask = targets["portal_type"].fillna("").str.lower().isin(
+            {"civicweb", "escribe", "(escribe)", "granicus_legistar"}
+        )
+        targets = targets[~js_mask]
 
     if args.limit > 0:
         targets = targets.head(args.limit)
@@ -547,11 +594,13 @@ def main():
                     print("AI failed. Fast-guessing patterns...", end=" ", flush=True)
                     candidates = _fast_pattern_guess_url(name)
                     healed = False
+                    listing_alive = _url_is_alive(listing_url)
                     for cand_url in candidates:
                         try_url = find_latest_document(driver, cand_url)
                         if try_url:
-                            # Found a working URL! Update the base listing url too
-                            df.at[idx, "minutes_listing_url"] = cand_url
+                            # Never overwrite a live minutes_listing_url
+                            if not listing_alive:
+                                df.at[idx, "minutes_listing_url"] = cand_url
                             df.at[idx, "example_recent_minutes_url"] = try_url
                             df.at[idx, "example_recent_minutes_date"] = datetime.date.today().isoformat()
                             updated += 1
