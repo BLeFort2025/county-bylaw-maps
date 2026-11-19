@@ -371,6 +371,7 @@ def render_county_digest_admin(conn) -> None:
                         cached_docs_df=cached_docs_df,
                         exclude_hashes=sent_hashes,
                         use_ai=use_ai_prev,
+                        conn=conn,
                     )
                     subj, html_inline = render_county_digest_html(payload, logo_mode="inline", is_test_banner=False)
                     st.session_state["_digest_preview_payload"] = payload
@@ -416,11 +417,12 @@ def render_county_digest_admin(conn) -> None:
             if st.session_state.get("_digest_preview_html"):
                 pl = st.session_state["_digest_preview_payload"]
                 st.markdown("---")
-                pm1, pm2, pm3, pm4 = st.columns(4)
+                pm1, pm2, pm3, pm4, pm5 = st.columns(5)
                 pm1.metric("Matches Found", len(pl["items"]))
                 pm2.metric("Municipalities Watched", pl["monitored_count"])
                 pm3.metric("Munis with Cached Docs", pl["munis_with_docs_checked"])
                 pm4.metric("Council Docs Checked", pl["docs_checked"])
+                pm5.metric("Upcoming Renewals (12 Mo)", len(pl.get("upcoming_renewals") or []))
                 st.caption(f"**Email Subject:** `{st.session_state['_digest_preview_subject']}`")
                 components.html(st.session_state["_digest_preview_html"], height=920, scrolling=True)
                 st.download_button(

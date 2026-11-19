@@ -516,11 +516,15 @@ def build_county_digest_payload(
     use_ai: bool = True,
     max_days: int = 180,
     cache_path: str = DEFAULT_CACHE_PATH,
+    conn=None,
+    upcoming_renewals: list[dict[str, Any]] | None = None,
+    renewal_months: int = 12,
 ) -> dict[str, Any]:
     """Build the complete structured weekly digest payload for one County Federation subscription.
 
     Returns a dict containing metadata, coverage counts (portals checked / munis monitored),
-    deduplicated matched items with full discussion context + grounded summaries, and skipped counts.
+    deduplicated matched items with full discussion context + grounded summaries, upcoming
+    12-month bylaw renewals from the OFA Bylaw Database, and skipped counts.
     """
     if cached_docs_df is None:
         cached_docs_df = load_cached_council_docs(cache_path)
@@ -528,6 +532,16 @@ def build_county_digest_payload(
     scope_munis = resolve_subscription_municipalities(munis_df, subscription)
     scope_ids = set(scope_munis["id"].astype(int).tolist()) if not scope_munis.empty else set()
     resolver = _build_muni_name_resolver(munis_df)
+
+    # Fetch upcoming bylaw renewals (next 12 months) for all monitored County + Lower/Single-Tier municipalities
+    if upcoming_renewals is None and conn is not None and scope_ids:
+        try:
+            from db_utils import get_upcoming_bylaw_renewals
+            upcoming_renewals = get_upcoming_bylaw_renewals(conn, list(scope_ids), months_ahead=renewal_months)
+        except Exception:
+            upcoming_renewals = []
+    elif upcoming_renewals is None:
+        upcoming_renewals = []
 
     pos_kws = [str(k).strip() for k in (subscription.get("keywords") or []) if str(k).strip()]
     neg_kws = [str(k).strip() for k in (subscription.get("negative_keywords") or []) if str(k).strip()]
@@ -661,4 +675,6 @@ def build_county_digest_payload(
         "keywords": pos_kws,
         "negative_keywords": neg_kws,
         "items": final_items,
+        "upcoming_renewals": upcoming_renewals,
+        "renewal_months": renewal_months,
     }

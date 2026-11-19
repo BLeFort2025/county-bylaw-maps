@@ -888,3 +888,123 @@ def get_digest_sent_history(conn, subscription_id: int | None = None, limit: int
     sql += " ORDER BY l.sent_at DESC LIMIT %s"
     params.append(int(limit))
     return _read_sql(conn, sql, params=tuple(params))
+
+
+CATEGORY_LABELS_MAP = {
+    "DC": "Development Charges",
+    "STORMWATER": "Stormwater Charges",
+    "SITE_ALT": "Site Alteration & Fill",
+    "LGD": "Livestock Guardian Dogs",
+    "TREES": "Tree / Forest Conservation",
+    "CHICKENS": "Backyard Chickens",
+    "FENCES": "Fence Bylaws",
+}
+
+
+def get_upcoming_bylaw_renewals(
+    conn,
+    municipality_ids: list[int],
+    months_ahead: int = 12,
+    reference_date: datetime.date | None = None,
+) -> list[dict]:
+    """Return all recorded bylaws expiring within the next `months_ahead` months for the given municipalities.
+
+    Covers all 7 bylaw categories across Upper Tier (County/Region), Lower Tier, and Single Tier
+    municipalities, resolving integer exemption codes to clean human-readable labels.
+    """
+    if not municipality_ids:
+        return []
+
+    clean_ids = [int(x) for x in municipality_ids]
+    ph = ",".join(["%s"] * len(clean_ids))
+    sql = f"""
+        SELECT m.id AS municipality_id,
+               m.name AS municipality_name,
+               m.municipal_status,
+               m.geographic_area,
+               b.category,
+               b.bylaw_name,
+               b.bylaw_link,
+               b.date_enacted,
+               b.expiry_date,
+               b.expiry_notes,
+               be.exemption_status,
+               dt.farm_exemption AS trees_farm_exemption,
+               dsa.farm_exemption AS sa_farm_exemption,
+               dc.can_keep AS chickens_can_keep,
+               dlgd.exempt_license_fees AS lgd_exempt_fees,
+               dfen.security_fencing_exemption AS fence_sec_exempt
+        FROM bylaws b
+        JOIN municipalities m ON m.id = b.municipality_id
+        LEFT JOIN bylaw_exemptions be ON be.bylaw_id = b.id
+        LEFT JOIN details_trees dt ON dt.bylaw_id = b.id
+        LEFT JOIN details_site_alt dsa ON dsa.bylaw_id = b.id
+        LEFT JOIN details_chickens dc ON dc.bylaw_id = b.id
+        LEFT JOIN details_lgd dlgd ON dlgd.bylaw_id = b.id
+        LEFT JOIN details_fences dfen ON dfen.bylaw_id = b.id
+        WHERE b.municipality_id IN ({ph})
+          AND b.expiry_date IS NOT NULL
+          AND b.expiry_date != ''
+    """
+    df = _read_sql(conn, sql, params=tuple(clean_ids))
+    if df.empty:
+        return []
+
+    today = reference_date or datetime.date.today()
+    cutoff = today + datetime.timedelta(days=int(round(months_ahead * 30.4375)))
+
+    rows = []
+    for _, r in df.iterrows():
+        raw_exp = str(r.get("expiry_date") or "").strip()
+        parsed_dt = pd.to_datetime(raw_exp, errors="coerce")
+        if pd.isna(parsed_dt):
+            continue
+        exp_date = parsed_dt.date()
+        if not (today <= exp_date <= cutoff):
+            continue
+
+        cat_code = str(r.get("category") or "").strip().upper()
+        cat_label = CATEGORY_LABELS_MAP.get(cat_code, cat_code)
+
+        # Resolve human-readable exemption status cleanly across categories
+        raw_ex = r.get("exemption_status")
+        ex_label = resolve_yes_no(raw_ex) if (raw_ex is not None and str(raw_ex).strip() not in ("", "nan", "None")) else ""
+        if not ex_label or ex_label == "N/A":
+            if cat_code == "TREES" and pd.notna(r.get("trees_farm_exemption")) and str(r.get("trees_farm_exemption")).strip():
+                ex_label = resolve_yes_no(r.get("trees_farm_exemption"))
+            elif cat_code == "SITE_ALT" and pd.notna(r.get("sa_farm_exemption")) and str(r.get("sa_farm_exemption")).strip():
+                ex_label = resolve_yes_no(r.get("sa_farm_exemption"))
+            elif cat_code == "CHICKENS" and pd.notna(r.get("chickens_can_keep")) and str(r.get("chickens_can_keep")).strip():
+                ex_label = resolve_yes_no(r.get("chickens_can_keep"))
+            elif cat_code == "LGD" and pd.notna(r.get("lgd_exempt_fees")) and str(r.get("lgd_exempt_fees")).strip():
+                ex_label = resolve_yes_no(r.get("lgd_exempt_fees"))
+            elif cat_code == "FENCES" and pd.notna(r.get("fence_sec_exempt")) and str(r.get("fence_sec_exempt")).strip():
+                ex_label = resolve_yes_no(r.get("fence_sec_exempt"))
+        if not ex_label or str(ex_label).strip().lower() in ("nan", "none"):
+            ex_label = "Not Known"
+
+        days_left = (exp_date - today).days
+        bylaw_name = str(r.get("bylaw_name") or "").strip()
+        if not bylaw_name or bylaw_name.lower() in ("nan", "none"):
+            bylaw_name = f"{cat_label} By-law"
+        bylaw_link = str(r.get("bylaw_link") or "").strip()
+        if bylaw_link.lower() in ("nan", "none"):
+            bylaw_link = ""
+
+        rows.append({
+            "municipality_id": int(r["municipality_id"]),
+            "municipality_name": str(r["municipality_name"] or ""),
+            "municipal_status": str(r.get("municipal_status") or ""),
+            "geographic_area": str(r.get("geographic_area") or ""),
+            "category_code": cat_code,
+            "category_label": cat_label,
+            "bylaw_name": bylaw_name,
+            "bylaw_link": bylaw_link,
+            "expiry_date": exp_date.isoformat(),
+            "expiry_date_display": exp_date.strftime("%b %d, %Y"),
+            "days_until_expiry": days_left,
+            "exemption_status": ex_label,
+        })
+
+    rows.sort(key=lambda x: (x["expiry_date"], x["municipality_name"], x["category_label"]))
+    return rows

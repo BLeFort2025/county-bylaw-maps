@@ -438,6 +438,138 @@ def render_county_digest_html(
 
         body_sections_html = toc_html + "".join(cards_html)
 
+    # ── Upcoming Bylaw Renewals Section (Next 12 Months) — Always rendered at the bottom ──
+    renewals = payload.get("upcoming_renewals") or []
+    renewal_months = int(payload.get("renewal_months") or 12)
+    renewal_count = len(renewals)
+
+    def _exemption_pill_html(status_val: str) -> str:
+        s_low = str(status_val or "").strip().lower()
+        s_esc = html.escape(str(status_val or "Not Known"))
+        if s_low == "yes":
+            return (
+                f'<span style="display:inline-block; background-color:#E6F4EA; color:#1B5E20; '
+                f'border:1px solid #B7DFC2; font-size:11px; font-weight:bold; padding:2px 8px; '
+                f'border-radius:3px; white-space:nowrap;">Yes</span>'
+            )
+        if s_low in ("no", "no explicit exemption found"):
+            return (
+                f'<span style="display:inline-block; background-color:{OFA_VALENCIA}; color:#FFFFFF; '
+                f'font-size:11px; font-weight:bold; padding:2px 8px; border-radius:3px; white-space:nowrap;">{s_esc}</span>'
+            )
+        return (
+            f'<span style="display:inline-block; background-color:{OFA_CHAMPAGNE}; color:{OFA_BLUEWOOD}; '
+            f'font-size:11px; font-weight:bold; padding:2px 8px; border-radius:3px; white-space:nowrap;">{s_esc}</span>'
+        )
+
+    def _format_time_left(days_left: int) -> str:
+        if days_left <= 0:
+            return "Due now"
+        if days_left < 45:
+            return f"{days_left} days"
+        months = max(1, round(days_left / 30.4375))
+        return f"~{months} mo" if months == 1 else f"~{months} mos"
+
+    if renewals:
+        ren_rows_html = []
+        for r_idx, ren in enumerate(renewals):
+            row_bg = "#FFFFFF" if r_idx % 2 == 0 else "#FAF8F6"
+            m_name = html.escape(str(ren.get("municipality_name") or ""))
+            m_tier = html.escape(str(ren.get("municipal_status") or ""))
+            c_lbl = html.escape(str(ren.get("category_label") or ""))
+            b_name = html.escape(str(ren.get("bylaw_name") or ""))
+            b_link = str(ren.get("bylaw_link") or "").strip()
+            if b_link and b_link.startswith(("http://", "https://")):
+                b_cell = (
+                    f'<a href="{html.escape(b_link, quote=True)}" target="_blank" '
+                    f'style="color:{OFA_CRIMSON}; text-decoration:underline; font-weight:bold;">{b_name}</a>'
+                )
+            else:
+                b_cell = f'<strong>{b_name}</strong>'
+
+            exp_disp = html.escape(str(ren.get("expiry_date_display") or ren.get("expiry_date") or ""))
+            days_left = int(ren.get("days_until_expiry") or 0)
+            time_left_str = _format_time_left(days_left)
+            ex_pill = _exemption_pill_html(str(ren.get("exemption_status") or "Not Known"))
+
+            ren_rows_html.append(f"""
+            <tr style="background-color:{row_bg};">
+              <td style="padding:9px 8px; border-bottom:1px solid #E5E8EC; font-size:12px; color:#222222; vertical-align:top;">
+                <strong>{m_name}</strong><br />
+                <span style="font-size:11px; color:#666666;">{m_tier}</span>
+              </td>
+              <td style="padding:9px 8px; border-bottom:1px solid #E5E8EC; font-size:12px; color:{OFA_BLUEWOOD}; font-weight:bold; vertical-align:top;">
+                {c_lbl}
+              </td>
+              <td style="padding:9px 8px; border-bottom:1px solid #E5E8EC; font-size:12px; color:#222222; vertical-align:top;">
+                {b_cell}
+              </td>
+              <td style="padding:9px 8px; border-bottom:1px solid #E5E8EC; font-size:12px; color:#222222; white-space:nowrap; vertical-align:top;">
+                <strong>{exp_disp}</strong><br />
+                <span style="font-size:11px; color:#666666;">({time_left_str})</span>
+              </td>
+              <td align="center" style="padding:9px 8px; border-bottom:1px solid #E5E8EC; vertical-align:top;">
+                {ex_pill}
+              </td>
+            </tr>
+            """)
+
+        renewals_section_html = f"""
+        <tr>
+          <td style="padding:14px 28px 10px 28px; font-family:Arial,Helvetica,sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #DCE1E6; border-top:4px solid {OFA_TULIP}; border-radius:4px; background-color:#FFFFFF;">
+              <tr>
+                <td style="padding:16px 18px 12px 18px; background-color:#FFFFFF;">
+                  <div style="font-size:11px; font-weight:bold; color:{OFA_VALENCIA}; text-transform:uppercase; letter-spacing:0.6px;">
+                    OFA Municipal Bylaw Database — Renewal Watch
+                  </div>
+                  <h2 style="margin:4px 0 6px 0; font-family:Arial,Helvetica,sans-serif; font-size:17px; color:{OFA_BLUEWOOD};">
+                    Upcoming Bylaw Renewals in {html.escape(area_label)} (Next {renewal_months} Months)
+                  </h2>
+                  <p style="margin:0 0 12px 0; font-size:12px; line-height:1.45; color:#555555;">
+                    The following <strong>{renewal_count}</strong> municipal bylaw{'s' if renewal_count != 1 else ''}
+                    (County/Upper-Tier and Lower/Single-Tier) in your monitored area {'are' if renewal_count != 1 else 'is'}
+                    recorded in OFA's Bylaw Database as expiring within the next {renewal_months} months.
+                    Municipalities typically begin background studies and public consultations 6–12 months before expiry.
+                  </p>
+
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; border:1px solid #DCE1E6;">
+                    <tr style="background-color:{OFA_BLUEWOOD}; color:#FFFFFF;">
+                      <th align="left" style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:0.3px;">Municipality</th>
+                      <th align="left" style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:0.3px;">Bylaw Category</th>
+                      <th align="left" style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:0.3px;">Bylaw Name / #</th>
+                      <th align="left" style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:0.3px;">Expiry Date</th>
+                      <th align="center" style="padding:8px 8px; font-size:11px; text-transform:uppercase; letter-spacing:0.3px;">Farm Exemption</th>
+                    </tr>
+                    {"".join(ren_rows_html)}
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        """
+    else:
+        renewals_section_html = f"""
+        <tr>
+          <td style="padding:10px 28px 10px 28px; font-family:Arial,Helvetica,sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F8F9FA; border:1px solid #E2E6EA; border-left:4px solid {OFA_TULIP}; border-radius:4px;">
+              <tr>
+                <td style="padding:14px 16px;">
+                  <div style="font-size:13px; font-weight:bold; color:{OFA_BLUEWOOD}; margin-bottom:4px;">
+                    Upcoming Bylaw Renewals (Next {renewal_months} Months): 0 Recorded
+                  </div>
+                  <div style="font-size:12px; color:#555555; line-height:1.45;">
+                    No County or Lower/Single-Tier bylaws in your monitored {html.escape(area_label)} scope are currently
+                    recorded in the OFA Bylaw Database as expiring within the next {renewal_months} months.
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        """
+
     # Full OFA-Branded Outlook-Safe Email Template
     full_html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -487,20 +619,24 @@ def render_county_digest_html(
                 Automated weekly summary of municipal council agendas and minutes across <strong>{html.escape(area_label)}</strong>.
               </div>
 
-              <!-- 3-Column KPI Summary Strip -->
+              <!-- 4-Column KPI Summary Strip -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate; border-spacing:6px 0; margin:0 -6px;">
                 <tr>
-                  <td width="33%" align="center" style="background-color:{OFA_BLUEWOOD}; color:#FFFFFF; padding:12px 8px; border-radius:4px;">
-                    <div style="font-size:22px; font-weight:bold;">{hit_count}</div>
-                    <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.4px; margin-top:2px;">New Matches</div>
+                  <td width="25%" align="center" style="background-color:{OFA_BLUEWOOD}; color:#FFFFFF; padding:12px 6px; border-radius:4px;">
+                    <div style="font-size:21px; font-weight:bold;">{hit_count}</div>
+                    <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.4px; margin-top:2px;">New Matches</div>
                   </td>
-                  <td width="33%" align="center" style="background-color:{OFA_CHAMPAGNE}; color:{OFA_BLUEWOOD}; padding:12px 8px; border-radius:4px;">
-                    <div style="font-size:22px; font-weight:bold;">{monitored_count}</div>
-                    <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.4px; margin-top:2px;">Municipalities Watched</div>
+                  <td width="25%" align="center" style="background-color:{OFA_CHAMPAGNE}; color:{OFA_BLUEWOOD}; padding:12px 6px; border-radius:4px;">
+                    <div style="font-size:21px; font-weight:bold;">{monitored_count}</div>
+                    <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.4px; margin-top:2px;">Munis Watched</div>
                   </td>
-                  <td width="33%" align="center" style="background-color:{OFA_CHAMPAGNE}; color:{OFA_BLUEWOOD}; padding:12px 8px; border-radius:4px;">
-                    <div style="font-size:22px; font-weight:bold;">{docs_checked}</div>
-                    <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.4px; margin-top:2px;">Council Docs Checked</div>
+                  <td width="25%" align="center" style="background-color:{OFA_CHAMPAGNE}; color:{OFA_BLUEWOOD}; padding:12px 6px; border-radius:4px;">
+                    <div style="font-size:21px; font-weight:bold;">{docs_checked}</div>
+                    <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.4px; margin-top:2px;">Docs Checked</div>
+                  </td>
+                  <td width="25%" align="center" style="background-color:{'#FFF4E0' if renewal_count > 0 else OFA_CHAMPAGNE}; color:{OFA_BLUEWOOD}; padding:12px 6px; border-radius:4px;">
+                    <div style="font-size:21px; font-weight:bold; color:{OFA_VALENCIA if renewal_count > 0 else OFA_BLUEWOOD};">{renewal_count}</div>
+                    <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.4px; margin-top:2px;">12-Mo Renewals</div>
                   </td>
                 </tr>
               </table>
@@ -516,6 +652,9 @@ def render_county_digest_html(
 
           <!-- Main Content (Items or All Clear Card) -->
           {body_sections_html}
+
+          <!-- Upcoming 12-Month Bylaw Renewals (County & Lower/Single Tier) -->
+          {renewals_section_html}
 
           <!-- Methodology / Scope Footnote -->
           <tr>
@@ -657,6 +796,7 @@ def process_subscription(
         cached_docs_df=cached_docs_df,
         exclude_hashes=sent_hashes,
         use_ai=use_ai,
+        conn=conn,
     )
 
     items = payload["items"]
