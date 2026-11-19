@@ -16,7 +16,10 @@ from county_digest_engine import (
     DEFAULT_CACHE_PATH,
     build_county_digest_payload,
     describe_county_scope,
+    format_areas_human,
+    format_geographic_areas,
     load_cached_council_docs,
+    parse_geographic_areas,
 )
 from county_digest_mailer import (
     load_smtp_settings,
@@ -81,7 +84,7 @@ def render_county_digest_admin(conn) -> None:
                 summary_rows.append({
                     "ID": s["id"],
                     "Federation / Profile": ("🧪 " if s["is_test_profile"] else "🌾 ") + s["federation_name"],
-                    "County / Area": "Province-Wide" if s["geographic_area"] == "ALL_ONTARIO" else s["geographic_area"],
+                    "County / Area": format_areas_human(s["geographic_area"]),
                     "Munis": len(s["municipality_ids"]) if s["municipality_ids"] else "Auto",
                     "Keywords": len(s["keywords"]),
                     "Recipients (To)": s["recipient_emails"],
@@ -112,18 +115,18 @@ def render_county_digest_admin(conn) -> None:
 
         st.subheader("➕ New Subscription" if is_new else f"✏️ Edit: {editing_sub['federation_name']}")
 
-        # Preset Keyword Pack helper (outside form so clicking appends cleanly)
+        # Preset Keyword Pack helper (outside form so clicking adds cleanly)
         all_packs = {**OFA_BYLAW_CATEGORY_PACKS, **CUSTOM_KEYWORD_PACKS}
         pcol1, pcol2 = st.columns([3, 1])
         with pcol1:
             pack_to_add = st.selectbox(
                 "Quick-Add Preset Keyword Pack (optional)",
-                ["— Choose a pack to append keywords —"] + list(all_packs.keys()),
+                ["— Choose a preset pack to add —"] + list(all_packs.keys()),
                 key=f"pack_sel_{sub_key}",
             )
         with pcol2:
             st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
-            if st.button("➕ Append Pack", key=f"btn_append_pack_{sub_key}", use_container_width=True):
+            if st.button("➕ Add Keywords", key=f"btn_append_pack_{sub_key}", use_container_width=True):
                 if pack_to_add in all_packs:
                     kw_state_key = f"kw_text_{sub_key}"
                     existing_txt = st.session_state.get(
@@ -139,19 +142,18 @@ def render_county_digest_admin(conn) -> None:
                     st.session_state[kw_state_key] = "\n".join(existing_lines)
                     st.rerun()
 
-        # Reactive area + exclude_large_cities controls (outside form so municipality list updates immediately)
+        # Reactive area(s) + exclude_large_cities controls (outside form so municipality list updates immediately)
         geo_areas = get_geographic_areas(conn)
-        area_options = geo_areas + ["ALL_ONTARIO"]
-        default_area = editing_sub["geographic_area"] if editing_sub and editing_sub["geographic_area"] in area_options else (geo_areas[0] if geo_areas else "ALL_ONTARIO")
+        existing_parsed_areas = parse_geographic_areas(editing_sub["geographic_area"]) if editing_sub else []
+        existing_is_all = existing_parsed_areas == ["ALL_ONTARIO"]
 
-        c_top1, c_top2, c_top3 = st.columns([2, 1.5, 1.5])
+        c_top1, c_top2, c_top3 = st.columns([2.2, 1.4, 1.4])
         with c_top1:
-            selected_area = st.selectbox(
-                "County / Geographic Area",
-                area_options,
-                index=area_options.index(default_area),
-                format_func=lambda x: "🌐 ALL ONTARIO (Custom Province-Wide Run)" if x == "ALL_ONTARIO" else x,
-                key=f"area_sel_{sub_key}",
+            province_wide_mode = st.checkbox(
+                "🌐 Province-Wide (All Ontario)",
+                value=existing_is_all,
+                key=f"pw_mode_{sub_key}",
+                help="Check for a province-wide custom run; uncheck to select one or more specific counties below.",
             )
         with c_top2:
             exclude_cities = st.checkbox(
@@ -168,20 +170,40 @@ def render_county_digest_admin(conn) -> None:
                 help="Marks this profile as a personal/test run (defaults To email to ben.lefort@ofa.on.ca).",
             )
 
-        # Compute available municipalities & defaults for selected_area
-        scope = describe_county_scope(munis_df, selected_area, exclude_large_cities=exclude_cities)
+        if province_wide_mode:
+            selected_areas = ["ALL_ONTARIO"]
+        else:
+            default_multi = [a for a in existing_parsed_areas if a in geo_areas]
+            if not default_multi and geo_areas:
+                default_multi = [geo_areas[0]]
+            selected_areas = st.multiselect(
+                "County / Geographic Area(s) — select one or more",
+                options=geo_areas,
+                default=default_multi,
+                key=f"area_ms_{sub_key}",
+                help="Select a single county or multiple counties. Multi-county digests automatically divide results by county.",
+            )
+
+        selected_area = format_geographic_areas(selected_areas)
+        area_human_lbl = format_areas_human(selected_areas)
+        is_multi_area = len(selected_areas) > 1 and not province_wide_mode
+
+        # Compute available municipalities & defaults for selected_areas
+        scope = describe_county_scope(munis_df, selected_areas, exclude_large_cities=exclude_cities)
         inc_df = scope["included_df"]
         exc_df = scope["excluded_df"]
 
-        if selected_area == "ALL_ONTARIO":
+        if province_wide_mode:
             all_area_df = munis_df.copy()
+        elif selected_areas:
+            all_area_df = munis_df[munis_df["geographic_area"].isin(selected_areas)].copy()
         else:
-            all_area_df = munis_df[munis_df["geographic_area"] == selected_area].copy()
+            all_area_df = munis_df.iloc[0:0].copy()
 
         muni_label_to_id = {}
         muni_id_to_label = {}
-        for _, mr in all_area_df.sort_values("name").iterrows():
-            lbl = f"{mr['name']} ({mr['municipal_status']})"
+        for _, mr in all_area_df.sort_values(["geographic_area", "name"]).iterrows():
+            lbl = f"{mr['name']} [{mr['geographic_area']} — {mr['municipal_status']}]" if is_multi_area else f"{mr['name']} ({mr['municipal_status']})"
             mid = int(mr["id"])
             muni_label_to_id[lbl] = mid
             muni_id_to_label[mid] = lbl
@@ -196,17 +218,22 @@ def render_county_digest_admin(conn) -> None:
                 muni_id_to_label[int(mid)] for mid in inc_df["id"].tolist() if int(mid) in muni_id_to_label
             ]
 
-        if selected_area != "ALL_ONTARIO":
-            selected_muni_labels = st.multiselect(
-                f"Municipalities Monitored in {selected_area} ({len(default_selected_labels)} default)",
-                options=list(muni_label_to_id.keys()),
-                default=default_selected_labels,
-                key=f"munis_ms_{sub_key}_{selected_area}_{exclude_cities}",
-            )
-            chosen_muni_ids = [muni_label_to_id[lbl] for lbl in selected_muni_labels]
-            if not exc_df.empty:
-                exc_names = ", ".join(sorted(exc_df["name"].tolist()))
-                st.caption(f"🏙️ Excluded by default (large/separated cities): **{exc_names}** — add any of them above if requested by the County Federation.")
+        if not province_wide_mode:
+            if selected_areas:
+                area_sig = "_".join(sorted(selected_areas))[:80]
+                selected_muni_labels = st.multiselect(
+                    f"Municipalities Monitored across {area_human_lbl} ({len(default_selected_labels)} default)",
+                    options=list(muni_label_to_id.keys()),
+                    default=default_selected_labels,
+                    key=f"munis_ms_{sub_key}_{area_sig}_{exclude_cities}",
+                )
+                chosen_muni_ids = [muni_label_to_id[lbl] for lbl in selected_muni_labels]
+                if not exc_df.empty:
+                    exc_names = ", ".join(sorted(exc_df["name"].tolist()))
+                    st.caption(f"🏙️ Excluded by default (large/separated cities): **{exc_names}** — add any of them above if requested by the County Federation.")
+            else:
+                st.warning("Please select at least one County / Geographic Area above.")
+                chosen_muni_ids = []
         else:
             st.info(
                 f"🌐 **Province-Wide Scope:** Monitors **{len(inc_df)}** municipalities "
@@ -216,15 +243,16 @@ def render_county_digest_admin(conn) -> None:
 
         # Main Save Form
         with st.form(f"digest_form_{sub_key}"):
-            default_fed_name = (
-                editing_sub["federation_name"]
-                if editing_sub
-                else (
-                    f"Ben Test — {'Province-Wide' if selected_area == 'ALL_ONTARIO' else selected_area}"
-                    if is_test_profile
-                    else (f"{selected_area} Federation of Agriculture" if selected_area != "ALL_ONTARIO" else "OFA Province-Wide Watch")
-                )
-            )
+            if editing_sub:
+                default_fed_name = editing_sub["federation_name"]
+            elif is_test_profile:
+                default_fed_name = f"Ben Test — {'Province-Wide' if province_wide_mode else area_human_lbl}"
+            elif province_wide_mode:
+                default_fed_name = "OFA Province-Wide Watch"
+            elif len(selected_areas) == 1:
+                default_fed_name = f"{selected_areas[0]} Federation of Agriculture"
+            else:
+                default_fed_name = f"{area_human_lbl} Municipal Council Watch"
             default_to = (
                 editing_sub["recipient_emails"]
                 if editing_sub
@@ -295,6 +323,8 @@ def render_county_digest_admin(conn) -> None:
                 neg_list = [ln.strip() for ln in neg_text.splitlines() if ln.strip()]
                 if not fed_name.strip():
                     st.error("Please enter a Federation or Profile Name.")
+                elif not selected_area:
+                    st.error("Please select at least one County / Geographic Area above.")
                 elif not recip_emails.strip() or "@" not in recip_emails:
                     st.error("Please enter at least one valid Recipient Email address.")
                 elif not pos_list:

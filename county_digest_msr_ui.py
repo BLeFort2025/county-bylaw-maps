@@ -19,6 +19,8 @@ from county_digest_engine import (
     DEFAULT_CACHE_PATH,
     build_county_digest_payload,
     describe_county_scope,
+    format_areas_human,
+    format_geographic_areas,
     load_cached_council_docs,
 )
 from county_digest_mailer import (
@@ -60,16 +62,17 @@ def render_msr_digest_sandbox() -> None:
     cached_docs_df = load_cached_council_docs(DEFAULT_CACHE_PATH)
     smtp_cfg = load_smtp_settings()
 
-    # ── Step 1: Select County & Municipalities ──
-    st.subheader("1️⃣ Choose Your County / Region")
-    c1, c2 = st.columns([2, 1.5])
+    # ── Step 1: Select One or More Counties & Municipalities ──
+    st.subheader("1️⃣ Choose Your County / Region(s)")
+    c1, c2 = st.columns([2.2, 1.3])
     with c1:
-        default_idx = geo_areas.index("Bruce") if "Bruce" in geo_areas else 0
-        selected_area = st.selectbox(
-            "County / Geographic Area",
+        default_areas = ["Bruce"] if "Bruce" in geo_areas else ([geo_areas[0]] if geo_areas else [])
+        selected_areas = st.multiselect(
+            "County / Geographic Area(s) — select one or more",
             options=geo_areas,
-            index=default_idx,
-            key="msr_digest_area",
+            default=default_areas,
+            key="msr_digest_areas",
+            help="Select one county, or multiple counties (e.g., all counties in your MSR territory). Results in the email are clearly divided by county.",
         )
     with c2:
         st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
@@ -80,15 +83,19 @@ def render_msr_digest_sandbox() -> None:
             help="Large/separated cities (e.g., Guelph, London, Stratford, Windsor, Barrie) are excluded by default. You can add any municipality back below.",
         )
 
-    scope = describe_county_scope(munis_df, selected_area, exclude_large_cities=exclude_cities)
+    selected_areas_str = format_geographic_areas(selected_areas)
+    area_human_label = format_areas_human(selected_areas)
+    is_multi = len(selected_areas) > 1
+
+    scope = describe_county_scope(munis_df, selected_areas, exclude_large_cities=exclude_cities)
     inc_df = scope["included_df"]
     exc_df = scope["excluded_df"]
-    all_area_df = munis_df[munis_df["geographic_area"] == selected_area].copy()
+    all_area_df = munis_df[munis_df["geographic_area"].isin(selected_areas)].copy() if selected_areas else munis_df.iloc[0:0].copy()
 
     muni_label_to_id = {}
     muni_id_to_label = {}
-    for _, mr in all_area_df.sort_values("name").iterrows():
-        lbl = f"{mr['name']} ({mr['municipal_status']})"
+    for _, mr in all_area_df.sort_values(["geographic_area", "name"]).iterrows():
+        lbl = f"{mr['name']} [{mr['geographic_area']} — {mr['municipal_status']}]" if is_multi else f"{mr['name']} ({mr['municipal_status']})"
         mid = int(mr["id"])
         muni_label_to_id[lbl] = mid
         muni_id_to_label[mid] = lbl
@@ -96,13 +103,18 @@ def render_msr_digest_sandbox() -> None:
     default_labels = [
         muni_id_to_label[int(mid)] for mid in inc_df["id"].tolist() if int(mid) in muni_id_to_label
     ]
-    selected_muni_labels = st.multiselect(
-        f"Municipalities Included in {selected_area} ({len(default_labels)} selected by default)",
-        options=list(muni_label_to_id.keys()),
-        default=default_labels,
-        key=f"msr_munis_{selected_area}_{exclude_cities}",
-    )
-    chosen_muni_ids = [muni_label_to_id[lbl] for lbl in selected_muni_labels]
+    if selected_areas:
+        area_key_sig = "_".join(sorted(selected_areas))[:80]
+        selected_muni_labels = st.multiselect(
+            f"Municipalities Included across {area_human_label} ({len(default_labels)} selected by default)",
+            options=list(muni_label_to_id.keys()),
+            default=default_labels,
+            key=f"msr_munis_{area_key_sig}_{exclude_cities}",
+        )
+        chosen_muni_ids = [muni_label_to_id[lbl] for lbl in selected_muni_labels]
+    else:
+        st.warning("Please select at least one County / Region above.")
+        chosen_muni_ids = []
 
     if not exc_df.empty:
         exc_names = ", ".join(sorted(exc_df["name"].tolist()))
@@ -118,12 +130,12 @@ def render_msr_digest_sandbox() -> None:
     with pcol1:
         pack_choice = st.selectbox(
             "Quick-Add OFA Preset Keyword Pack",
-            ["— Choose a preset pack to append keywords —"] + list(all_packs.keys()),
+            ["— Choose a preset pack to add —"] + list(all_packs.keys()),
             key="msr_pack_choice",
         )
     with pcol2:
         st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
-        if st.button("➕ Append Pack", key="msr_append_pack_btn", use_container_width=True):
+        if st.button("➕ Add Keywords", key="msr_append_pack_btn", use_container_width=True):
             if pack_choice in all_packs:
                 cur_txt = st.session_state.get("msr_kw_text", "")
                 lines = [ln.strip() for ln in cur_txt.splitlines() if ln.strip()]
@@ -167,8 +179,14 @@ def render_msr_digest_sandbox() -> None:
     pos_kws = [ln.strip() for ln in kw_text.splitlines() if ln.strip()]
     neg_kws = [ln.strip() for ln in neg_text.splitlines() if ln.strip()]
 
+    default_profile_title = (
+        f"{selected_areas[0]} Federation of Agriculture"
+        if len(selected_areas) == 1
+        else (f"{area_human_label} Municipal Council Watch" if selected_areas else "OFA County Municipal Council Watch")
+    )
+
     # ── Step 3: Live Email Preview ──
-    st.subheader("3️⃣ Preview Your County's Weekly Email")
+    st.subheader("3️⃣ Preview Your Weekly Email")
     use_ai = st.checkbox(
         "Include Gemini AI Plain-English Summaries in Preview",
         value=True,
@@ -176,16 +194,16 @@ def render_msr_digest_sandbox() -> None:
     )
 
     if st.button("🔍 Generate Live Digest Preview", type="primary", use_container_width=True, key="msr_gen_preview_btn"):
-        if not chosen_muni_ids:
-            st.warning("Please select at least one municipality above.")
+        if not selected_areas or not chosen_muni_ids:
+            st.warning("Please select at least one county and municipality above.")
         elif not pos_kws:
             st.warning("Please enter at least one keyword above.")
         else:
-            with st.spinner(f"Scanning cached council agendas & minutes for {selected_area} and checking 12-month bylaw renewals..."):
+            with st.spinner(f"Scanning cached council agendas & minutes for {area_human_label} and checking 12-month bylaw renewals..."):
                 temp_sub = {
                     "id": 0,
-                    "federation_name": f"{selected_area} Federation of Agriculture",
-                    "geographic_area": selected_area,
+                    "federation_name": default_profile_title,
+                    "geographic_area": selected_areas_str,
                     "municipality_ids": chosen_muni_ids,
                     "exclude_large_cities": exclude_cities,
                     "recipient_emails": "",
@@ -223,10 +241,11 @@ def render_msr_digest_sandbox() -> None:
 
         dl_c1, dl_c2 = st.columns([1, 2])
         with dl_c1:
+            dl_slug = "_".join(a.lower().replace(" ", "_") for a in (selected_areas[:2] or ["county"]))
             st.download_button(
                 "📥 Download Preview HTML",
                 data=st.session_state["_msr_preview_html"].encode("utf-8"),
-                file_name=f"{selected_area.lower().replace(' ', '_')}_digest_preview_{datetime.date.today().isoformat()}.html",
+                file_name=f"{dl_slug}_digest_preview_{datetime.date.today().isoformat()}.html",
                 mime="text/html",
                 use_container_width=True,
             )
@@ -274,8 +293,8 @@ def render_msr_digest_sandbox() -> None:
             msr_name = st.text_input("Your Name (MSR / OFA Staff) *", placeholder="e.g., Karen Smith")
             msr_email = st.text_input("Your Email *", placeholder="firstname.lastname@ofa.on.ca")
             fed_name = st.text_input(
-                "County Federation Name *",
-                value=f"{selected_area} Federation of Agriculture",
+                "County Federation / Digest Title *",
+                value=default_profile_title,
             )
         with ef2:
             recip_emails = st.text_input(
@@ -313,7 +332,7 @@ def render_msr_digest_sandbox() -> None:
                 sub_payload = {
                     "id": None,
                     "federation_name": fed_name.strip(),
-                    "geographic_area": selected_area,
+                    "geographic_area": selected_areas_str,
                     "municipality_ids": chosen_muni_ids,
                     "exclude_large_cities": exclude_cities,
                     "recipient_emails": recip_emails.strip(),
@@ -332,7 +351,7 @@ def render_msr_digest_sandbox() -> None:
                     <html><body style="font-family:Arial,Helvetica,sans-serif; color:#222222;">
                       <h2 style="color:{OFA_VALENCIA}; margin-bottom:6px;">New County Weekly Digest Enrollment Request (#{new_id})</h2>
                       <p><strong>Submitted by:</strong> {html.escape(msr_name.strip())} ({html.escape(msr_email.strip())})</p>
-                      <p><strong>Federation:</strong> {html.escape(fed_name.strip())} ({html.escape(selected_area)} — {len(chosen_muni_ids)} municipalities)</p>
+                      <p><strong>Federation / Watchlist:</strong> {html.escape(fed_name.strip())} ({html.escape(area_human_label)} — {len(chosen_muni_ids)} municipalities)</p>
                       <p><strong>Recipients (To):</strong> {html.escape(recip_emails.strip())}</p>
                       <p><strong>CC:</strong> {html.escape(cc_emails.strip() or 'None')}</p>
                       <p><strong>Watchlist Keywords ({len(pos_kws)}):</strong> {html.escape(', '.join(pos_kws))}</p>

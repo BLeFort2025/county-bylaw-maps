@@ -102,37 +102,86 @@ def is_excluded_large_city(muni_row: pd.Series, area_df: pd.DataFrame) -> bool:
     return False
 
 
+AREA_DELIMITER = " | "
+
+
+def parse_geographic_areas(raw_area: str | list[str] | None) -> list[str]:
+    """Parse a stored geographic_area string ('Bruce' or 'Bruce | Grey | Stormont, Dundas and Glengarry') into a list."""
+    if raw_area is None:
+        return []
+    if isinstance(raw_area, (list, tuple, set)):
+        parts = [str(x).strip() for x in raw_area if str(x).strip()]
+    else:
+        s = str(raw_area).strip()
+        if not s:
+            return []
+        if s == "ALL_ONTARIO":
+            return ["ALL_ONTARIO"]
+        parts = [p.strip() for p in s.split("|") if p.strip()]
+    seen = set()
+    out = []
+    for p in parts:
+        if p not in seen:
+            seen.add(p)
+            out.append(p)
+    return out
+
+
+def format_geographic_areas(areas: list[str] | str) -> str:
+    """Serialize one or more geographic areas for DB storage using ' | ' (safe for names with commas)."""
+    parsed = parse_geographic_areas(areas)
+    if not parsed:
+        return ""
+    if "ALL_ONTARIO" in parsed:
+        return "ALL_ONTARIO"
+    return AREA_DELIMITER.join(parsed)
+
+
+def format_areas_human(areas: list[str] | str, max_inline: int = 4) -> str:
+    """Format selected geographic areas cleanly for email headers and UI captions."""
+    parsed = parse_geographic_areas(areas)
+    if not parsed:
+        return "Ontario"
+    if "ALL_ONTARIO" in parsed:
+        return "Province-Wide (All Ontario)"
+    if len(parsed) == 1:
+        return parsed[0]
+    if len(parsed) == 2:
+        return f"{parsed[0]} & {parsed[1]}"
+    if len(parsed) <= max_inline:
+        return ", ".join(parsed[:-1]) + f" & {parsed[-1]}"
+    return f"{len(parsed)} Counties/Regions ({', '.join(parsed[:3])}, +{len(parsed) - 3} more)"
+
+
 def describe_county_scope(
     munis_df: pd.DataFrame,
-    geographic_area: str,
+    geographic_area: str | list[str],
     exclude_large_cities: bool = True,
 ) -> dict[str, pd.DataFrame]:
-    """Split a geographic_area's municipalities into default-included vs. default-excluded cities."""
+    """Split one or more geographic areas' municipalities into default-included vs. default-excluded cities."""
     if munis_df is None or munis_df.empty:
         return {"included_df": pd.DataFrame(), "excluded_df": pd.DataFrame()}
 
-    if geographic_area == "ALL_ONTARIO":
-        area_df = munis_df.copy()
-        if not exclude_large_cities:
-            return {"included_df": area_df, "excluded_df": pd.DataFrame(columns=area_df.columns)}
-        excluded_ids = set()
-        for _, grp in area_df.groupby("geographic_area", dropna=False):
-            for _, row in grp.iterrows():
-                if is_excluded_large_city(row, grp):
-                    excluded_ids.add(int(row["id"]))
-        inc = area_df[~area_df["id"].isin(excluded_ids)].copy()
-        exc = area_df[area_df["id"].isin(excluded_ids)].copy()
-        return {"included_df": inc, "excluded_df": exc}
+    areas = parse_geographic_areas(geographic_area)
+    if not areas:
+        return {"included_df": pd.DataFrame(columns=munis_df.columns), "excluded_df": pd.DataFrame(columns=munis_df.columns)}
 
-    area_df = munis_df[munis_df["geographic_area"] == geographic_area].copy()
+    if "ALL_ONTARIO" in areas:
+        area_df = munis_df.copy()
+    else:
+        area_df = munis_df[munis_df["geographic_area"].isin(areas)].copy()
+
     if area_df.empty or not exclude_large_cities:
         return {"included_df": area_df, "excluded_df": pd.DataFrame(columns=area_df.columns)}
 
-    exc_mask = area_df.apply(lambda r: is_excluded_large_city(r, area_df), axis=1)
-    return {
-        "included_df": area_df[~exc_mask].copy(),
-        "excluded_df": area_df[exc_mask].copy(),
-    }
+    excluded_ids = set()
+    for _, grp in area_df.groupby("geographic_area", dropna=False):
+        for _, row in grp.iterrows():
+            if is_excluded_large_city(row, grp):
+                excluded_ids.add(int(row["id"]))
+    inc = area_df[~area_df["id"].isin(excluded_ids)].copy()
+    exc = area_df[area_df["id"].isin(excluded_ids)].copy()
+    return {"included_df": inc, "excluded_df": exc}
 
 
 def resolve_subscription_municipalities(
@@ -555,6 +604,25 @@ def build_county_digest_payload(
     munis_with_docs_checked: set[int] = set()
     already_sent_skipped = 0
 
+    # Per-county coverage tracking for clear multi-county email division
+    if not scope_munis.empty:
+        selected_areas = sorted(scope_munis["geographic_area"].dropna().astype(str).unique().tolist())
+    else:
+        parsed_a = parse_geographic_areas(subscription.get("geographic_area", ""))
+        selected_areas = [] if parsed_a == ["ALL_ONTARIO"] else parsed_a
+
+    county_stats: dict[str, dict[str, Any]] = {}
+    for area_name in selected_areas:
+        area_m_df = scope_munis[scope_munis["geographic_area"] == area_name] if not scope_munis.empty else pd.DataFrame()
+        county_stats[area_name] = {
+            "monitored_count": int(len(area_m_df)),
+            "monitored_municipalities": sorted(area_m_df["name"].tolist()) if not area_m_df.empty else [],
+            "munis_checked_ids": set(),
+            "docs_checked": 0,
+            "hits_count": 0,
+            "renewals_count": 0,
+        }
+
     # Collect raw matches keyed by (muni_id, meeting_key) so Minutes win over Agenda if both are cached
     by_meeting: dict[tuple[int, str], dict[str, Any]] = {}
 
@@ -583,6 +651,10 @@ def build_county_digest_payload(
 
             docs_checked += 1
             munis_with_docs_checked.add(mrec["id"])
+            m_area = str(mrec.get("geographic_area") or "")
+            if m_area in county_stats:
+                county_stats[m_area]["docs_checked"] += 1
+                county_stats[m_area]["munis_checked_ids"].add(mrec["id"])
 
             filtered_text = apply_negative_keywords(doc_text, neg_kws) if neg_kws else doc_text
             if not combined_pat.search(filtered_text):
@@ -661,11 +733,34 @@ def build_county_digest_payload(
 
     final_items.sort(key=_sort_key)
 
+    # Finalize per-county counts
+    for it in final_items:
+        a = str(it.get("geographic_area") or "")
+        if a in county_stats:
+            county_stats[a]["hits_count"] += 1
+    for ren in upcoming_renewals:
+        a = str(ren.get("geographic_area") or "")
+        if a in county_stats:
+            county_stats[a]["renewals_count"] += 1
+
+    clean_county_stats = {}
+    for a, st_dict in county_stats.items():
+        clean_county_stats[a] = {
+            "monitored_count": st_dict["monitored_count"],
+            "monitored_municipalities": st_dict["monitored_municipalities"],
+            "munis_with_docs_checked": len(st_dict["munis_checked_ids"]),
+            "docs_checked": st_dict["docs_checked"],
+            "hits_count": st_dict["hits_count"],
+            "renewals_count": st_dict["renewals_count"],
+        }
+
     return {
         "subscription": subscription,
         "generated_at": datetime.datetime.now().strftime("%B %d, %Y at %I:%M %p"),
         "run_date": datetime.date.today().isoformat(),
         "geographic_area": subscription.get("geographic_area", ""),
+        "selected_areas": selected_areas,
+        "county_stats": clean_county_stats,
         "federation_name": subscription.get("federation_name", ""),
         "monitored_municipalities": sorted(scope_munis["name"].tolist()) if not scope_munis.empty else [],
         "monitored_count": len(scope_ids),

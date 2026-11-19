@@ -35,7 +35,9 @@ from typing import Any
 from county_digest_engine import (
     DEFAULT_CACHE_PATH,
     build_county_digest_payload,
+    format_areas_human,
     load_cached_council_docs,
+    parse_geographic_areas,
 )
 from db_utils import (
     DEFAULT_BCC_EMAIL,
@@ -213,6 +215,9 @@ def render_county_digest_html(
     """
     fed_name = str(payload.get("federation_name") or "County Federation of Agriculture").strip()
     geo_area = str(payload.get("geographic_area") or "").strip()
+    selected_areas = payload.get("selected_areas") or parse_geographic_areas(geo_area)
+    county_stats = payload.get("county_stats") or {}
+    is_multi_county = len(selected_areas) > 1 or geo_area == "ALL_ONTARIO"
     items = payload.get("items") or []
     hit_count = len(items)
     monitored_count = int(payload.get("monitored_count") or 0)
@@ -224,7 +229,7 @@ def render_county_digest_html(
     monitored_munis = payload.get("monitored_municipalities") or []
     run_date_str = datetime.date.today().strftime("%B %d, %Y")
 
-    area_label = "Province-Wide" if geo_area == "ALL_ONTARIO" else geo_area
+    area_label = format_areas_human(selected_areas if selected_areas else geo_area)
 
     if hit_count == 0:
         subject = f"OFA Municipal Council Watch — {fed_name}: All Clear (0 New Matches | {run_date_str})"
@@ -280,7 +285,146 @@ def render_county_digest_html(
             f'<strong>Excluded terms:</strong> {html.escape(", ".join(neg_keywords))}</div>'
         )
 
-    # Body sections: either Quiet Week ("All Clear") or Detailed Discussion Cards
+    # Optional Multi-County Overview Table (when monitoring 2+ counties)
+    county_overview_html = ""
+    if is_multi_county and county_stats and len(county_stats) <= 15:
+        ov_rows = []
+        for idx_a, area_name in enumerate(sorted(county_stats.keys())):
+            st_c = county_stats[area_name]
+            bg = "#FFFFFF" if idx_a % 2 == 0 else "#FAF8F6"
+            h_cnt = int(st_c.get("hits_count") or 0)
+            r_cnt = int(st_c.get("renewals_count") or 0)
+            d_cnt = int(st_c.get("docs_checked") or 0)
+            m_cnt = int(st_c.get("monitored_count") or 0)
+            h_cell = (
+                f'<span style="display:inline-block; background-color:{OFA_VALENCIA}; color:#FFFFFF; font-size:11px; font-weight:bold; padding:2px 8px; border-radius:3px;">{h_cnt}</span>'
+                if h_cnt > 0
+                else '<span style="color:#666666; font-size:12px;">0 (All Clear)</span>'
+            )
+            r_cell = (
+                f'<strong style="color:{OFA_VALENCIA};">{r_cnt}</strong>'
+                if r_cnt > 0
+                else '<span style="color:#666666;">0</span>'
+            )
+            ov_rows.append(
+                f'<tr style="background-color:{bg};">'
+                f'<td style="padding:7px 10px; border-bottom:1px solid #E5E8EC; font-size:12px; font-weight:bold; color:{OFA_BLUEWOOD};">{html.escape(area_name)}</td>'
+                f'<td align="center" style="padding:7px 8px; border-bottom:1px solid #E5E8EC;">{h_cell}</td>'
+                f'<td align="center" style="padding:7px 8px; border-bottom:1px solid #E5E8EC; font-size:12px; color:#333333;">{d_cnt} ({m_cnt} munis)</td>'
+                f'<td align="center" style="padding:7px 8px; border-bottom:1px solid #E5E8EC; font-size:12px;">{r_cell}</td>'
+                f'</tr>'
+            )
+        county_overview_html = f"""
+        <tr>
+          <td style="padding:8px 28px 12px 28px; font-family:Arial,Helvetica,sans-serif;">
+            <div style="font-size:12px; font-weight:bold; color:{OFA_BLUEWOOD}; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:6px;">
+              At-a-Glance Breakdown by County / Region
+            </div>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; border:1px solid #DCE1E6;">
+              <tr style="background-color:{OFA_BLUEWOOD}; color:#FFFFFF;">
+                <th align="left" style="padding:7px 10px; font-size:11px; text-transform:uppercase;">County / Region</th>
+                <th align="center" style="padding:7px 8px; font-size:11px; text-transform:uppercase;">Council Matches</th>
+                <th align="center" style="padding:7px 8px; font-size:11px; text-transform:uppercase;">Docs Checked</th>
+                <th align="center" style="padding:7px 8px; font-size:11px; text-transform:uppercase;">12-Mo Renewals</th>
+              </tr>
+              {"".join(ov_rows)}
+            </table>
+          </td>
+        </tr>
+        """
+
+    def _render_item_card(idx_num: int, it: dict[str, Any]) -> str:
+        badge = str(it.get("status_badge") or "Council Discussion")
+        badge_bg, badge_fg = _badge_colors(badge)
+        muni_name = html.escape(str(it.get("municipality_name") or "Unknown"))
+        headline = html.escape(str(it.get("headline") or muni_name))
+        doc_type = html.escape(str(it.get("doc_type") or "Council Document"))
+        meet_date = html.escape(str(it.get("meeting_date_display") or ""))
+        exec_summary = html.escape(str(it.get("executive_summary") or ""))
+        key_action = str(it.get("key_action_or_date") or "").strip()
+        doc_url = html.escape(str(it.get("doc_url") or "#"), quote=True)
+        item_kws = it.get("matched_keywords") or []
+        item_kw_html = " ".join(
+            f'<span style="display:inline-block; background-color:#FDECEC; color:{OFA_CRIMSON}; '
+            f'border:1px solid #F5C2C2; font-size:11px; font-weight:bold; padding:2px 7px; '
+            f'margin-right:4px; border-radius:3px;">{html.escape(k)}</span>'
+            for k in item_kws
+        )
+        full_ctx_html = _highlight_keywords_html(str(it.get("full_context") or ""), item_kws)
+
+        action_box = ""
+        if key_action:
+            action_box = (
+                f'<div style="margin:10px 0 12px 0; padding:8px 12px; background-color:#FFF8EB; '
+                f'border-left:3px solid {OFA_TULIP}; font-size:13px; color:#222222;">'
+                f'<strong>Key Date / Outcome:</strong> {html.escape(key_action)}</div>'
+            )
+
+        return f"""
+        <tr>
+          <td style="padding:8px 28px 14px 28px; font-family:Arial,Helvetica,sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #DCE1E6; border-top:4px solid {OFA_VALENCIA}; border-radius:4px; background-color:#FFFFFF;">
+              <tr>
+                <td style="padding:18px 20px;">
+                  <!-- Municipality & Status Badge -->
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td style="font-size:12px; font-weight:bold; color:{OFA_BLUEWOOD}; text-transform:uppercase; letter-spacing:0.5px;">
+                        {idx_num}. {muni_name} &nbsp;|&nbsp; {meet_date}
+                      </td>
+                      <td align="right">
+                        <span style="display:inline-block; background-color:{badge_bg}; color:{badge_fg}; font-size:11px; font-weight:bold; padding:4px 9px; border-radius:3px;">
+                          {html.escape(badge)}
+                        </span>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Headline -->
+                  <h2 style="margin:8px 0 6px 0; font-family:Arial,Helvetica,sans-serif; font-size:18px; line-height:1.3; color:{OFA_BLACK};">
+                    {headline}
+                  </h2>
+
+                  <!-- Document Type & Matched Keywords -->
+                  <div style="margin:0 0 12px 0; font-size:12px; color:#555555;">
+                    <strong>Source Type:</strong> {doc_type} &nbsp;&bull;&nbsp; <strong>Matched Keywords:</strong> {item_kw_html}
+                  </div>
+
+                  <!-- Executive Summary -->
+                  <div style="margin:0 0 10px 0; font-size:14px; line-height:1.55; color:#1F2428;">
+                    <strong style="color:{OFA_BLUEWOOD};">Summary:</strong> {exec_summary}
+                  </div>
+
+                  {action_box}
+
+                  <!-- Full Verbatim Council Discussion Context (OFA Champagne Box) -->
+                  <div style="margin-top:14px; background-color:{OFA_CHAMPAGNE}; border-left:4px solid {OFA_BLUEWOOD}; padding:14px 16px; border-radius:3px;">
+                    <div style="font-size:12px; font-weight:bold; color:{OFA_BLUEWOOD}; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">
+                      Full Context from Official Municipal Document
+                    </div>
+                    <div style="font-family:Arial,Helvetica,sans-serif; font-size:13px; color:#222222;">
+                      {full_ctx_html}
+                    </div>
+                  </div>
+
+                  <!-- Source Link Button -->
+                  <table cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;">
+                    <tr>
+                      <td style="background-color:{OFA_VALENCIA}; border-radius:4px;">
+                        <a href="{doc_url}" target="_blank" style="display:inline-block; padding:10px 18px; font-family:Arial,Helvetica,sans-serif; font-size:13px; font-weight:bold; color:#FFFFFF; text-decoration:none;">
+                          View Official Municipal Document &rarr;
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        """
+
+    # Body sections: either Quiet Week ("All Clear") or Detailed Discussion Cards (divided by county if multi-county)
     if hit_count == 0:
         prev_note = (
             f" ({already_sent} earlier item{'s' if already_sent != 1 else ''} already reported in a prior digest were not repeated.)"
@@ -291,9 +435,9 @@ def render_county_digest_html(
         if len(monitored_munis) > 25:
             muni_list_preview += f" (+{len(monitored_munis) - 25} more)"
 
-        body_sections_html = f"""
+        body_sections_html = county_overview_html + f"""
         <tr>
-          <td style="padding:24px 28px 16px 28px; font-family:Arial,Helvetica,sans-serif;">
+          <td style="padding:16px 28px 16px 28px; font-family:Arial,Helvetica,sans-serif;">
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:{OFA_CHAMPAGNE}; border-left:5px solid {OFA_BLUEWOOD}; border-radius:4px;">
               <tr>
                 <td style="padding:20px 22px;">
@@ -315,8 +459,65 @@ def render_county_digest_html(
           </td>
         </tr>
         """
+    elif is_multi_county:
+        # Clearly divide council matches into County/Region sections
+        items_by_area: dict[str, list[dict[str, Any]]] = {}
+        for it in items:
+            a = str(it.get("geographic_area") or "Other").strip()
+            items_by_area.setdefault(a, []).append(it)
+
+        sections = [county_overview_html]
+        areas_with_hits = sorted(items_by_area.keys())
+        quiet_areas = [a for a in sorted(selected_areas) if a not in items_by_area]
+
+        for area_name in areas_with_hits:
+            area_items = items_by_area[area_name]
+            n_hits = len(area_items)
+            st_c = county_stats.get(area_name, {})
+            d_cnt = int(st_c.get("docs_checked") or 0)
+            m_cnt = int(st_c.get("monitored_count") or 0)
+            sections.append(f"""
+            <tr>
+              <td style="padding:18px 28px 6px 28px; font-family:Arial,Helvetica,sans-serif;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:{OFA_BLUEWOOD}; border-left:6px solid {OFA_VALENCIA}; border-radius:4px;">
+                  <tr>
+                    <td style="padding:11px 16px; color:#FFFFFF; font-size:15px; font-weight:bold; letter-spacing:0.3px;">
+                      {html.escape(area_name.upper())} &mdash; {n_hits} New {'Match' if n_hits == 1 else 'Matches'}
+                    </td>
+                    <td align="right" style="padding:11px 16px; color:#E0E6EB; font-size:12px;">
+                      {d_cnt} docs checked ({m_cnt} munis)
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            """)
+            for local_idx, it in enumerate(area_items, 1):
+                sections.append(_render_item_card(local_idx, it))
+
+        if quiet_areas and len(selected_areas) <= 15:
+            quiet_details = []
+            for qa in quiet_areas:
+                d_cnt = int((county_stats.get(qa) or {}).get("docs_checked") or 0)
+                quiet_details.append(f"<strong>{html.escape(qa)}</strong> ({d_cnt} docs checked)")
+            sections.append(f"""
+            <tr>
+              <td style="padding:10px 28px 12px 28px; font-family:Arial,Helvetica,sans-serif;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:{OFA_CHAMPAGNE}; border-left:4px solid {OFA_BLUEWOOD}; border-radius:4px;">
+                  <tr>
+                    <td style="padding:12px 16px; font-size:13px; color:#222222; line-height:1.5;">
+                      <strong style="color:{OFA_BLUEWOOD};">All Clear (0 New Matches This Week):</strong>
+                      {" &nbsp;&bull;&nbsp; ".join(quiet_details)}
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            """)
+
+        body_sections_html = "".join(sections)
     else:
-        # Optional quick summary index when >= 2 hits
+        # Single-county layout with optional quick summary index when >= 2 hits
         toc_html = ""
         if hit_count >= 2:
             toc_rows = []
@@ -344,98 +545,7 @@ def render_county_digest_html(
             </tr>
             """
 
-        cards_html = []
-        for idx, it in enumerate(items, 1):
-            badge = str(it.get("status_badge") or "Council Discussion")
-            badge_bg, badge_fg = _badge_colors(badge)
-            muni_name = html.escape(str(it.get("municipality_name") or "Unknown"))
-            headline = html.escape(str(it.get("headline") or muni_name))
-            doc_type = html.escape(str(it.get("doc_type") or "Council Document"))
-            meet_date = html.escape(str(it.get("meeting_date_display") or ""))
-            exec_summary = html.escape(str(it.get("executive_summary") or ""))
-            key_action = str(it.get("key_action_or_date") or "").strip()
-            doc_url = html.escape(str(it.get("doc_url") or "#"), quote=True)
-            item_kws = it.get("matched_keywords") or []
-            item_kw_html = " ".join(
-                f'<span style="display:inline-block; background-color:#FDECEC; color:{OFA_CRIMSON}; '
-                f'border:1px solid #F5C2C2; font-size:11px; font-weight:bold; padding:2px 7px; '
-                f'margin-right:4px; border-radius:3px;">{html.escape(k)}</span>'
-                for k in item_kws
-            )
-            full_ctx_html = _highlight_keywords_html(str(it.get("full_context") or ""), item_kws)
-
-            action_box = ""
-            if key_action:
-                action_box = (
-                    f'<div style="margin:10px 0 12px 0; padding:8px 12px; background-color:#FFF8EB; '
-                    f'border-left:3px solid {OFA_TULIP}; font-size:13px; color:#222222;">'
-                    f'<strong>Key Date / Outcome:</strong> {html.escape(key_action)}</div>'
-                )
-
-            cards_html.append(f"""
-            <tr>
-              <td style="padding:10px 28px 14px 28px; font-family:Arial,Helvetica,sans-serif;">
-                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #DCE1E6; border-top:4px solid {OFA_VALENCIA}; border-radius:4px; background-color:#FFFFFF;">
-                  <tr>
-                    <td style="padding:18px 20px;">
-                      <!-- Municipality & Status Badge -->
-                      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                        <tr>
-                          <td style="font-size:12px; font-weight:bold; color:{OFA_BLUEWOOD}; text-transform:uppercase; letter-spacing:0.5px;">
-                            {idx}. {muni_name} &nbsp;|&nbsp; {meet_date}
-                          </td>
-                          <td align="right">
-                            <span style="display:inline-block; background-color:{badge_bg}; color:{badge_fg}; font-size:11px; font-weight:bold; padding:4px 9px; border-radius:3px;">
-                              {html.escape(badge)}
-                            </span>
-                          </td>
-                        </tr>
-                      </table>
-
-                      <!-- Headline -->
-                      <h2 style="margin:8px 0 6px 0; font-family:Arial,Helvetica,sans-serif; font-size:18px; line-height:1.3; color:{OFA_BLACK};">
-                        {headline}
-                      </h2>
-
-                      <!-- Document Type & Matched Keywords -->
-                      <div style="margin:0 0 12px 0; font-size:12px; color:#555555;">
-                        <strong>Source Type:</strong> {doc_type} &nbsp;&bull;&nbsp; <strong>Matched Keywords:</strong> {item_kw_html}
-                      </div>
-
-                      <!-- Executive Summary -->
-                      <div style="margin:0 0 10px 0; font-size:14px; line-height:1.55; color:#1F2428;">
-                        <strong style="color:{OFA_BLUEWOOD};">Summary:</strong> {exec_summary}
-                      </div>
-
-                      {action_box}
-
-                      <!-- Full Verbatim Council Discussion Context (OFA Champagne Box) -->
-                      <div style="margin-top:14px; background-color:{OFA_CHAMPAGNE}; border-left:4px solid {OFA_BLUEWOOD}; padding:14px 16px; border-radius:3px;">
-                        <div style="font-size:12px; font-weight:bold; color:{OFA_BLUEWOOD}; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">
-                          Full Context from Official Municipal Document
-                        </div>
-                        <div style="font-family:Arial,Helvetica,sans-serif; font-size:13px; color:#222222;">
-                          {full_ctx_html}
-                        </div>
-                      </div>
-
-                      <!-- Source Link Button -->
-                      <table cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;">
-                        <tr>
-                          <td style="background-color:{OFA_VALENCIA}; border-radius:4px;">
-                            <a href="{doc_url}" target="_blank" style="display:inline-block; padding:10px 18px; font-family:Arial,Helvetica,sans-serif; font-size:13px; font-weight:bold; color:#FFFFFF; text-decoration:none;">
-                              View Official Municipal Document &rarr;
-                            </a>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-            """)
-
+        cards_html = [_render_item_card(idx, it) for idx, it in enumerate(items, 1)]
         body_sections_html = toc_html + "".join(cards_html)
 
     # ── Upcoming Bylaw Renewals Section (Next 12 Months) — Always rendered at the bottom ──
@@ -472,7 +582,35 @@ def render_county_digest_html(
 
     if renewals:
         ren_rows_html = []
-        for r_idx, ren in enumerate(renewals):
+        # When monitoring multiple counties, group upcoming renewals clearly by County with Champagne subheaders
+        if is_multi_county:
+            ordered_renewals = sorted(
+                renewals,
+                key=lambda x: (str(x.get("geographic_area") or ""), str(x.get("expiry_date") or ""), str(x.get("municipality_name") or "")),
+            )
+            ren_counts_by_area: dict[str, int] = {}
+            for x in ordered_renewals:
+                a_k = str(x.get("geographic_area") or "Other")
+                ren_counts_by_area[a_k] = ren_counts_by_area.get(a_k, 0) + 1
+        else:
+            ordered_renewals = renewals
+            ren_counts_by_area = {}
+
+        last_ren_area = None
+        for r_idx, ren in enumerate(ordered_renewals):
+            if is_multi_county:
+                cur_area = str(ren.get("geographic_area") or "Other")
+                if cur_area != last_ren_area:
+                    cnt_a = ren_counts_by_area.get(cur_area, 0)
+                    ren_rows_html.append(f"""
+                    <tr style="background-color:{OFA_CHAMPAGNE};">
+                      <td colspan="5" style="padding:7px 10px; border-top:2px solid {OFA_BLUEWOOD}; border-bottom:1px solid #D5CEC6; font-size:12px; font-weight:bold; color:{OFA_BLUEWOOD}; text-transform:uppercase; letter-spacing:0.4px;">
+                        {html.escape(cur_area)} &mdash; {cnt_a} Upcoming {'Renewal' if cnt_a == 1 else 'Renewals'}
+                      </td>
+                    </tr>
+                    """)
+                    last_ren_area = cur_area
+
             row_bg = "#FFFFFF" if r_idx % 2 == 0 else "#FAF8F6"
             m_name = html.escape(str(ren.get("municipality_name") or ""))
             m_tier = html.escape(str(ren.get("municipal_status") or ""))
