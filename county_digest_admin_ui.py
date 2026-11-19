@@ -266,22 +266,29 @@ def render_county_digest_admin(conn) -> None:
             )
             default_neg_str = "\n".join(editing_sub["negative_keywords"]) if editing_sub else ""
 
+            existing_to_list = [e.strip() for e in (default_to or "").replace(";", ",").split(",") if e.strip()]
+            default_primary_email = existing_to_list[0] if existing_to_list else ""
+            default_extra_emails = ", ".join(existing_to_list[1:]) if len(existing_to_list) > 1 else ""
+
             f1, f2 = st.columns(2)
             with f1:
-                fed_name = st.text_input("County Federation / Profile Name *", value=default_fed_name)
-                recip_emails = st.text_input(
-                    "Recipient Emails (To) — comma-separated *",
-                    value=default_to,
-                    placeholder="president@countyfa.ca, admin@countyfa.ca",
+                fed_name = st.text_input(
+                    "County Federation / Profile Name (optional)",
+                    value=editing_sub["federation_name"] if editing_sub else "",
+                    placeholder=default_fed_name,
+                    help="Optional — leave blank to auto-name from the selected county/counties.",
                 )
-                cc_emails = st.text_input(
-                    "CC Emails (optional — e.g. local MSR)",
-                    value=default_cc,
-                    placeholder="msr@ofa.on.ca",
+                primary_email = st.text_input(
+                    "Email Address *",
+                    value=default_primary_email,
+                    placeholder="president@countyfa.ca",
+                    help="Primary recipient email address.",
                 )
-                bcc_emails = st.text_input(
-                    "BCC Emails (Ben is always blind-copied automatically on Monday runs)",
-                    value=default_bcc or DEFAULT_BCC_EMAIL,
+                extra_emails = st.text_input(
+                    "Additional Email Addresses (optional)",
+                    value=default_extra_emails,
+                    placeholder="admin@countyfa.ca, msr@ofa.on.ca",
+                    help="Optional: add additional recipients separated by commas.",
                 )
 
             with f2:
@@ -297,6 +304,10 @@ def render_county_digest_admin(conn) -> None:
                     "Internal Notes (optional)",
                     value=editing_sub["notes"] if editing_sub else "",
                     placeholder="e.g. Requested by County Board Nov 2026",
+                )
+                bcc_emails = st.text_input(
+                    "BCC Emails (Ben is always blind-copied automatically on Monday runs)",
+                    value=default_bcc or DEFAULT_BCC_EMAIL,
                 )
 
             kcol1, kcol2 = st.columns(2)
@@ -321,23 +332,33 @@ def render_county_digest_admin(conn) -> None:
             if submitted:
                 pos_list = [ln.strip() for ln in kw_text.splitlines() if ln.strip()]
                 neg_list = [ln.strip() for ln in neg_text.splitlines() if ln.strip()]
-                if not fed_name.strip():
-                    st.error("Please enter a Federation or Profile Name.")
-                elif not selected_area:
+                raw_all_em = [primary_email.strip()] + [
+                    e.strip() for e in extra_emails.replace(";", ",").replace("\n", ",").split(",") if e.strip()
+                ]
+                seen_em = set()
+                merged_em = []
+                for em in raw_all_em:
+                    if "@" in em and em.lower() not in seen_em:
+                        seen_em.add(em.lower())
+                        merged_em.append(em)
+                recip_emails = ", ".join(merged_em)
+                final_fed_name = fed_name.strip() or default_fed_name
+
+                if not selected_area:
                     st.error("Please select at least one County / Geographic Area above.")
-                elif not recip_emails.strip() or "@" not in recip_emails:
-                    st.error("Please enter at least one valid Recipient Email address.")
+                elif not recip_emails:
+                    st.error("Please enter at least one valid Email address.")
                 elif not pos_list:
                     st.error("Please enter at least one Watchlist Keyword.")
                 else:
                     sub_payload = {
                         "id": editing_sub["id"] if editing_sub else None,
-                        "federation_name": fed_name.strip(),
+                        "federation_name": final_fed_name,
                         "geographic_area": selected_area,
                         "municipality_ids": chosen_muni_ids,
                         "exclude_large_cities": exclude_cities,
-                        "recipient_emails": recip_emails.strip(),
-                        "cc_emails": cc_emails.strip(),
+                        "recipient_emails": recip_emails,
+                        "cc_emails": default_cc.strip(),
                         "bcc_emails": bcc_emails.strip() or DEFAULT_BCC_EMAIL,
                         "send_empty_digest": send_empty,
                         "is_test_profile": is_test_profile,
@@ -346,7 +367,7 @@ def render_county_digest_admin(conn) -> None:
                     }
                     saved_id = upsert_county_subscription(conn, sub_payload, pos_list, neg_list)
                     st.session_state.pop(f"kw_text_{sub_key}", None)
-                    st.success(f"✅ Saved subscription **#{saved_id} — {fed_name.strip()}** ({len(pos_list)} keywords) to live database!")
+                    st.success(f"✅ Saved subscription **#{saved_id} — {final_fed_name}** ({len(pos_list)} keywords) to live database!")
                     st.rerun()
 
         if editing_sub:

@@ -290,53 +290,67 @@ def render_msr_digest_sandbox() -> None:
     with st.form("msr_enroll_form"):
         ef1, ef2 = st.columns(2)
         with ef1:
-            msr_name = st.text_input("Your Name (MSR / OFA Staff) *", placeholder="e.g., Karen Smith")
-            msr_email = st.text_input("Your Email *", placeholder="firstname.lastname@ofa.on.ca")
+            msr_name = st.text_input("Your Name *", placeholder="e.g., Karen Smith")
+            primary_email = st.text_input(
+                "Email Address *",
+                placeholder="firstname.lastname@ofa.on.ca",
+                help="Primary email address that will receive the weekly Monday morning digest.",
+            )
             fed_name = st.text_input(
-                "County Federation / Digest Title *",
-                value=default_profile_title,
+                "County Federation / Digest Name (optional)",
+                value="",
+                placeholder=default_profile_title,
+                help="Optional — leave blank to automatically label the email using your selected county/counties.",
             )
         with ef2:
-            recip_emails = st.text_input(
-                "Monday Digest Recipient Email(s) (To) *",
+            extra_emails = st.text_input(
+                "Additional Email Addresses (optional)",
                 placeholder="president@countyfa.ca, admin@countyfa.ca",
-                help="Comma-separated list of who should receive the weekly Monday email.",
-            )
-            cc_emails = st.text_input(
-                "CC Email(s) (optional — e.g., yourself as MSR)",
-                placeholder="msr@ofa.on.ca",
+                help="Optional: add any extra recipients (separated by commas) who should also receive this weekly digest.",
             )
             send_empty = st.checkbox(
                 "Send 'All Clear (0 matches)' email on quiet weeks",
                 value=True,
             )
-
-        req_notes = st.text_input(
-            "Notes for Ben (optional)",
-            placeholder="e.g., County Board approved pilot — please start next Monday",
-        )
+            req_notes = st.text_input(
+                "Notes for Ben (optional)",
+                placeholder="e.g., County Board approved pilot — please start next Monday",
+            )
 
         submit_req = st.form_submit_button("📩 Submit Enrollment Request for Activation", type="primary", use_container_width=True)
         if submit_req:
-            if not msr_name.strip() or not msr_email.strip() or "@" not in msr_email:
-                st.error("Please enter your name and a valid email address.")
-            elif not fed_name.strip() or not recip_emails.strip() or "@" not in recip_emails:
-                st.error("Please enter a County Federation name and at least one recipient email.")
+            if not msr_name.strip():
+                st.error("Please enter your name.")
+            elif not primary_email.strip() or "@" not in primary_email:
+                st.error("Please enter a valid email address.")
             elif not pos_kws:
                 st.error("Please add at least one keyword in Step 2 above before submitting.")
-            elif not chosen_muni_ids:
-                st.error("Please select at least one municipality in Step 1 above before submitting.")
+            elif not selected_areas or not chosen_muni_ids:
+                st.error("Please select at least one county and municipality in Step 1 above before submitting.")
             else:
-                note_tag = f"[MSR SELF-SERVE REQUEST from {msr_name.strip()} <{msr_email.strip()}>]"
+                # Merge primary + any optional additional emails cleanly (deduplicated)
+                raw_all_emails = [primary_email.strip()] + [
+                    e.strip() for e in extra_emails.replace(";", ",").replace("\n", ",").split(",") if e.strip()
+                ]
+                seen_em = set()
+                merged_emails = []
+                for em in raw_all_emails:
+                    if "@" in em and em.lower() not in seen_em:
+                        seen_em.add(em.lower())
+                        merged_emails.append(em)
+                recip_emails_str = ", ".join(merged_emails)
+
+                final_fed_name = fed_name.strip() or default_profile_title
+                note_tag = f"[MSR SELF-SERVE REQUEST from {msr_name.strip()} <{primary_email.strip()}>]"
                 full_notes = f"{note_tag} {req_notes.strip()}".strip()
                 sub_payload = {
                     "id": None,
-                    "federation_name": fed_name.strip(),
+                    "federation_name": final_fed_name,
                     "geographic_area": selected_areas_str,
                     "municipality_ids": chosen_muni_ids,
                     "exclude_large_cities": exclude_cities,
-                    "recipient_emails": recip_emails.strip(),
-                    "cc_emails": cc_emails.strip(),
+                    "recipient_emails": recip_emails_str,
+                    "cc_emails": "",
                     "bcc_emails": DEFAULT_BCC_EMAIL,
                     "send_empty_digest": send_empty,
                     "is_test_profile": False,
@@ -350,10 +364,9 @@ def render_msr_digest_sandbox() -> None:
                     notify_html = f"""
                     <html><body style="font-family:Arial,Helvetica,sans-serif; color:#222222;">
                       <h2 style="color:{OFA_VALENCIA}; margin-bottom:6px;">New County Weekly Digest Enrollment Request (#{new_id})</h2>
-                      <p><strong>Submitted by:</strong> {html.escape(msr_name.strip())} ({html.escape(msr_email.strip())})</p>
-                      <p><strong>Federation / Watchlist:</strong> {html.escape(fed_name.strip())} ({html.escape(area_human_label)} — {len(chosen_muni_ids)} municipalities)</p>
-                      <p><strong>Recipients (To):</strong> {html.escape(recip_emails.strip())}</p>
-                      <p><strong>CC:</strong> {html.escape(cc_emails.strip() or 'None')}</p>
+                      <p><strong>Submitted by:</strong> {html.escape(msr_name.strip())} ({html.escape(primary_email.strip())})</p>
+                      <p><strong>Federation / Watchlist:</strong> {html.escape(final_fed_name)} ({html.escape(area_human_label)} — {len(chosen_muni_ids)} municipalities)</p>
+                      <p><strong>Recipients (To):</strong> {html.escape(recip_emails_str)}</p>
                       <p><strong>Watchlist Keywords ({len(pos_kws)}):</strong> {html.escape(', '.join(pos_kws))}</p>
                       <p><strong>Excluded Terms:</strong> {html.escape(', '.join(neg_kws) or 'None')}</p>
                       <p><strong>Notes:</strong> {html.escape(req_notes.strip() or 'None')}</p>
@@ -366,14 +379,14 @@ def render_msr_digest_sandbox() -> None:
                     </body></html>
                     """
                     send_branded_email(
-                        subject=f"[OFA Action] New County Digest Request: {fed_name.strip()} (from {msr_name.strip()})",
+                        subject=f"[OFA Action] New County Digest Request: {final_fed_name} (from {msr_name.strip()})",
                         html_body=notify_html,
                         to_emails=[DEFAULT_BCC_EMAIL],
                         smtp_settings=smtp_cfg,
                     )
 
                 st.success(
-                    f"✅ Request **#{new_id}** submitted for **{fed_name.strip()}** ({len(pos_kws)} keywords, {len(chosen_muni_ids)} municipalities)! "
+                    f"✅ Request **#{new_id}** submitted for **{final_fed_name}** ({len(pos_kws)} keywords, {len(chosen_muni_ids)} municipalities)! "
                     f"Ben (`{DEFAULT_BCC_EMAIL}`) has been notified and will review and activate it for Monday morning delivery."
                 )
 
