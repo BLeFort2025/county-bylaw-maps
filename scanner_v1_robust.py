@@ -48,6 +48,8 @@ from shared_config import (
     is_recent_date,
     is_stale_context,
     is_valid_meeting_document,
+    classify_meeting_doc,
+    merge_docs_into_cache,
     SOCIAL_JUNK_DOMAINS,
 )
 
@@ -154,11 +156,11 @@ def scan_municipality(row, cached_munis_upper):
     # Skip live HTTP if this JS portal is already covered in cached_portal_docs.csv
     if portal_type in JS_PORTAL_TYPES and name.upper() in cached_munis_upper:
         coverage['status'] = 'covered_by_prefetch_cache'
-        return [], coverage
+        return [], coverage, []
 
     if not listing_url and not fallback_url:
         coverage['status'] = 'no_url_in_registry'
-        return [], coverage
+        return [], coverage, []
 
     urls_to_scan = []
     found_real_docs = False
@@ -173,6 +175,7 @@ def scan_municipality(row, cached_munis_upper):
             found_real_docs = True
 
     found_candidates = []
+    fetched_docs = []
     seen_cats = set()
 
     try:
@@ -217,6 +220,15 @@ def scan_municipality(row, cached_munis_upper):
             if not is_valid_meeting_document(target_url, text_content):
                 continue
 
+            fetched_docs.append({
+                'municipality_name': name,
+                'portal_type': portal_type or 'html_pdf',
+                'doc_url': target_url,
+                'doc_text': text_content[:25000],
+                'doc_type': classify_meeting_doc(target_url, text_content),
+                'fetch_date': datetime.date.today().isoformat(),
+            })
+
             hits = check_all_keywords(text_content)
             for trigger, category in hits:
                 if category not in seen_cats:
@@ -240,7 +252,7 @@ def scan_municipality(row, cached_munis_upper):
             coverage['status'] = 'error'
             coverage['error'] = str(e)
 
-    return found_candidates, coverage
+    return found_candidates, coverage, fetched_docs
 
 
 def main():
@@ -270,6 +282,7 @@ def main():
             pass
 
     candidates = []
+    all_fetched_docs = []
     coverage_log = []
     completed = 0
     total = len(df)
@@ -286,8 +299,10 @@ def main():
                 print(f"  Progress: {completed}/{total} municipalities...")
             row = future_to_row[future]
             try:
-                cands, cov = future.result()
+                cands, cov, fdocs = future.result()
                 coverage_log.append(cov)
+                if fdocs:
+                    all_fetched_docs.extend(fdocs)
                 for cand in cands:
                     candidates.append(cand)
                     print(f"  [!] HIT: {row['municipality_name']} -> {cand['category']} ({cand['trigger_keyword']})")
@@ -303,6 +318,10 @@ def main():
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     today_str = datetime.date.today().strftime('%Y-%m-%d')
+
+    if all_fetched_docs:
+        total_cached = merge_docs_into_cache(all_fetched_docs, CACHE_PATH)
+        print(f"Unified council text cache updated: +{len(all_fetched_docs)} non-JS docs -> {total_cached} total docs in cached_portal_docs.csv")
 
     cov_path = os.path.join(OUTPUT_DIR, f"coverage_report_{today_str}.csv")
     pd.DataFrame(coverage_log).to_csv(cov_path, index=False)

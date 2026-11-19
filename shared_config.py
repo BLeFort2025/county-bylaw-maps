@@ -682,3 +682,63 @@ def classify_meeting_doc(url, text=""):
 
     return "📋 Council Document"
 
+
+def merge_docs_into_cache(new_docs: list[dict], cache_path: str, max_text_len: int = 25000) -> int:
+    """Merge freshly fetched meeting documents into signals/cached_portal_docs.csv atomically.
+
+    Preserves existing cached rows (e.g. JS portals from selenium_prefetch.py), adds/updates
+    new rows (e.g. non-JS PDF/HTML docs from scanner_v1_robust.py or retried docs from
+    scanner_v2_selenium.py), deduplicates on (municipality_name, doc_url), and trims text.
+    Returns total row count written.
+    """
+    import os
+    import datetime
+    import pandas as pd
+
+    if not new_docs:
+        return 0
+
+    cols = ["municipality_name", "portal_type", "doc_url", "doc_text", "doc_type", "fetch_date"]
+    today_iso = datetime.date.today().isoformat()
+    cleaned_rows = []
+    for d in new_docs:
+        txt = str(d.get("doc_text") or "").strip()
+        url = str(d.get("doc_url") or "").strip()
+        muni = str(d.get("municipality_name") or "").strip()
+        if not muni or not url or len(txt) < 50:
+            continue
+        cleaned_rows.append({
+            "municipality_name": muni,
+            "portal_type": str(d.get("portal_type") or "html_pdf").strip(),
+            "doc_url": url,
+            "doc_text": txt[:max_text_len],
+            "doc_type": str(d.get("doc_type") or classify_meeting_doc(url, txt)),
+            "fetch_date": str(d.get("fetch_date") or today_iso)[:10],
+        })
+
+    if not cleaned_rows:
+        return 0
+
+    new_df = pd.DataFrame(cleaned_rows, columns=cols)
+    if os.path.exists(cache_path):
+        try:
+            old_df = pd.read_csv(cache_path)
+            for c in cols:
+                if c not in old_df.columns:
+                    old_df[c] = ""
+            combined = pd.concat([old_df[cols], new_df], ignore_index=True)
+        except Exception:
+            combined = new_df
+    else:
+        combined = new_df
+
+    combined["_muni_key"] = combined["municipality_name"].astype(str).str.strip().str.upper()
+    combined["_url_key"] = combined["doc_url"].astype(str).str.strip()
+    combined = combined.drop_duplicates(subset=["_muni_key", "_url_key"], keep="last")
+    combined = combined.drop(columns=["_muni_key", "_url_key"])
+
+    os.makedirs(os.path.dirname(os.path.abspath(cache_path)), exist_ok=True)
+    tmp_path = f"{cache_path}.{os.getpid()}.tmp"
+    combined.to_csv(tmp_path, index=False)
+    os.replace(tmp_path, cache_path)
+    return len(combined)

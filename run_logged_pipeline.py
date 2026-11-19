@@ -233,7 +233,7 @@ class PipelineLogger:
         dirty = False
         metrics = self.status_doc["metrics"]
 
-        if step_label.startswith("[1/7]"):
+        if step_label.startswith("[1/"):
             m_ok = re.search(r"^\[\d+/\d+\]\s+.+\.\.\.\s+OK\s+\((\d+)\s+doc", line)
             if m_ok:
                 metrics["prefetch_munis_ok"] += 1
@@ -256,19 +256,19 @@ class PipelineLogger:
                 dirty = True
 
         if "[!] HIT:" in line:
-            if step_label.startswith("[3/7]"):
+            if step_label.startswith("[3/"):
                 metrics["v1_hits"] += 1
-            elif step_label.startswith("[4/7]"):
+            elif step_label.startswith("[4/"):
                 metrics["v2_hits"] += 1
             dirty = True
 
         m_v1_total = re.search(r"SUCCESS:\s*Found\s*(\d+)\s*candidate hits", line)
-        if m_v1_total and step_label.startswith("[3/7]"):
+        if m_v1_total and step_label.startswith("[3/"):
             metrics["v1_hits"] = int(m_v1_total.group(1))
             dirty = True
 
         m_v2_total = re.search(r"Selenium found\s*(\d+)\s*NEW candidate hits", line)
-        if m_v2_total and step_label.startswith("[4/7]"):
+        if m_v2_total and step_label.startswith("[4/"):
             metrics["v2_hits"] = int(m_v2_total.group(1))
             dirty = True
 
@@ -412,15 +412,15 @@ def run_weekly(logger: PipelineLogger) -> int:
 
     critical_failed = False
 
-    # [0/7] Refresh non-JS registry URLs + git sync
-    lbl = "[0/7] Refreshing non-JS portal registry URLs"
+    # [0/8] Refresh non-JS registry URLs + git sync
+    lbl = "[0/8] Refreshing non-JS portal registry URLs"
     st = logger.start_step(lbl)
     rc = logger.run_cmd([sys.executable, "-u", "refresh_registry.py", "--non-js"], lbl)
     logger.git_sync(["signals/portal_registry.csv"], "auto: weekly refresh of portal registry URLs", lbl)
     logger.finish_step(st, rc)
 
-    # [1/7] Selenium Pre-Fetch of JS portals + git sync
-    lbl = "[1/7] Pre-fetching document text from JS-rendered portals"
+    # [1/8] Selenium Pre-Fetch of JS portals + git sync
+    lbl = "[1/8] Pre-fetching document text from JS-rendered portals"
     st = logger.start_step(lbl)
     rc = logger.run_cmd([sys.executable, "-u", "selenium_prefetch.py"], lbl)
     if rc != 0:
@@ -432,40 +432,52 @@ def run_weekly(logger: PipelineLogger) -> int:
     )
     logger.finish_step(st, rc)
 
-    # [2/7] Clean intermediate candidate/coverage CSVs
-    lbl = "[2/7] Cleaning old intermediate candidate files"
+    # [2/8] Clean intermediate candidate/coverage CSVs
+    lbl = "[2/8] Cleaning old intermediate candidate files"
     st = logger.start_step(lbl)
     rc = _clean_intermediate_files(logger, lbl)
     logger.finish_step(st, rc)
 
-    # [3/7] Scanner V1 (HTML + PDF + Prefetch cache check)
-    lbl = "[3/7] Running Scanner V1 (HTML and PDF)"
+    # [3/8] Scanner V1 (HTML + PDF + persists non-JS full text into unified cache)
+    lbl = "[3/8] Running Scanner V1 (HTML and PDF)"
     st = logger.start_step(lbl)
     rc = logger.run_cmd([sys.executable, "-u", "scanner_v1_robust.py"], lbl)
     if rc != 0:
         critical_failed = True
     logger.finish_step(st, rc)
 
-    # [4/7] Scanner V2 (Selenium for failures)
-    lbl = "[4/7] Running Scanner V2 (Selenium for failures)"
+    # [4/8] Scanner V2 (Selenium for failures + persists retried full text into unified cache)
+    lbl = "[4/8] Running Scanner V2 (Selenium for failures)"
     st = logger.start_step(lbl)
     rc = logger.run_cmd([sys.executable, "-u", "scanner_v2_selenium.py"], lbl)
     if rc != 0:
         critical_failed = True
     logger.finish_step(st, rc)
 
-    # [5/7] Generate signals & sync SQLite/Postgres
-    lbl = "[5/7] Merging intelligence and syncing SQLite/PostgreSQL"
+    # [5/8] Generate signals & sync SQLite/Postgres
+    lbl = "[5/8] Merging intelligence and syncing SQLite/PostgreSQL"
     st = logger.start_step(lbl)
     rc = logger.run_cmd([sys.executable, "-u", "generate_signals.py"], lbl)
     if rc != 0:
         critical_failed = True
     logger.finish_step(st, rc)
 
-    # [6/7] Push updated signals to GitHub
-    lbl = "[6/7] Pushing updated signals to GitHub"
+    # [6/8] Send County Federation Weekly Digests (OFA-branded emails + BCC ben.lefort@ofa.on.ca)
+    lbl = "[6/8] Sending County Federation Weekly Digests"
     st = logger.start_step(lbl)
-    logger.git_sync(["signals/signals.csv"], "auto: weekly intelligence scan results", lbl)
+    rc_digest = logger.run_cmd([sys.executable, "-u", "county_digest_mailer.py"], lbl)
+    if rc_digest != 0:
+        logger.write_line(f"WARNING: County digest mailer exited with code {rc_digest}", lbl)
+    logger.finish_step(st, rc_digest)
+
+    # [7/8] Push updated signals & unified 444-municipality text cache to GitHub
+    lbl = "[7/8] Pushing updated signals & unified council cache to GitHub"
+    st = logger.start_step(lbl)
+    logger.git_sync(
+        ["signals/signals.csv", "signals/cached_portal_docs.csv", "signals/portal_registry.csv"],
+        "auto: weekly intelligence scan results & unified council cache",
+        lbl,
+    )
     logger.finish_step(st, 0)
 
     logger.write_line("==========================================", "footer")

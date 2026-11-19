@@ -192,7 +192,7 @@ if st.sidebar.button("🚪 Logout"):
 # ── Mode selector ──
 admin_mode = st.sidebar.radio(
     "Mode",
-    ["✏️ Edit Municipality", "📜 Change History", "📤 Bulk Import"],
+    ["✏️ Edit Municipality", "📬 County Federation Digests", "📜 Change History", "📤 Bulk Import"],
     index=0,
 )
 
@@ -336,8 +336,6 @@ if admin_mode == "✏️ Edit Municipality":
                     # Progress
                     progress_opts = ["", "COMPLETE", "COMPLETE - FARM FRIENDLY", "COMPLETE - NOTABLE CASE",
                                      "COMMUNICATION NEEDED", "AWAITING RESPONSE", "IN PROGRESS",
-                                     "NO BY-LAW IN PLACE", "NOT STARTED"]
-                                     "AWAITING RESPONSE", "IN PROGRESS",
                                      "NO BY-LAW IN PLACE", "NOT STARTED"]
                     current_progress = brow["progress_label"] or ""
                     try:
@@ -511,6 +509,14 @@ if admin_mode == "✏️ Edit Municipality":
                         import traceback
                         st.error(f"❌ Save failed: {e}")
                         st.code(traceback.format_exc(), language="text")
+
+
+# ═══════════════════════════════════════════════════════════════
+# MODE: County Federation Weekly Digests
+# ═══════════════════════════════════════════════════════════════
+elif admin_mode == "📬 County Federation Digests":
+    from county_digest_admin_ui import render_county_digest_admin
+    render_county_digest_admin(conn)
 
 
 # ═══════════════════════════════════════════════════════════════

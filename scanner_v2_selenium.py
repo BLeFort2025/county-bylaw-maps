@@ -10,6 +10,7 @@ from selenium.webdriver.chrome.options import Options
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REGISTRY_PATH = os.path.join(SCRIPT_DIR, "signals", "portal_registry.csv")
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "signals")
+CACHE_PATH = os.path.join(OUTPUT_DIR, "cached_portal_docs.csv")
 
 # --- KEYWORD CONFIG (imported from shared module) ---
 from shared_config import (
@@ -17,6 +18,8 @@ from shared_config import (
     check_all_keywords,
     extract_snippet,
     is_valid_meeting_document,
+    classify_meeting_doc,
+    merge_docs_into_cache,
 )
 from selenium_prefetch import prefetch_single_muni, select_best_portal_url
 
@@ -67,9 +70,10 @@ def scan_with_selenium(driver, row):
 
     if pd.isna(url) or str(url).strip() == '':
         coverage['status'] = 'no_url'
-        return [], coverage
+        return [], coverage, []
 
     found_candidates = []
+    fetched_docs = []
     seen_cats = set()
 
     try:
@@ -81,6 +85,14 @@ def scan_with_selenium(driver, row):
                 doc_url = str(doc.get("doc_url", url) or url)
                 if not is_valid_meeting_document(doc_url, doc_text):
                     continue
+                fetched_docs.append({
+                    'municipality_name': name,
+                    'portal_type': str(row.get('portal_type', '') or 'selenium'),
+                    'doc_url': doc_url,
+                    'doc_text': doc_text[:25000],
+                    'doc_type': str(doc.get('doc_type') or classify_meeting_doc(doc_url, doc_text)),
+                    'fetch_date': datetime.date.today().isoformat(),
+                })
                 for trigger, category in check_all_keywords(doc_text):
                     if category not in seen_cats:
                         seen_cats.add(category)
@@ -99,7 +111,7 @@ def scan_with_selenium(driver, row):
             if cur_u.startswith("chrome-error://") or cur_u in ("", "about:blank"):
                 coverage['status'] = 'error'
                 coverage['error'] = f"Navigation failed ({cur_u or 'about:blank'})"
-                return found_candidates, coverage
+                return found_candidates, coverage, fetched_docs
             page_text = driver.find_element("tag name", "body").text
             coverage['status'] = 'scanned_selenium'
             if is_valid_meeting_document(url, page_text):
@@ -157,13 +169,16 @@ def main():
 
     driver = setup_driver()
     candidates = []
+    all_fetched_docs = []
 
     try:
         total_targets = len(target_data)
         for count, (_, row) in enumerate(target_data.iterrows(), 1):
             ptype = str(row.get('portal_type', '?') or '?')
             print(f"[{count}/{total_targets}] Scanning {row['municipality_name']} ({ptype})...", end=" ", flush=True)
-            cands, cov = scan_with_selenium(driver, row)
+            cands, cov, fdocs = scan_with_selenium(driver, row)
+            if fdocs:
+                all_fetched_docs.extend(fdocs)
             if cov['status'] == 'error':
                 err_short = str(cov.get('error', '')).replace('\n', ' ')[:80]
                 print(f"FAILED ({err_short})", flush=True)
@@ -178,6 +193,10 @@ def main():
         print("\nStopping scan...")
     finally:
         driver.quit()
+
+    if all_fetched_docs:
+        total_cached = merge_docs_into_cache(all_fetched_docs, CACHE_PATH)
+        print(f"Unified council text cache updated: +{len(all_fetched_docs)} Selenium retry docs -> {total_cached} total docs")
 
     today_str = datetime.date.today().strftime('%Y-%m-%d')
     if candidates:

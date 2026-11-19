@@ -42,3 +42,4 @@ geckodriver.log
 chromedriver.log
 logs/
 signals/morning_briefing_draft.html
+signals/county_digests/

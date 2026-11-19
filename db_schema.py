@@ -268,6 +268,54 @@ CREATE TABLE IF NOT EXISTS advocacy_log (
     action          TEXT  -- 'letter_downloaded', 'mailto_opened'
 );
 
+
+-- ═══════════════════════════════════════════════
+-- County Federation Weekly Digest Subscriptions
+-- ═══════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS county_subscriptions (
+    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+    federation_name       TEXT NOT NULL,
+    geographic_area       TEXT NOT NULL,
+    municipality_ids_json TEXT,
+    exclude_large_cities  INTEGER DEFAULT 1,
+    recipient_emails      TEXT NOT NULL,
+    cc_emails             TEXT DEFAULT '',
+    bcc_emails            TEXT DEFAULT 'ben.lefort@ofa.on.ca',
+    send_empty_digest     INTEGER DEFAULT 1,
+    is_test_profile       INTEGER DEFAULT 0,
+    active                INTEGER DEFAULT 1,
+    notes                 TEXT DEFAULT '',
+    created_at            TEXT,
+    updated_at            TEXT
+);
+
+CREATE TABLE IF NOT EXISTS county_watchlist_keywords (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    subscription_id INTEGER NOT NULL REFERENCES county_subscriptions(id) ON DELETE CASCADE,
+    keyword         TEXT NOT NULL,
+    is_negative     INTEGER DEFAULT 0,
+    UNIQUE(subscription_id, keyword, is_negative)
+);
+
+CREATE TABLE IF NOT EXISTS county_digest_sent_log (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    subscription_id   INTEGER NOT NULL REFERENCES county_subscriptions(id) ON DELETE CASCADE,
+    run_date          TEXT NOT NULL,
+    municipality_id   INTEGER,
+    municipality_name TEXT,
+    doc_url           TEXT,
+    doc_type          TEXT,
+    content_hash      TEXT,
+    matched_keywords  TEXT,
+    recipients_sent   TEXT,
+    delivery_mode     TEXT DEFAULT 'live',
+    sent_at           TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_digest_kw_sub   ON county_watchlist_keywords(subscription_id);
+CREATE INDEX IF NOT EXISTS idx_digest_log_sub  ON county_digest_sent_log(subscription_id);
+CREATE INDEX IF NOT EXISTS idx_digest_log_hash ON county_digest_sent_log(subscription_id, content_hash);
+
 -- ═══════════════════════════════════════════════
 -- Indexes for common queries
 -- ═══════════════════════════════════════════════

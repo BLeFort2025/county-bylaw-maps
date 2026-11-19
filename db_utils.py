@@ -537,3 +537,354 @@ def export_map_dataframe(conn) -> pd.DataFrame:
         rows.append(row)
 
     return pd.DataFrame(rows).fillna("")
+
+
+# ═══════════════════════════════════════════════════════════════
+# County Federation Weekly Digest Subscriptions & Sent Log
+# ═══════════════════════════════════════════════════════════════
+
+DEFAULT_BCC_EMAIL = "ben.lefort@ofa.on.ca"
+DEFAULT_NEON_URL = "postgresql://neondb_owner:npg_gjmiS41HEeXB@ep-fancy-resonance-amthrghm.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require"
+
+
+def get_cli_connection(prefer_postgres: bool = True):
+    """Connect to Neon PostgreSQL (or local SQLite fallback) safely outside Streamlit."""
+    if prefer_postgres:
+        url = os.environ.get("DATABASE_URL", "").strip()
+        if not url:
+            secrets_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".streamlit", "secrets.toml")
+            if os.path.exists(secrets_path):
+                try:
+                    import tomllib
+                    with open(secrets_path, "rb") as fh:
+                        sec = tomllib.load(fh)
+                    url = str(sec.get("DATABASE_URL", "")).strip()
+                except Exception:
+                    pass
+        url = url or DEFAULT_NEON_URL
+        try:
+            return PgWrapper(url)
+        except Exception:
+            pass
+    return SqliteWrapper(DB_PATH)
+
+
+def _is_sqlite_conn(conn) -> bool:
+    raw = conn.conn if hasattr(conn, "conn") else conn
+    return isinstance(raw, sqlite3.Connection)
+
+
+def ensure_digest_tables(conn) -> None:
+    """Create county digest subscription, watchlist, and sent-log tables on SQLite or PostgreSQL."""
+    pk = "INTEGER PRIMARY KEY AUTOINCREMENT" if _is_sqlite_conn(conn) else "SERIAL PRIMARY KEY"
+    stmts = [
+        f"""
+        CREATE TABLE IF NOT EXISTS county_subscriptions (
+            id                    {pk},
+            federation_name       TEXT NOT NULL,
+            geographic_area       TEXT NOT NULL,
+            municipality_ids_json TEXT,
+            exclude_large_cities  INTEGER DEFAULT 1,
+            recipient_emails      TEXT NOT NULL,
+            cc_emails             TEXT DEFAULT '',
+            bcc_emails            TEXT DEFAULT '{DEFAULT_BCC_EMAIL}',
+            send_empty_digest     INTEGER DEFAULT 1,
+            is_test_profile       INTEGER DEFAULT 0,
+            active                INTEGER DEFAULT 1,
+            notes                 TEXT DEFAULT '',
+            created_at            TEXT,
+            updated_at            TEXT
+        )
+        """,
+        f"""
+        CREATE TABLE IF NOT EXISTS county_watchlist_keywords (
+            id              {pk},
+            subscription_id INTEGER NOT NULL REFERENCES county_subscriptions(id) ON DELETE CASCADE,
+            keyword         TEXT NOT NULL,
+            is_negative     INTEGER DEFAULT 0,
+            UNIQUE(subscription_id, keyword, is_negative)
+        )
+        """,
+        f"""
+        CREATE TABLE IF NOT EXISTS county_digest_sent_log (
+            id                {pk},
+            subscription_id   INTEGER NOT NULL REFERENCES county_subscriptions(id) ON DELETE CASCADE,
+            run_date          TEXT NOT NULL,
+            municipality_id   INTEGER,
+            municipality_name TEXT,
+            doc_url           TEXT,
+            doc_type          TEXT,
+            content_hash      TEXT,
+            matched_keywords  TEXT,
+            recipients_sent   TEXT,
+            delivery_mode     TEXT DEFAULT 'live',
+            sent_at           TEXT NOT NULL
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS idx_digest_kw_sub ON county_watchlist_keywords(subscription_id)",
+        "CREATE INDEX IF NOT EXISTS idx_digest_log_sub ON county_digest_sent_log(subscription_id)",
+        "CREATE INDEX IF NOT EXISTS idx_digest_log_hash ON county_digest_sent_log(subscription_id, content_hash)",
+    ]
+    for stmt in stmts:
+        conn.execute(stmt)
+    conn.commit()
+
+
+def list_county_subscriptions(conn, active_only: bool = False) -> list[dict]:
+    """Return all county digest subscriptions with their positive/negative watchlists."""
+    import json
+
+    ensure_digest_tables(conn)
+    sql = "SELECT * FROM county_subscriptions"
+    if active_only:
+        sql += " WHERE active = 1"
+    sql += " ORDER BY is_test_profile ASC, geographic_area ASC, federation_name ASC"
+    sub_df = _read_sql(conn, sql)
+    if sub_df.empty:
+        return []
+
+    kw_df = _read_sql(conn, "SELECT subscription_id, keyword, is_negative FROM county_watchlist_keywords ORDER BY id ASC")
+    kw_by_sub: dict[int, tuple[list[str], list[str]]] = {}
+    for _, r in kw_df.iterrows():
+        sid = int(r["subscription_id"])
+        kw_by_sub.setdefault(sid, ([], []))
+        if int(r["is_negative"] or 0) == 1:
+            kw_by_sub[sid][1].append(str(r["keyword"]))
+        else:
+            kw_by_sub[sid][0].append(str(r["keyword"]))
+
+    results = []
+    for _, r in sub_df.iterrows():
+        sid = int(r["id"])
+        pos, neg = kw_by_sub.get(sid, ([], []))
+        raw_ids = r.get("municipality_ids_json")
+        try:
+            m_ids = json.loads(raw_ids) if raw_ids else []
+        except Exception:
+            m_ids = []
+        results.append({
+            "id": sid,
+            "federation_name": str(r.get("federation_name") or ""),
+            "geographic_area": str(r.get("geographic_area") or ""),
+            "municipality_ids": [int(x) for x in m_ids],
+            "exclude_large_cities": bool(int(r.get("exclude_large_cities") if pd.notna(r.get("exclude_large_cities")) else 1)),
+            "recipient_emails": str(r.get("recipient_emails") or ""),
+            "cc_emails": str(r.get("cc_emails") or ""),
+            "bcc_emails": str(r.get("bcc_emails") if pd.notna(r.get("bcc_emails")) else DEFAULT_BCC_EMAIL),
+            "send_empty_digest": bool(int(r.get("send_empty_digest") if pd.notna(r.get("send_empty_digest")) else 1)),
+            "is_test_profile": bool(int(r.get("is_test_profile") if pd.notna(r.get("is_test_profile")) else 0)),
+            "active": bool(int(r.get("active") if pd.notna(r.get("active")) else 1)),
+            "notes": str(r.get("notes") or ""),
+            "created_at": str(r.get("created_at") or ""),
+            "updated_at": str(r.get("updated_at") or ""),
+            "keywords": pos,
+            "negative_keywords": neg,
+        })
+    return results
+
+
+def get_county_subscription(conn, subscription_id: int) -> dict | None:
+    for sub in list_county_subscriptions(conn, active_only=False):
+        if sub["id"] == int(subscription_id):
+            return sub
+    return None
+
+
+def upsert_county_subscription(
+    conn,
+    sub: dict,
+    keywords: list[str],
+    negative_keywords: list[str] | None = None,
+) -> int:
+    """Create or update a County Federation subscription and its keyword watchlists."""
+    import json
+
+    ensure_digest_tables(conn)
+    now_iso = datetime.datetime.now().isoformat(timespec="seconds")
+    muni_ids = [int(x) for x in (sub.get("municipality_ids") or [])]
+    muni_ids_json = json.dumps(muni_ids)
+
+    fed_name = str(sub.get("federation_name") or "").strip()
+    geo_area = str(sub.get("geographic_area") or "").strip()
+    excl_cities = 1 if sub.get("exclude_large_cities", True) else 0
+    recip = str(sub.get("recipient_emails") or "").strip()
+    cc = str(sub.get("cc_emails") or "").strip()
+    bcc = str(sub.get("bcc_emails", DEFAULT_BCC_EMAIL) or "").strip()
+    send_empty = 1 if sub.get("send_empty_digest", True) else 0
+    is_test = 1 if sub.get("is_test_profile", False) else 0
+    active = 1 if sub.get("active", True) else 0
+    notes = str(sub.get("notes") or "").strip()
+
+    sub_id = sub.get("id")
+    if sub_id:
+        sub_id = int(sub_id)
+        conn.execute(
+            """
+            UPDATE county_subscriptions
+               SET federation_name = %s,
+                   geographic_area = %s,
+                   municipality_ids_json = %s,
+                   exclude_large_cities = %s,
+                   recipient_emails = %s,
+                   cc_emails = %s,
+                   bcc_emails = %s,
+                   send_empty_digest = %s,
+                   is_test_profile = %s,
+                   active = %s,
+                   notes = %s,
+                   updated_at = %s
+             WHERE id = %s
+            """,
+            (
+                fed_name, geo_area, muni_ids_json, excl_cities,
+                recip, cc, bcc, send_empty, is_test, active, notes, now_iso, sub_id,
+            ),
+        )
+    else:
+        if _is_sqlite_conn(conn):
+            cur = conn.execute(
+                """
+                INSERT INTO county_subscriptions (
+                    federation_name, geographic_area, municipality_ids_json, exclude_large_cities,
+                    recipient_emails, cc_emails, bcc_emails, send_empty_digest,
+                    is_test_profile, active, notes, created_at, updated_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    fed_name, geo_area, muni_ids_json, excl_cities,
+                    recip, cc, bcc, send_empty, is_test, active, notes, now_iso, now_iso,
+                ),
+            )
+            sub_id = int(cur.lastrowid)
+        else:
+            cur = conn.execute(
+                """
+                INSERT INTO county_subscriptions (
+                    federation_name, geographic_area, municipality_ids_json, exclude_large_cities,
+                    recipient_emails, cc_emails, bcc_emails, send_empty_digest,
+                    is_test_profile, active, notes, created_at, updated_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+                """,
+                (
+                    fed_name, geo_area, muni_ids_json, excl_cities,
+                    recip, cc, bcc, send_empty, is_test, active, notes, now_iso, now_iso,
+                ),
+            )
+            sub_id = int(cur.fetchone()[0])
+
+    # Replace watchlists cleanly
+    conn.execute("DELETE FROM county_watchlist_keywords WHERE subscription_id = %s", (sub_id,))
+    seen_pos = set()
+    for kw in (keywords or []):
+        k = str(kw).strip()
+        if k and k.lower() not in seen_pos:
+            seen_pos.add(k.lower())
+            conn.execute(
+                "INSERT INTO county_watchlist_keywords (subscription_id, keyword, is_negative) VALUES (%s, %s, 0)",
+                (sub_id, k),
+            )
+
+    seen_neg = set()
+    for nkw in (negative_keywords or []):
+        k = str(nkw).strip()
+        if k and k.lower() not in seen_neg:
+            seen_neg.add(k.lower())
+            conn.execute(
+                "INSERT INTO county_watchlist_keywords (subscription_id, keyword, is_negative) VALUES (%s, %s, 1)",
+                (sub_id, k),
+            )
+
+    conn.commit()
+    return sub_id
+
+
+def delete_county_subscription(conn, subscription_id: int) -> None:
+    ensure_digest_tables(conn)
+    sid = int(subscription_id)
+    conn.execute("DELETE FROM county_watchlist_keywords WHERE subscription_id = %s", (sid,))
+    conn.execute("DELETE FROM county_digest_sent_log WHERE subscription_id = %s", (sid,))
+    conn.execute("DELETE FROM county_subscriptions WHERE id = %s", (sid,))
+    conn.commit()
+
+
+def get_sent_content_hashes(conn, subscription_id: int) -> set[str]:
+    """Return all content hashes already delivered in live runs for this subscription."""
+    ensure_digest_tables(conn)
+    df = _read_sql(
+        conn,
+        "SELECT DISTINCT content_hash FROM county_digest_sent_log WHERE subscription_id = %s AND delivery_mode = 'live' AND content_hash IS NOT NULL",
+        params=(int(subscription_id),),
+    )
+    if df.empty:
+        return set()
+    return set(df["content_hash"].dropna().astype(str).tolist())
+
+
+def record_digest_sent(
+    conn,
+    subscription_id: int,
+    entries: list[dict],
+    run_date: str,
+    recipients_sent: str,
+    delivery_mode: str = "live",
+) -> None:
+    """Persist sent digest items (or an ALL_CLEAR_SUMMARY row) for deduplication and audit."""
+    ensure_digest_tables(conn)
+    now_iso = datetime.datetime.now().isoformat(timespec="seconds")
+    sid = int(subscription_id)
+
+    if not entries:
+        conn.execute(
+            """
+            INSERT INTO county_digest_sent_log (
+                subscription_id, run_date, municipality_id, municipality_name,
+                doc_url, doc_type, content_hash, matched_keywords,
+                recipients_sent, delivery_mode, sent_at
+            ) VALUES (%s, %s, NULL, %s, '', 'ALL_CLEAR_SUMMARY', %s, '', %s, %s, %s)
+            """,
+            (sid, run_date, "All Monitored Municipalities", f"ALL_CLEAR_{run_date}", recipients_sent, delivery_mode, now_iso),
+        )
+    else:
+        for e in entries:
+            conn.execute(
+                """
+                INSERT INTO county_digest_sent_log (
+                    subscription_id, run_date, municipality_id, municipality_name,
+                    doc_url, doc_type, content_hash, matched_keywords,
+                    recipients_sent, delivery_mode, sent_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    sid,
+                    run_date,
+                    e.get("municipality_id"),
+                    str(e.get("municipality_name") or ""),
+                    str(e.get("doc_url") or ""),
+                    str(e.get("doc_type") or ""),
+                    str(e.get("content_hash") or ""),
+                    ", ".join(e.get("matched_keywords") or []),
+                    recipients_sent,
+                    delivery_mode,
+                    now_iso,
+                ),
+            )
+    conn.commit()
+
+
+def get_digest_sent_history(conn, subscription_id: int | None = None, limit: int = 100) -> pd.DataFrame:
+    ensure_digest_tables(conn)
+    sql = """
+        SELECT l.id, l.subscription_id, s.federation_name, s.geographic_area,
+               l.run_date, l.municipality_name, l.doc_type, l.matched_keywords,
+               l.recipients_sent, l.delivery_mode, l.doc_url, l.sent_at
+        FROM county_digest_sent_log l
+        LEFT JOIN county_subscriptions s ON s.id = l.subscription_id
+    """
+    params = []
+    if subscription_id is not None:
+        sql += " WHERE l.subscription_id = %s"
+        params.append(int(subscription_id))
+    sql += " ORDER BY l.sent_at DESC LIMIT %s"
+    params.append(int(limit))
+    return _read_sql(conn, sql, params=tuple(params))
