@@ -76,6 +76,8 @@ def render_county_digest_admin(conn) -> None:
         if subs:
             summary_rows = []
             for s in subs:
+                is_pending_msr = (not s["active"]) and ("[MSR SELF-SERVE REQUEST" in (s.get("notes") or ""))
+                status_badge = "✅ Active" if s["active"] else ("🟡 Pending MSR Request" if is_pending_msr else "⏸️ Paused")
                 summary_rows.append({
                     "ID": s["id"],
                     "Federation / Profile": ("🧪 " if s["is_test_profile"] else "🌾 ") + s["federation_name"],
@@ -84,7 +86,7 @@ def render_county_digest_admin(conn) -> None:
                     "Keywords": len(s["keywords"]),
                     "Recipients (To)": s["recipient_emails"],
                     "Quiet Week": "All-Clear Email" if s["send_empty_digest"] else "Skip",
-                    "Status": "✅ Active" if s["active"] else "⏸️ Paused",
+                    "Status": status_badge,
                 })
             st.dataframe(summary_rows, use_container_width=True, hide_index=True)
         else:

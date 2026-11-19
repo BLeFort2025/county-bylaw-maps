@@ -1025,7 +1025,19 @@ def run_live_scan(registry_subset, keywords, negative_keywords=None, fast_mode=T
 
 # --- UI Layout ---
 
-tab_live, tab_history, tab_health = st.tabs(["🚀 Live Target Scanner", "📂 Historical Intelligence Database", "🩺 Portal Health Monitor"])
+tab_live, tab_digest, tab_history, tab_health = st.tabs([
+    "🚀 Live Target Scanner",
+    "📬 County Weekly Digest (Preview & Sign-Up)",
+    "📂 Historical Intelligence Database",
+    "🩺 Portal Health Monitor",
+])
+
+# ──────────────────────────────────────────────────────────────────
+# TAB 2: COUNTY WEEKLY DIGEST (MSR SELF-SERVE PREVIEW & SIGN-UP)
+# ──────────────────────────────────────────────────────────────────
+with tab_digest:
+    from county_digest_msr_ui import render_msr_digest_sandbox
+    render_msr_digest_sandbox()
 
 # ──────────────────────────────────────────────────────────────────
 # TAB 3: PORTAL HEALTH MONITOR
