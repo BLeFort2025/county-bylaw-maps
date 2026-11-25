@@ -110,7 +110,11 @@ CREATE TABLE IF NOT EXISTS details_site_alt (
     farm_exemption  TEXT,                    -- YES / NO
     special_provision TEXT,                  -- YES / NO
     guidelines_wording TEXT,
-    exception_wording TEXT
+    exception_wording TEXT,
+    nfp_exemption_scope TEXT,                -- Full NFP / Fill & Grading | Statutory Topsoil & Drainage Only | Topsoil Removal Only | Drainage Only | None
+    drainage_act_exempt TEXT,                -- Yes / No / NOT KNOWN
+    excess_soil_reg_406_19 TEXT,             -- Yes / No / NOT KNOWN
+    fill_captures_ag_materials TEXT          -- None | Sod | Compost or Manure | Sod + Compost/Manure
 );
 
 -- Livestock Guardian Dogs extras

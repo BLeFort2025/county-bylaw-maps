@@ -86,6 +86,33 @@ if selected_cat == "DC":
         index=0,
     )
 
+sa_nfp_filter = "All"
+sa_policy_filter = "All"
+if selected_cat == "SITE_ALT":
+    sa_nfp_filter = st.sidebar.selectbox(
+        "🚜 NFP Exemption Scope",
+        [
+            "All",
+            "Full NFP / Fill & Grading",
+            "Statutory Topsoil & Drainage Only",
+            "Topsoil Removal Only",
+            "Drainage Only",
+            "No NFP Exemption",
+        ],
+        index=0,
+    )
+    sa_policy_filter = st.sidebar.selectbox(
+        "🚧 Site Alteration Provisions",
+        [
+            "All",
+            "✅ Drainage Act Exempt",
+            "📋 References O. Reg. 406/19",
+            "⚠️ Fill Captures Sod / Compost / Manure",
+            "🔴 Fill Captures Compost or Manure",
+        ],
+        index=0,
+    )
+
 # Geographic area filter
 areas = get_geographic_areas(conn)
 selected_area = st.sidebar.selectbox("🗺️ Geographic Area", ["All"] + areas, index=0)
@@ -167,6 +194,18 @@ if selected_cat == "DC" and dc_carveout_filter != "All":
         df = df[df["exemption_wording"].fillna("").str.contains("cannabis|marijuana|marihuana", case=False, regex=True)]
     elif dc_carveout_filter == "🌱 Greenhouses Mentioned / Carve-Out":
         df = df[df["exemption_wording"].fillna("").str.contains("greenhouse", case=False, regex=True)]
+if selected_cat == "SITE_ALT":
+    if sa_nfp_filter != "All" and "nfp_exemption_scope" in df.columns:
+        df = df[df["nfp_exemption_scope"].fillna("").str.strip() == sa_nfp_filter]
+    if sa_policy_filter != "All":
+        if sa_policy_filter == "✅ Drainage Act Exempt" and "drainage_act_exempt" in df.columns:
+            df = df[df["drainage_act_exempt"].fillna("").str.strip().str.upper().isin(["YES", "1", "TRUE"])]
+        elif sa_policy_filter == "📋 References O. Reg. 406/19" and "excess_soil_reg_406_19" in df.columns:
+            df = df[df["excess_soil_reg_406_19"].fillna("").str.strip().str.upper().isin(["YES", "1", "TRUE"])]
+        elif sa_policy_filter == "⚠️ Fill Captures Sod / Compost / Manure" and "fill_captures_ag_materials" in df.columns:
+            df = df[df["fill_captures_ag_materials"].fillna("").isin(["Sod", "Compost or Manure", "Sod + Compost/Manure"])]
+        elif sa_policy_filter == "🔴 Fill Captures Compost or Manure" and "fill_captures_ag_materials" in df.columns:
+            df = df[df["fill_captures_ag_materials"].fillna("").isin(["Compost or Manure", "Sod + Compost/Manure"])]
 
 # ── Metrics row ──
 col1, col1a, col2, col3, col4, col5 = st.columns(6)
@@ -243,10 +282,14 @@ CATEGORY_DETAIL_COLS = {
         "fee_calculation":  "Fee Calculation",
     },
     "SITE_ALT": {
-        "farm_exemption":       "Farm Exempt. (Detail)",
-        "special_provision":    "Special Provision",
-        "guidelines_wording":   "Guidelines Wording",
-        "exception_wording":    "Exception Wording",
+        "farm_exemption":             "Farm Exempt. (Detail)",
+        "nfp_exemption_scope":        "NFP Exemption Scope",
+        "drainage_act_exempt":        "Drainage Act Exempt",
+        "excess_soil_reg_406_19":     "O. Reg. 406/19",
+        "fill_captures_ag_materials": "Fill Captures Ag Materials",
+        "special_provision":          "Special Provision",
+        "guidelines_wording":         "Guidelines Wording",
+        "exception_wording":          "Exception Wording",
     },
     "TREES": {
         "farm_exemption":               "Farm Exempt. (Detail)",
@@ -270,7 +313,7 @@ YES_NO_DETAIL_FIELDS = {
     "security_fencing_exemption", "electrified_fencing_exemption",
     "equal_apportionment", "has_dc", "farm_exemption", "can_keep",
     "roosters_allowed", "licence_required",
-    "special_provision",
+    "special_provision", "drainage_act_exempt", "excess_soil_reg_406_19",
 }
 
 # ── Build display columns ──
@@ -352,16 +395,21 @@ st.subheader(f"📊 {selected_label} — {total} Municipalities")
 # Highlight function for exemption status and Yes/No fields
 def highlight_status(val):
     v = str(val).strip()
-    if v in ("Yes", "✅ Explicitly Exempt"):
+    if v in ("Yes", "✅ Explicitly Exempt", "Full NFP / Fill & Grading", "None Flagged"):
         return "background-color: #d4edda; color: #155724"
-    elif v in ("No", "❌ Explicitly Excluded", "No Farm Exemption"):
+    elif v in ("No", "❌ Explicitly Excluded", "No Farm Exemption", "No NFP Exemption", "Sod + Compost/Manure", "Compost or Manure"):
         return "background-color: #f8d7da; color: #721c24"
-    elif v in ("N/A", "NOT KNOWN", "⚠️ Silent (Standard Non-Res)"):
+    elif v in ("N/A", "NOT KNOWN", "⚠️ Silent (Standard Non-Res)", "Statutory Topsoil & Drainage Only", "Topsoil Removal Only", "Drainage Only", "Sod"):
         return "background-color: #fff3cd; color: #856404"
     return ""
 
 # Apply highlighting to Farm Exemption and all Yes/No detail columns
-highlight_cols = ["Farm Exemption", "Worker Housing Treatment"]
+highlight_cols = [
+    "Farm Exemption",
+    "Worker Housing Treatment",
+    "NFP Exemption Scope",
+    "Fill Captures Ag Materials",
+]
 for raw_col, nice_name in detail_map.items():
     if raw_col in YES_NO_DETAIL_FIELDS and nice_name in display_df.columns:
         highlight_cols.append(nice_name)

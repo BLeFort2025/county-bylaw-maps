@@ -389,8 +389,23 @@ if admin_mode == "✏️ Edit Municipality":
                 elif cat_code == "SITE_ALT" and not detail_df.empty:
                     drow = detail_df.iloc[0]
                     sa1, sa2 = st.columns(2)
+                    _fe_opts = ["", "Yes", "No", "NOT KNOWN"]
+                    _nfp_opts = [
+                        "",
+                        "Full NFP / Fill & Grading",
+                        "Statutory Topsoil & Drainage Only",
+                        "Topsoil Removal Only",
+                        "Drainage Only",
+                        "No NFP Exemption",
+                    ]
+                    _fill_ag_opts = [
+                        "",
+                        "None Flagged",
+                        "Sod",
+                        "Compost or Manure",
+                        "Sod + Compost/Manure",
+                    ]
                     with sa1:
-                        _fe_opts = ["", "Yes", "No", "NOT KNOWN"]
                         _fe_val = resolve_yes_no(drow["farm_exemption"])
                         _fe_idx = _fe_opts.index(_fe_val) if _fe_val in _fe_opts else 0
                         detail_updates["farm_exemption"] = st.selectbox(
@@ -401,11 +416,31 @@ if admin_mode == "✏️ Edit Municipality":
                         detail_updates["special_provision"] = st.selectbox(
                             "Special Provision for Farm Land?", _fe_opts,
                             index=_sp_idx, key=f"sp_{cat_code}_{muni_id}")
+                        _nfp_cur = str(drow.get("nfp_exemption_scope") or "").strip()
+                        detail_updates["nfp_exemption_scope"] = st.selectbox(
+                            "NFP Exemption Scope", _nfp_opts,
+                            index=_nfp_opts.index(_nfp_cur) if _nfp_cur in _nfp_opts else 0,
+                            key=f"snfp_{cat_code}_{muni_id}")
+                        _drn_val = resolve_yes_no(drow.get("drainage_act_exempt"))
+                        detail_updates["drainage_act_exempt"] = st.selectbox(
+                            "Drainage Act / Tile Drainage Act Exempt?", _fe_opts,
+                            index=_fe_opts.index(_drn_val) if _drn_val in _fe_opts else 0,
+                            key=f"sdrn_{cat_code}_{muni_id}")
+                        _reg_val = resolve_yes_no(drow.get("excess_soil_reg_406_19"))
+                        detail_updates["excess_soil_reg_406_19"] = st.selectbox(
+                            "References O. Reg. 406/19 (Excess Soil)?", _fe_opts,
+                            index=_fe_opts.index(_reg_val) if _reg_val in _fe_opts else 0,
+                            key=f"sreg_{cat_code}_{muni_id}")
+                        _fag_cur = str(drow.get("fill_captures_ag_materials") or "").strip()
+                        detail_updates["fill_captures_ag_materials"] = st.selectbox(
+                            "Fill Definition Captures Ag Materials?", _fill_ag_opts,
+                            index=_fill_ag_opts.index(_fag_cur) if _fag_cur in _fill_ag_opts else 0,
+                            key=f"sfag_{cat_code}_{muni_id}")
                     with sa2:
                         detail_updates["guidelines_wording"] = st.text_area(
-                            "Guidelines Wording", value=drow["guidelines_wording"] or "", height=80, key=f"gw_{cat_code}_{muni_id}")
+                            "Guidelines Wording", value=drow["guidelines_wording"] or "", height=110, key=f"gw_{cat_code}_{muni_id}")
                         detail_updates["exception_wording"] = st.text_area(
-                            "Exception Wording", value=drow["exception_wording"] or "", height=80, key=f"exw_{cat_code}_{muni_id}")
+                            "Exception Wording", value=drow["exception_wording"] or "", height=140, key=f"exw_{cat_code}_{muni_id}")
 
                 elif cat_code == "LGD" and not detail_df.empty:
                     drow = detail_df.iloc[0]

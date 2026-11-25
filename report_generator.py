@@ -83,8 +83,12 @@ SHORT_DETAIL_FIELDS = {
         ("fee_calculation", "Fee Summary", 2.90),
     ],
     "SITE_ALT": [
-        ("farm_exemption", "Farm Exemption", 1.50),
-        ("special_provision", "Special Provision", 1.50),
+        ("farm_exemption", "Farm Exempt.", 0.68),
+        ("special_provision", "Special Prov.", 0.68),
+        ("nfp_exemption_scope", "NFP Scope", 1.54),
+        ("drainage_act_exempt", "Drainage Act", 0.72),
+        ("excess_soil_reg_406_19", "O. Reg. 406/19", 0.78),
+        ("fill_captures_ag_materials", "Fill Ag Risk", 1.15),
     ],
     "LGD": [
         ("has_lgd_definition", "LGD Def.", 0.78),
@@ -893,7 +897,16 @@ def _add_category_detail(doc, cat_code, cat_bylaws, details_df, include_full_wor
             d_widths = [muni_w] + [w for _, _, w in short_fields]
 
             # Center short Yes/No/Date columns; keep text columns left-aligned
-            left_fields = {"fees_bylaw_name", "charge_type", "fee_calculation", "chicken_limit", "welfare_requirements", "apportionment_bylaw"}
+            left_fields = {
+                "fees_bylaw_name",
+                "charge_type",
+                "fee_calculation",
+                "chicken_limit",
+                "welfare_requirements",
+                "apportionment_bylaw",
+                "nfp_exemption_scope",
+                "fill_captures_ag_materials",
+            }
             center_cols = [idx + 1 for idx, (f, _, _) in enumerate(short_fields) if f not in left_fields]
 
             d_rows = []

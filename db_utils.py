@@ -477,6 +477,10 @@ def export_map_dataframe(conn) -> pd.DataFrame:
             row["Date Bylaw Enacted4 (Regional)"]         = d["date_enacted"]
             row["Expiry date 4"]                          = d["expiry_date"]
             row["SA Special Provision"]                   = d.get("special_provision", "")
+            row["SA NFP Exemption Scope"]                 = d.get("nfp_exemption_scope", "")
+            row["SA Drainage Act Exempt"]                 = d.get("drainage_act_exempt", "")
+            row["SA O. Reg. 406/19"]                      = d.get("excess_soil_reg_406_19", "")
+            row["SA Fill Captures Ag Materials"]          = d.get("fill_captures_ag_materials", "")
 
         # ── LGD ──
         if mid in lgd_map:
