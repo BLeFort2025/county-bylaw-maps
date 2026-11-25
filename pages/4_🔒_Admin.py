@@ -285,7 +285,7 @@ if admin_mode == "✏️ Edit Municipality":
                     st.error(f"❌ Save failed: {e}")
 
     # --- Tabs 1-7: Bylaw categories ---
-    EXEMPTION_OPTIONS = ["Yes", "No", "NOT KNOWN", "N/A",
+    EXEMPTION_OPTIONS = ["Yes", "Partial", "No", "NOT KNOWN", "N/A",
                          "No explicit exemption found", ""]
 
     for i, (cat_code, cat_label) in enumerate(BYLAW_CATEGORIES):
@@ -390,6 +390,7 @@ if admin_mode == "✏️ Edit Municipality":
                     drow = detail_df.iloc[0]
                     sa1, sa2 = st.columns(2)
                     _fe_opts = ["", "Yes", "No", "NOT KNOWN"]
+                    _sa_fe_opts = ["", "Yes", "Partial", "No", "NOT KNOWN"]
                     _nfp_opts = [
                         "",
                         "Full NFP / Fill & Grading",
@@ -407,9 +408,9 @@ if admin_mode == "✏️ Edit Municipality":
                     ]
                     with sa1:
                         _fe_val = resolve_yes_no(drow["farm_exemption"])
-                        _fe_idx = _fe_opts.index(_fe_val) if _fe_val in _fe_opts else 0
+                        _fe_idx = _sa_fe_opts.index(_fe_val) if _fe_val in _sa_fe_opts else 0
                         detail_updates["farm_exemption"] = st.selectbox(
-                            "Farm Exemption", _fe_opts,
+                            "Farm Exemption", _sa_fe_opts,
                             index=_fe_idx, key=f"sfe_{cat_code}_{muni_id}")
                         _sp_val = resolve_yes_no(drow["special_provision"])
                         _sp_idx = _fe_opts.index(_sp_val) if _sp_val in _fe_opts else 0

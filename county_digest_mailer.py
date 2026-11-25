@@ -562,6 +562,12 @@ def render_county_digest_html(
                 f'border:1px solid #B7DFC2; font-size:11px; font-weight:bold; padding:2px 8px; '
                 f'border-radius:3px; white-space:nowrap;">Yes</span>'
             )
+        if s_low == "partial":
+            return (
+                f'<span style="display:inline-block; background-color:#FFF3CD; color:#856404; '
+                f'border:1px solid {OFA_TULIP}; font-size:11px; font-weight:bold; padding:2px 8px; '
+                f'border-radius:3px; white-space:nowrap;">Partial</span>'
+            )
         if s_low in ("no", "no explicit exemption found"):
             return (
                 f'<span style="display:inline-block; background-color:{OFA_VALENCIA}; color:#FFFFFF; '

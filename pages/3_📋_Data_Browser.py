@@ -119,7 +119,7 @@ selected_area = st.sidebar.selectbox("🗺️ Geographic Area", ["All"] + areas,
 
 # Exemption status filter
 status_filter = st.sidebar.selectbox(
-    "🏷️ Exemption Status", ["All", "Yes", "No", "N/A", "NOT KNOWN"], index=0
+    "🏷️ Exemption Status", ["All", "Yes", "Partial", "No", "N/A", "NOT KNOWN"], index=0
 )
 
 
@@ -208,7 +208,6 @@ if selected_cat == "SITE_ALT":
             df = df[df["fill_captures_ag_materials"].fillna("").isin(["Compost or Manure", "Sod + Compost/Manure"])]
 
 # ── Metrics row ──
-col1, col1a, col2, col3, col4, col5 = st.columns(6)
 total = len(df)
 has_expiry = len(df[df["expiry_date"].notna() & (df["expiry_date"] != "")])
 
@@ -224,6 +223,7 @@ has_bylaw_count = int(df.apply(lambda r: _has_bylaw(r.get('bylaw_name'), r.get('
 
 
 # Category-specific metric labels and counts
+partial_count = int((df["exemption_status"] == "Partial").sum()) if "exemption_status" in df.columns else 0
 if selected_cat == "LGD":
     yes_label, no_label = "✅ Defines Farm Dogs", "❌ No Definition"
     # Count from combined LGD + HD definition columns (matches map logic)
@@ -235,17 +235,29 @@ if selected_cat == "LGD":
     no_count = total - yes_count
     na_count = 0
 else:
-    yes_label, no_label = "✅ Yes (Exemption)", "❌ No (Exemption)"
+    yes_label = "✅ Yes (Full NFP)" if selected_cat == "SITE_ALT" else "✅ Yes (Exemption)"
+    no_label = "❌ No (Exemption)"
     yes_count = len(df[df["exemption_status"] == "Yes"])
     no_count = len(df[df["exemption_status"] == "No"])
     na_count = len(df[df["exemption_status"].isin(["N/A", "NOT KNOWN"])])
 
-col1.metric("Total Shown", total)
-col1a.metric("🏛️ Has Bylaw", has_bylaw_count)
-col2.metric(yes_label, yes_count)
-col3.metric(no_label, no_count)
-col4.metric("❓ N/A / Unknown", na_count)
-col5.metric("📅 Has Expiry Date", has_expiry)
+if selected_cat == "SITE_ALT" or partial_count > 0:
+    col1, col1a, col2, colp, col3, col4, col5 = st.columns(7)
+    col1.metric("Total Shown", total)
+    col1a.metric("🏛️ Has Bylaw", has_bylaw_count)
+    col2.metric(yes_label, yes_count)
+    colp.metric("⚠️ Partial (Statutory)", partial_count)
+    col3.metric(no_label, no_count)
+    col4.metric("❓ N/A / Unknown", na_count)
+    col5.metric("📅 Has Expiry Date", has_expiry)
+else:
+    col1, col1a, col2, col3, col4, col5 = st.columns(6)
+    col1.metric("Total Shown", total)
+    col1a.metric("🏛️ Has Bylaw", has_bylaw_count)
+    col2.metric(yes_label, yes_count)
+    col3.metric(no_label, no_count)
+    col4.metric("❓ N/A / Unknown", na_count)
+    col5.metric("📅 Has Expiry Date", has_expiry)
 
 st.divider()
 
@@ -331,6 +343,8 @@ def _resolve_detail_value(val):
     s = str(val).strip().upper()
     if s in ("1", "YES", "Y", "TRUE"):
         return "Yes"
+    if s in ("PARTIAL",):
+        return "Partial"
     if s in ("2", "NO", "N", "FALSE"):
         return "No"
     if s in ("3", "NOT KNOWN", "UNKNOWN", "TBD"):
@@ -399,7 +413,7 @@ def highlight_status(val):
         return "background-color: #d4edda; color: #155724"
     elif v in ("No", "❌ Explicitly Excluded", "No Farm Exemption", "No NFP Exemption", "Sod + Compost/Manure", "Compost or Manure"):
         return "background-color: #f8d7da; color: #721c24"
-    elif v in ("N/A", "NOT KNOWN", "⚠️ Silent (Standard Non-Res)", "Statutory Topsoil & Drainage Only", "Topsoil Removal Only", "Drainage Only", "Sod"):
+    elif v in ("Partial", "N/A", "NOT KNOWN", "⚠️ Silent (Standard Non-Res)", "Statutory Topsoil & Drainage Only", "Topsoil Removal Only", "Drainage Only", "Sod"):
         return "background-color: #fff3cd; color: #856404"
     return ""
 
@@ -489,6 +503,8 @@ if muni_names:
             # Status badge
             if status == "Yes":
                 badge = "✅"
+            elif status == "Partial":
+                badge = "⚠️"
             elif status == "No":
                 badge = "❌"
             else:

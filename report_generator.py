@@ -248,6 +248,8 @@ def _resolve(val):
     upper = str(res).strip().upper()
     if upper == "YES":
         return "Yes"
+    if upper == "PARTIAL":
+        return "Partial"
     if upper == "NO":
         return "No"
     if upper == "N/A":
@@ -395,7 +397,7 @@ def _status_bg(status):
         return GREEN_BG
     if s == "NO":
         return RED_BG
-    if s in ("N/A", "NOT KNOWN", "NO EXPLICIT EXEMPTION FOUND"):
+    if s in ("PARTIAL", "N/A", "NOT KNOWN", "NO EXPLICIT EXEMPTION FOUND"):
         return AMBER_BG
     return None
 
@@ -699,41 +701,45 @@ def _add_executive_summary(doc, data):
         _body_para(doc, f"Detailed bylaw analysis for {data['scope_value']}.")
 
     _heading(doc, "Exemption Scorecard", level=2)
-    headers = ["Category", "Yes", "No", "N/A", "Unknown", "Total", "Bylaw %", "Exempt %"]
+    headers = ["Category", "Yes", "Partial", "No", "N/A", "Unknown", "Total", "Bylaw %", "Full Exempt %"]
     rows = []
 
     for cat in CATEGORY_ORDER:
         cat_bylaws = bylaws[bylaws["category"] == cat]
         if cat_bylaws.empty:
-            rows.append([CATEGORY_NAMES[cat], "0", "0", "0", "0", "0", "—", "—"])
+            rows.append([CATEGORY_NAMES[cat], "0", "0", "0", "0", "0", "0", "—", "—"])
             continue
         statuses = cat_bylaws["exemption_status"].apply(_resolve)
         yes = int((statuses == "Yes").sum())
+        partial = int((statuses == "Partial").sum())
         no = int((statuses == "No").sum())
         na = int(statuses.isin(["N/A"]).sum())
-        nk = int(len(statuses) - yes - no - na)
+        nk = int(len(statuses) - yes - partial - no - na)
         total = int(len(statuses))
 
-        active_bylaws = yes + no
+        active_bylaws = yes + partial + no
         bylaw_cov = f"{active_bylaws / total * 100:.0f}%" if total > 0 else "—"
         exempt_cov = f"{yes / active_bylaws * 100:.0f}%" if active_bylaws > 0 else "—"
 
-        rows.append([CATEGORY_NAMES[cat], str(yes), str(no), str(na), str(nk), str(total), bylaw_cov, exempt_cov])
+        rows.append([
+            CATEGORY_NAMES[cat], str(yes), str(partial), str(no), str(na),
+            str(nk), str(total), bylaw_cov, exempt_cov,
+        ])
 
     table = _add_table(
         doc,
         headers,
         rows,
-        col_widths=[2.20, 0.58, 0.58, 0.58, 0.78, 0.64, 0.82, 0.82],
-        center_cols=[1, 2, 3, 4, 5, 6, 7],
+        col_widths=[1.85, 0.50, 0.58, 0.50, 0.50, 0.72, 0.55, 0.85, 0.95],
+        center_cols=[1, 2, 3, 4, 5, 6, 7, 8],
     )
 
     for i, row_data in enumerate(rows):
-        cov = row_data[7]
+        cov = row_data[8]
         if cov != "—":
             pct = int(cov.replace("%", ""))
             bg = GREEN_BG if pct >= 70 else AMBER_BG if pct >= 40 else RED_BG
-            _set_cell_shading(table.rows[i + 1].cells[7], bg)
+            _set_cell_shading(table.rows[i + 1].cells[8], bg)
 
     doc.add_page_break()
 
@@ -755,22 +761,28 @@ def _add_category_section(doc, data, cat_code, include_full_wordings=True):
 
     statuses = cat_bylaws["exemption_status"].apply(_resolve)
     yes = int((statuses == "Yes").sum())
+    partial = int((statuses == "Partial").sum())
     no = int((statuses == "No").sum())
     na = int(statuses.isin(["N/A"]).sum())
     total = int(len(statuses))
 
-    active_bylaws = yes + no
+    active_bylaws = yes + partial + no
     bylaw_cov = f"{active_bylaws / total * 100:.0f}%" if total > 0 else "0%"
     exempt_cov = f"{yes / active_bylaws * 100:.0f}%" if active_bylaws > 0 else "N/A"
 
     bylaw_word = "active bylaw" if active_bylaws == 1 else "active bylaws"
+    partial_clause = (
+        f", {partial} {'has' if partial == 1 else 'have'} a partial (statutory-only) exemption"
+        if partial > 0
+        else ""
+    )
     no_verb = "active bylaw has" if no == 1 else "active bylaws have"
     na_word = "municipality does" if na == 1 else "municipalities do"
 
     _body_para(
         doc,
         f"Bylaw presence: {bylaw_cov} ({active_bylaws} {bylaw_word} identified out of {total} municipalities). "
-        f"Farm exemption coverage: {exempt_cov} ({yes} out of {active_bylaws} {bylaw_word}); "
+        f"Full farm exemption coverage: {exempt_cov} ({yes} out of {active_bylaws} {bylaw_word}){partial_clause}; "
         f"{no} {no_verb} no exemption, and {na} {na_word} not have this type of bylaw.",
     )
 
@@ -788,31 +800,44 @@ def _add_category_provincial(doc, cat_bylaws):
 
     cat_bylaws = cat_bylaws.copy()
     cat_bylaws["_status"] = cat_bylaws["exemption_status"].apply(_resolve)
+    has_partial = bool((cat_bylaws["_status"] == "Partial").any())
 
-    headers = ["County / Region", "Yes", "No", "N/A", "Unknown", "Total", "Bylaw %", "Exempt %"]
+    if has_partial:
+        headers = ["County / Region", "Yes", "Partial", "No", "N/A", "Unknown", "Total", "Bylaw %", "Full Exempt %"]
+        widths = [1.85, 0.50, 0.58, 0.50, 0.50, 0.72, 0.55, 0.85, 0.95]
+        center_cols = [1, 2, 3, 4, 5, 6, 7, 8]
+    else:
+        headers = ["County / Region", "Yes", "No", "N/A", "Unknown", "Total", "Bylaw %", "Exempt %"]
+        widths = [2.20, 0.58, 0.58, 0.58, 0.78, 0.64, 0.82, 0.82]
+        center_cols = [1, 2, 3, 4, 5, 6, 7]
+
     rows = []
 
     for county, group in sorted(cat_bylaws.groupby("geographic_area"), key=lambda x: str(x[0])):
         county = county if county and str(county).strip() else "Unassigned"
         s = group["_status"]
         yes = int((s == "Yes").sum())
+        partial = int((s == "Partial").sum())
         no = int((s == "No").sum())
         na = int(s.isin(["N/A"]).sum())
-        nk = int(len(s) - yes - no - na)
+        nk = int(len(s) - yes - partial - no - na)
         total = int(len(s))
 
-        active_bylaws = yes + no
+        active_bylaws = yes + partial + no
         bylaw_cov = f"{active_bylaws / total * 100:.0f}%" if total > 0 else "—"
         exempt_cov = f"{yes / active_bylaws * 100:.0f}%" if active_bylaws > 0 else "—"
 
-        rows.append([county, str(yes), str(no), str(na), str(nk), str(total), bylaw_cov, exempt_cov])
+        if has_partial:
+            rows.append([county, str(yes), str(partial), str(no), str(na), str(nk), str(total), bylaw_cov, exempt_cov])
+        else:
+            rows.append([county, str(yes), str(no), str(na), str(nk), str(total), bylaw_cov, exempt_cov])
 
     _add_table(
         doc,
         headers,
         rows,
-        col_widths=[2.20, 0.58, 0.58, 0.58, 0.78, 0.64, 0.82, 0.82],
-        center_cols=[1, 2, 3, 4, 5, 6, 7],
+        col_widths=widths,
+        center_cols=center_cols,
     )
 
 
@@ -933,7 +958,7 @@ def _add_category_detail(doc, cat_code, cat_bylaws, details_df, include_full_wor
                             val = cleaned
                     else:
                         s_raw = _sanitize_xml(raw_val) if not _is_empty(raw_val) else ""
-                        if s_raw in ("1", "2", "3", "4", "5") or s_raw.upper() in ("YES", "NO", "N/A", "NOT KNOWN"):
+                        if s_raw in ("1", "2", "3", "4", "5") or s_raw.upper() in ("YES", "PARTIAL", "NO", "N/A", "NOT KNOWN"):
                             val = _resolve(s_raw)
                         else:
                             val = _clean(raw_val, single_line=True)
@@ -1275,7 +1300,8 @@ def _add_advocacy_matrix(doc, data):
     _body_para(
         doc,
         "Municipalities ranked by advocacy urgency. Scoring: missing exemptions (3 pts), "
-        "expired bylaws (5 pts), expiring within 18 months (3 pts), scanner signals (2 pts), "
+        "partial / statutory-only exemptions (2 pts), expired bylaws (5 pts), "
+        "expiring within 18 months (3 pts), scanner signals (2 pts), "
         "unknown status (1 pt). Recommended actions are auto-generated.",
     )
 
@@ -1289,7 +1315,7 @@ def _add_advocacy_matrix(doc, data):
         ms = signals[signals["municipality_id"] == muni_id] if not signals.empty else pd.DataFrame()
 
         score = 0
-        no_cats, expired_cats, expiring_cats, unknown_cats = [], [], [], []
+        no_cats, partial_cats, expired_cats, expiring_cats, unknown_cats = [], [], [], [], []
 
         for _, b in mb.iterrows():
             status = _resolve(b["exemption_status"])
@@ -1298,6 +1324,9 @@ def _add_advocacy_matrix(doc, data):
             if status == "No":
                 no_cats.append(cat_label)
                 score += 3
+            elif status == "Partial":
+                partial_cats.append(cat_label)
+                score += 2
             elif status in ("Not Known", "NOT KNOWN", "No explicit exemption found", "—"):
                 unknown_cats.append(cat_label)
                 score += 1
@@ -1327,6 +1356,8 @@ def _add_advocacy_matrix(doc, data):
             action = f"Send template letter ({', '.join(no_cats)})"
         elif expiring_cats:
             action = f"Engage before renewal ({', '.join(expiring_cats)})"
+        elif partial_cats:
+            action = f"Request full NFP exemption ({', '.join(partial_cats)})"
         elif not ms.empty:
             kw = _clean(ms.iloc[0].get("trigger_keyword", "activity"))
             action = f"Review council activity — '{kw}'"
@@ -1421,7 +1452,8 @@ def _add_methodology(doc, data, include_full_wordings=True):
 
     _heading(doc, "Exemption Status Definitions", level=2)
     for status, desc in [
-        ("Yes", "An explicit farm or agricultural exemption exists in the bylaw."),
+        ("Yes", "An explicit, full farm or normal farm practice exemption exists in the bylaw."),
+        ("Partial", "Statutory minimum or narrow carve-out only (e.g. Site Alteration bylaws that exempt only Drainage Act works and incidental topsoil removal under Municipal Act s. 142(5)–(6), meaning farm fill placement and grading may still require a permit)."),
         ("No", "The bylaw applies to farms with no exemption provision."),
         ("N/A", "The municipality does not have this type of bylaw."),
         ("NOT KNOWN", "Research has not yet confirmed the exemption status."),
@@ -1441,6 +1473,7 @@ def _add_methodology(doc, data, include_full_wordings=True):
     _heading(doc, "Priority Scoring", level=2)
     for item in [
         "Missing exemption (No): 3 points per category",
+        "Partial / statutory-only exemption (Partial): 2 points per category",
         "Expired bylaw: 5 points per category",
         "Expiring within 18 months: 3 points per category",
         "Scanner signal detected: 2 points per signal",

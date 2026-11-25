@@ -61,10 +61,12 @@ def pick_name_field(df: pd.DataFrame) -> str:
 
 
 def status_color(s: str) -> list[int]:
-    """Map a YES/NO/N/A style status string to an RGBA colour."""
+    """Map a YES/PARTIAL/NO/N/A style status string to an RGBA colour."""
     s = (s or "").strip().upper()
     if s == "YES":
         return [0, 128, 0, 160]  # green
+    if s == "PARTIAL":
+        return [236, 168, 66, 180]  # OFA Tulip Tree amber (statutory-only / partial)
     if s == "NO":
         return [200, 0, 0, 160]  # red
     if s == "N/A":
@@ -434,7 +436,7 @@ selected_label = st.sidebar.selectbox("Bylaw", list(display_labels.values()), in
 selected_col = label_to_col[selected_label]
 
 # Split filters: Status vs Expiry alerts (signals)
-status_filter = st.sidebar.selectbox("Status", ["All", "YES", "NO", "N/A"], index=0)
+status_filter = st.sidebar.selectbox("Status", ["All", "YES", "PARTIAL", "NO", "N/A"], index=0)
 signal_filter = st.sidebar.selectbox(
     "Expiry alert",
     ["All", "Expiring soon", "Expired", "Expiry unknown"],
@@ -641,6 +643,7 @@ else:
 # ---------- Summary cards (counts reflect the matching set) ----------
 counts = gdf_match["__STATUS__"].value_counts()
 yes = int(counts.get("YES", 0))
+partial = int(counts.get("PARTIAL", 0))
 no = int(counts.get("NO", 0))
 na = int(counts.get("N/A", 0))
 
@@ -649,16 +652,31 @@ expiring = int(sig_counts.get("Expiring soon", 0))
 expired = int(sig_counts.get("Expired", 0))
 unknown = int(sig_counts.get("Expiry unknown", 0))
 
-c1, c2, c3, c4, c5, c6 = st.columns(6)
-c1.metric("YES", f"{yes}")
-c2.metric("NO", f"{no}")
-c3.metric("N/A", f"{na}")
-c4.metric("Expiring soon", f"{expiring}")
-c5.metric("Expired", f"{expired}")
-c6.metric("Expiry unknown", f"{unknown}")
+if partial > 0 or selected_label == "Farm Exemption for SA":
+    c1, cp, c2, c3, c4, c5, c6 = st.columns(7)
+    c1.metric("YES (Full)", f"{yes}")
+    cp.metric("PARTIAL", f"{partial}")
+    c2.metric("NO", f"{no}")
+    c3.metric("N/A", f"{na}")
+    c4.metric("Expiring soon", f"{expiring}")
+    c5.metric("Expired", f"{expired}")
+    c6.metric("Expiry unknown", f"{unknown}")
+else:
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1.metric("YES", f"{yes}")
+    c2.metric("NO", f"{no}")
+    c3.metric("N/A", f"{na}")
+    c4.metric("Expiring soon", f"{expiring}")
+    c5.metric("Expired", f"{expired}")
+    c6.metric("Expiry unknown", f"{unknown}")
 
+fill_legend = (
+    "Fill legend: 🟩 YES (Full NFP) • 🟨 PARTIAL (Statutory Topsoil/Drainage Only) • 🟥 NO • ⬜ N/A  •  "
+    if (partial > 0 or selected_label == "Farm Exemption for SA")
+    else ""
+)
 st.caption(
-    f"Matches: {len(gdf_match)} of {len(gdf_all)} municipalities.  "
+    f"Matches: {len(gdf_match)} of {len(gdf_all)} municipalities.  {fill_legend}"
     "Outline legend: 🟧 Expiring soon • ⬛ Expired • 🟨 Expiry unknown • ⬜ No expiry alert  •  Outline priority (if multiple signals): Expired > Expiring soon > Mentioned in minutes/agendas > Expiry unknown"
 )
 
@@ -889,7 +907,14 @@ if content is not None:
                     f"✅ **{selected_muni}** already has a farm exemption for this bylaw. "
                     "No advocacy letter needed!"
                 )
-            elif muni_status in ("NO", "NOT KNOWN", ""):
+            elif muni_status in ("NO", "PARTIAL", "NOT KNOWN", ""):
+                if muni_status == "PARTIAL":
+                    st.warning(
+                        f"⚠️ **{selected_muni}** currently provides only a **Partial** exemption "
+                        "(e.g. mandatory *Municipal Act* topsoil removal / Drainage Act carve-outs only — "
+                        "farm fill placement and grade alterations may still require a permit). "
+                        "You can send an advocacy letter below requesting a full Normal Farm Practice exemption."
+                    )
                 with st.expander("✉️ Send Personalized Advocacy Letter", expanded=False):
                     st.markdown(
                         "Fill in your details below to generate a **personalized advocacy letter** "

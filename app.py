@@ -83,24 +83,27 @@ def load_executive_summary():
     scorecard_rows = []
     total_active = 0
     total_yes = 0
+    total_partial = 0
     total_no = 0
     total_expiring = 0
 
     for cat_label, status_col, name_col, exp_col, desc in categories:
         st_series = df[status_col].fillna("NOT KNOWN").astype(str).str.strip().str.upper()
         yes_count = int((st_series == "YES").sum())
+        partial_count = int((st_series == "PARTIAL").sum())
         no_count = int((st_series == "NO").sum())
-        active_count = yes_count + no_count
+        active_count = yes_count + partial_count + no_count
 
         exp_raw = df[exp_col].fillna("").astype(str).str.strip() if exp_col in df.columns else pd.Series([""] * len(df))
         exp_dt = pd.to_datetime(exp_raw, errors="coerce")
         days = (exp_dt - today).dt.days
-        expiring_count = int(((st_series.isin(["YES", "NO"])) & exp_dt.notna() & (days <= 540)).sum())
+        expiring_count = int(((st_series.isin(["YES", "PARTIAL", "NO"])) & exp_dt.notna() & (days <= 540)).sum())
 
         rate = round((yes_count / active_count * 100), 1) if active_count > 0 else 0.0
 
         total_active += active_count
         total_yes += yes_count
+        total_partial += partial_count
         total_no += no_count
         total_expiring += expiring_count
 
@@ -109,7 +112,8 @@ def load_executive_summary():
                 "Bylaw Category": cat_label,
                 "Key Provision Tracked": desc,
                 "Active Bylaws": active_count,
-                "✅ Farm Exempt / Permitted (YES)": yes_count,
+                "✅ Full Exempt / Permitted (YES)": yes_count,
+                "⚠️ Partial / Statutory Only": partial_count,
                 "❌ No Exemption / Prohibited (NO)": no_count,
                 "⏳ Expiring ≤ 18 Mos / Expired": expiring_count,
                 "Exemption Rate (%)": rate,
@@ -132,6 +136,7 @@ def load_executive_summary():
         "total_records": len(df) * 7,
         "total_active": total_active,
         "total_yes": total_yes,
+        "total_partial": total_partial,
         "total_no": total_no,
         "total_expiring": total_expiring,
         "signal_count": signal_count,
@@ -147,13 +152,14 @@ except Exception as e:
 # ── Top-Level KPI Metrics ──
 if summary is not None:
     st.markdown("### 📊 Province-Wide Executive Overview")
-    k1, k2, k3, k4, k5 = st.columns(5)
+    k1, k2, k3, k4, k5, k6 = st.columns(6)
     overall_pct = round(summary["total_yes"] / summary["total_active"] * 100, 1) if summary["total_active"] else 0.0
     k1.metric("Municipalities Tracked", f"{summary['total_munis']:,}", "414 Lower/Single · 30 Upper")
     k2.metric("Active Bylaws Mapped", f"{summary['total_active']:,}", f"{summary['total_records']:,} total category records")
-    k3.metric("✅ Confirmed Exemptions (YES)", f"{summary['total_yes']:,}", f"{overall_pct}% of active bylaws")
-    k4.metric("❌ Missing Exemptions (NO)", f"{summary['total_no']:,}", "Advocacy letter targets", delta_color="inverse")
-    k5.metric("⏳ Expiring Within 18 Months", f"{summary['total_expiring']:,}", f"{summary['signal_count']} active scanner signals")
+    k3.metric("✅ Full Exemptions (YES)", f"{summary['total_yes']:,}", f"{overall_pct}% of active bylaws")
+    k4.metric("⚠️ Partial Exemptions", f"{summary['total_partial']:,}", "Statutory minimum only")
+    k5.metric("❌ Missing Exemptions (NO)", f"{summary['total_no']:,}", "Advocacy letter targets", delta_color="inverse")
+    k6.metric("⏳ Expiring ≤ 18 Mos", f"{summary['total_expiring']:,}", f"{summary['signal_count']} active scanner signals")
 
 st.divider()
 
