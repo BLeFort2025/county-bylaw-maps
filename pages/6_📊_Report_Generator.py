@@ -84,7 +84,7 @@ elif scope_key == "county":
     st.info(f"**{scope_value}** report covering **{count}** municipalities.")
     st.caption(
         "Includes: Executive Summary · Exemption Scorecard · "
-        "Municipality-level Category Tables with Detail Sub-fields (×7) · "
+        "Municipality-level Comparison Tables & Full Verbatim Bylaw Wordings/Notes (×7) · "
         "Individual Municipality Profiles · Intelligence Alerts · "
         "Advocacy Priority Matrix · Methodology"
     )
@@ -93,10 +93,23 @@ else:
     st.info(f"Detailed report for **{scope_value}**.")
     st.caption(
         "Includes: Executive Summary · All 7 Category Deep-Dives with "
-        "Detail Sub-fields · Intelligence Alerts · Methodology"
+        "Comparison Tables & Full Verbatim Bylaw Wordings/Notes · Intelligence Alerts · Methodology"
     )
 
 conn.close()
+
+# ── Report options ──
+include_full_wordings = True
+if scope_key in ("county", "municipality"):
+    include_full_wordings = st.checkbox(
+        "Include full verbatim bylaw wordings & notes (untruncated)",
+        value=True,
+        help=(
+            "Prints all tracked exemption clauses, definitions, limits, expiry notes, and "
+            "researcher notes in full-width sections beneath each category's comparison table. "
+            "Uncheck for a shorter summary-table handout."
+        ),
+    )
 
 # ── Generate button ──
 st.divider()
@@ -111,7 +124,11 @@ if generate:
         try:
             from report_generator import generate_report
 
-            docx_buffer = generate_report(scope_key, scope_value)
+            docx_buffer = generate_report(
+                scope_key,
+                scope_value,
+                include_full_wordings=include_full_wordings,
+            )
 
             safe_name = (scope_value or "Provincial").replace(" ", "_").replace("/", "_")
             filename = f"OFA_Bylaw_Report_{safe_name}_{datetime.date.today()}.docx"
