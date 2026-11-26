@@ -150,11 +150,15 @@ def _eval_spec(
                 over_cap = _to_float(b.get("over_cap_sqft"))
                 over_rate = _to_float(b.get("over_rate"))
                 mn = _to_float(b.get("min_fee")) or 0.0
+                mx = _to_float(b.get("max_fee"))
                 if over_cap is not None and over_rate is not None and float(sqft) > over_cap:
                     val = base + max(0.0, over_cap - thresh) * rate + (float(sqft) - over_cap) * over_rate
                 else:
                     val = base + max(0.0, float(sqft) - thresh) * rate
-                return round(max(mn, val), 2)
+                val = max(mn, val)
+                if mx is not None:
+                    val = min(mx, val)
+                return round(val, 2)
         return None
 
     if stype == "valuation":
