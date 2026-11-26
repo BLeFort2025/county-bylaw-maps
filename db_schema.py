@@ -106,16 +106,35 @@ CREATE TABLE IF NOT EXISTS details_stormwater (
 
 -- Site Alteration extras
 CREATE TABLE IF NOT EXISTS details_site_alt (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    bylaw_id        INTEGER NOT NULL REFERENCES bylaws(id) UNIQUE,
-    farm_exemption  TEXT,                    -- YES / NO
-    special_provision TEXT,                  -- YES / NO
-    guidelines_wording TEXT,
-    exception_wording TEXT,
-    nfp_exemption_scope TEXT,                -- Full NFP / Fill & Grading | Statutory Topsoil & Drainage Only | Topsoil Removal Only | Drainage Only | None
-    drainage_act_exempt TEXT,                -- Yes / No / NOT KNOWN
-    excess_soil_reg_406_19 TEXT,             -- Yes / No / NOT KNOWN
-    fill_captures_ag_materials TEXT          -- None | Sod | Compost or Manure | Sod + Compost/Manure
+    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+    bylaw_id                INTEGER NOT NULL REFERENCES bylaws(id) UNIQUE,
+    farm_exemption          TEXT,            -- Yes / Partial / No / NOT KNOWN
+    special_provision       TEXT,            -- Yes / No
+    guidelines_wording      TEXT,
+    exception_wording       TEXT,
+    nfp_exemption_scope     TEXT,            -- Full NFP / Fill & Grading | Statutory Topsoil & Drainage Only | Topsoil Removal Only | Drainage Only | No NFP Exemption
+    drainage_act_exempt     TEXT,            -- Yes / No / NOT KNOWN
+    excess_soil_reg_406_19  TEXT,            -- Yes / No / NOT KNOWN
+    fill_captures_ag_materials TEXT,         -- None Flagged | Sod | Compost or Manure | Sod + Compost/Manure
+    -- Structured Excess Soil & Site Alteration Permit Fee fields
+    fee_verification_status TEXT,            -- Verified | Verified (Ag Exempt - $0) | Verified (Ag Tier) | Verified (Scanned PDF) | Not Published Online | Pending | N/A (No Bylaw)
+    fee_year                INTEGER,         -- Effective fee schedule year (e.g. 2025, 2026)
+    fees_bylaw_name         TEXT,            -- Consolidated Fees & Charges / User Fee By-law name (or 'In Site Alteration By-law')
+    fees_bylaw_link         TEXT,            -- Direct URL to enacted fee schedule / User Fee By-law
+    ag_import_fee_status    TEXT,            -- Exempt ($0) | Exempt up to Volume Cap | Waiver Available ($0 App Fee) | Reduced Farm Tier | Standard Commercial Rate | No Bylaw | Pending
+    ag_exempt_volume_cap_m3 REAL,            -- Max exempt imported topsoil/fill volume (m³) before permit/fees apply
+    out_of_muni_fill_ban    TEXT,            -- Yes | No | Restricted | Unknown
+    fee_pricing_model       TEXT,            -- Tiered Volume + Per m³ | Base + Per m³ | Per m³ Only | Flat Fee | Base + Per Hectare | Reduced Farm Flat Fee | Exempt ($0) | Waiver ($0 App Fee) | Cost Recovery Only | Not Published
+    base_fee_small          REAL,            -- Base permit application fee ($) for small/minor fill tier
+    base_fee_large          REAL,            -- Base permit application fee ($) for large/commercial fill tier
+    per_m3_rate             REAL,            -- Volumetric fill/topsoil fee ($ per cubic metre, m³)
+    fee_calc_spec_json      TEXT,            -- Structured JSON formula for tiered volume brackets, caps, & ag tiers
+    est_fee_500_m3          REAL,            -- Standardized benchmark: est. farm permit fee ($) for 500 m³ clean topsoil
+    est_fee_5000_m3         REAL,            -- Standardized benchmark: est. farm permit fee ($) for 5,000 m³ clean topsoil
+    est_fee_15000_m3        REAL,            -- Standardized benchmark: est. farm permit fee ($) for 15,000 m³ clean topsoil
+    security_deposit_terms  TEXT,            -- Refundable security / Letter of Credit / road damage deposit terms
+    peer_review_recovery    TEXT,            -- Third-party engineering / Qualified Person / peer-review cost recovery terms
+    fee_formula_notes       TEXT             -- Concise verified breakdown of fee tiers, volume thresholds, renewals, & ag rules
 );
 
 -- Livestock Guardian Dogs extras

@@ -382,6 +382,7 @@ label_to_col = {v: k for k, v in display_labels.items()}
 selected_label = st.sidebar.selectbox("Bylaw", list(display_labels.values()), index=0)
 selected_col = label_to_col[selected_label]
 is_bldg_fees = (selected_label == "Farm Building Permit Fees")
+is_site_alt = (selected_label == "Farm Exemption for SA")
 
 view_mode = st.sidebar.radio(
     "Jurisdiction mode",
@@ -755,6 +756,35 @@ if len(detail_row) == 1:
     else:
         st.sidebar.markdown(f"**Status:** {str(r.get('__STATUS__', 'N/A') or 'N/A')}")
         st.sidebar.markdown(f"**Expiry signal:** {str(r.get('__SIGNAL__', '') or '').strip() or '—'}")
+        if is_site_alt:
+            _sfx = "__DIRECT" if direct_only else ""
+            _sa_fvs = str(r.get(f"SA Fee Verification Status{_sfx}", "") or "").strip()
+            _sa_rate = str(r.get(f"SA Per m3 Rate{_sfx}", "") or "").strip()
+            _sa_5k = str(r.get(f"SA Est Fee 5000 m3{_sfx}", "") or "").strip()
+            _sa_15k = str(r.get(f"SA Est Fee 15000 m3{_sfx}", "") or "").strip()
+            _sa_fbn = str(r.get(f"SA Fees Bylaw Name{_sfx}", "") or "").strip()
+            _sa_fbl = str(r.get(f"SA Fees Bylaw Link{_sfx}", "") or "").strip()
+            if _sa_fvs and _sa_fvs != "N/A (No Bylaw)":
+                st.sidebar.markdown("---")
+                _scope_lbl = "Direct" if direct_only else "Lower-Tier Median"
+                st.sidebar.markdown(f"**💰 Excess Soil / Fill Fees** ({_sa_fvs})")
+                if _sa_rate and _sa_rate.lower() != "nan":
+                    try:
+                        st.sidebar.markdown(f"**{_scope_lbl} Rate:** ${float(_sa_rate):,.2f}/m³")
+                    except Exception:
+                        pass
+                if _sa_5k and _sa_5k.lower() != "nan":
+                    try:
+                        st.sidebar.markdown(f"**{_scope_lbl} 5,000 m³ Est.:** ${float(_sa_5k):,.0f}")
+                    except Exception:
+                        pass
+                if _sa_15k and _sa_15k.lower() != "nan":
+                    try:
+                        st.sidebar.markdown(f"**{_scope_lbl} 15,000 m³ Est.:** ${float(_sa_15k):,.0f}")
+                    except Exception:
+                        pass
+                if _sa_fbn:
+                    st.sidebar.markdown(f"**Fees By-law:** [{_sa_fbn}]({_sa_fbl})" if _sa_fbl else f"**Fees By-law:** {_sa_fbn}")
 
     bylaw_name = str(r.get("__BYLAW_NAME__", "") or "").strip()
     enacted = str(r.get("__ENACTED__", "") or "").strip()
@@ -1130,6 +1160,30 @@ with st.expander("Results (filtered) – table + export", expanded=False):
                 "__BYLAW_LINK__": "Bylaw Link",
             }
         )
+    elif is_site_alt:
+        _sfx = "__DIRECT" if direct_only else ""
+        _sa_ut_cols = [
+            name_field, "__STATUS__",
+            f"SA Fee Verification Status{_sfx}",
+            f"SA Per m3 Rate{_sfx}",
+            f"SA Est Fee 500 m3{_sfx}",
+            f"SA Est Fee 5000 m3{_sfx}",
+            f"SA Est Fee 15000 m3{_sfx}",
+            "__BYLAW_NAME__", "__BYLAW_LINK__",
+        ]
+        table = gdf_match[[c for c in _sa_ut_cols if c in gdf_match.columns]].copy().rename(
+            columns={
+                name_field: "County / Single Tier",
+                "__STATUS__": "Farm Exemption",
+                f"SA Fee Verification Status{_sfx}": "Fee Audit Status",
+                f"SA Per m3 Rate{_sfx}": f"{'Direct' if direct_only else 'Median'} $/m³",
+                f"SA Est Fee 500 m3{_sfx}": f"{'Direct' if direct_only else 'Median'} 500 m³",
+                f"SA Est Fee 5000 m3{_sfx}": f"{'Direct' if direct_only else 'Median'} 5k m³",
+                f"SA Est Fee 15000 m3{_sfx}": f"{'Direct' if direct_only else 'Median'} 15k m³",
+                "__BYLAW_NAME__": "Bylaw",
+                "__BYLAW_LINK__": "Bylaw Link",
+            }
+        )
     else:
         table = gdf_match[
             [name_field, "__STATUS__", "__EXPIRY__", "__SIGNAL__", "__BYLAW_NAME__", "__BYLAW_LINK__"]
@@ -1152,6 +1206,10 @@ with st.expander("Results (filtered) – table + export", expanded=False):
     st.download_button(
         "Download these results as CSV",
         data=csv_bytes,
-        file_name="farm_building_fees_upper_results.csv" if is_bldg_fees else "bylaw_map_results_upper.csv",
+        file_name=(
+            "farm_building_fees_upper_results.csv" if is_bldg_fees
+            else "site_alteration_fees_upper_results.csv" if is_site_alt
+            else "bylaw_map_results_upper.csv"
+        ),
         mime="text/csv",
     )

@@ -26,6 +26,7 @@ from db_utils import (
 )
 from shared_config import ADMIN_PASSWORD_HASH, BYLAW_CATEGORIES
 from bldg_fees_calc import compute_benchmarks
+from site_alt_fees_calc import compute_site_alt_benchmarks
 
 # ── Page config ──
 st.set_page_config(page_title="Admin — Municipal Bylaw Database", page_icon="🔒", layout="wide")
@@ -445,6 +446,118 @@ if admin_mode == "✏️ Edit Municipality":
                             "Guidelines Wording", value=drow["guidelines_wording"] or "", height=110, key=f"gw_{cat_code}_{muni_id}")
                         detail_updates["exception_wording"] = st.text_area(
                             "Exception Wording", value=drow["exception_wording"] or "", height=140, key=f"exw_{cat_code}_{muni_id}")
+
+                    st.markdown("##### 💰 Excess Soil & Site Alteration Permit Fees")
+                    def _sa_num_str(v):
+                        return "" if (v is None or (isinstance(v, float) and pd.isna(v))) else str(v)
+                    def _sa_opt_float(s):
+                        s = str(s or "").strip().replace("$", "").replace(",", "")
+                        if not s:
+                            return None
+                        try:
+                            return float(s)
+                        except ValueError:
+                            return None
+                    _sa_fvs_opts = [
+                        "",
+                        "Verified",
+                        "Verified (Ag Exempt - $0)",
+                        "Verified (Ag Tier)",
+                        "Verified (Scanned PDF)",
+                        "Not Published Online",
+                        "Pending",
+                        "N/A (No Bylaw)",
+                    ]
+                    _sa_ag_fee_opts = [
+                        "",
+                        "Exempt ($0)",
+                        "Exempt up to Volume Cap",
+                        "Waiver Available ($0 App Fee)",
+                        "Reduced Farm Tier",
+                        "Standard Commercial Rate",
+                        "No Bylaw",
+                        "Pending",
+                    ]
+                    _sa_ban_opts = ["", "Yes", "No", "Restricted", "Unknown"]
+                    _sa_pm_opts = [
+                        "",
+                        "Tiered Volume + Per m³",
+                        "Base + Per m³",
+                        "Per m³ Only",
+                        "Flat Fee",
+                        "Base + Per Hectare",
+                        "Reduced Farm Flat Fee",
+                        "Exempt ($0)",
+                        "Waiver ($0 App Fee)",
+                        "Cost Recovery Only",
+                        "Not Published",
+                    ]
+                    saf1, saf2 = st.columns(2)
+                    with saf1:
+                        detail_updates["fee_verification_status"] = st.selectbox(
+                            "Fee Audit Status", _sa_fvs_opts,
+                            index=_opt_idx(_sa_fvs_opts, drow.get("fee_verification_status")),
+                            key=f"safvs_{muni_id}")
+                        _sa_fy_in = st.text_input(
+                            "Fee Year (e.g. 2026)",
+                            value=_sa_num_str(drow.get("fee_year")).split(".")[0],
+                            key=f"safy_{muni_id}")
+                        detail_updates["fee_year"] = int(_sa_fy_in) if _sa_fy_in.strip().isdigit() else None
+                        detail_updates["fees_bylaw_name"] = st.text_input(
+                            "Fees / User Fee By-law Name",
+                            value=str(drow.get("fees_bylaw_name") or ""),
+                            key=f"safbn_{muni_id}")
+                        detail_updates["fees_bylaw_link"] = st.text_input(
+                            "Fees / User Fee By-law Link",
+                            value=str(drow.get("fees_bylaw_link") or ""),
+                            key=f"safbl_{muni_id}")
+                        detail_updates["ag_import_fee_status"] = st.selectbox(
+                            "Ag Clean-Topsoil Import Fee Status", _sa_ag_fee_opts,
+                            index=_opt_idx(_sa_ag_fee_opts, drow.get("ag_import_fee_status")),
+                            key=f"saags_{muni_id}")
+                        detail_updates["ag_exempt_volume_cap_m3"] = _sa_opt_float(st.text_input(
+                            "Ag Exempt Volume Cap (m³, blank if none/uncapped)",
+                            value=_sa_num_str(drow.get("ag_exempt_volume_cap_m3")),
+                            key=f"sacap_{muni_id}"))
+                        detail_updates["out_of_muni_fill_ban"] = st.selectbox(
+                            "Out-of-Municipality Fill Import Ban?", _sa_ban_opts,
+                            index=_opt_idx(_sa_ban_opts, drow.get("out_of_muni_fill_ban")),
+                            key=f"saban_{muni_id}")
+                        detail_updates["fee_pricing_model"] = st.selectbox(
+                            "Fee Pricing Model", _sa_pm_opts,
+                            index=_opt_idx(_sa_pm_opts, drow.get("fee_pricing_model")),
+                            key=f"sapm_{muni_id}")
+                    with saf2:
+                        detail_updates["base_fee_small"] = _sa_opt_float(st.text_input(
+                            "Base Permit Fee — Small/Minor ($)",
+                            value=_sa_num_str(drow.get("base_fee_small")),
+                            key=f"sabsm_{muni_id}"))
+                        detail_updates["base_fee_large"] = _sa_opt_float(st.text_input(
+                            "Base Permit Fee — Large/Commercial ($)",
+                            value=_sa_num_str(drow.get("base_fee_large")),
+                            key=f"sablg_{muni_id}"))
+                        detail_updates["per_m3_rate"] = _sa_opt_float(st.text_input(
+                            "Volumetric Rate ($ per m³)",
+                            value=_sa_num_str(drow.get("per_m3_rate")),
+                            key=f"sam3_{muni_id}"))
+                        detail_updates["security_deposit_terms"] = st.text_input(
+                            "Security Deposit / Letter of Credit Terms",
+                            value=str(drow.get("security_deposit_terms") or ""),
+                            key=f"sasec_{muni_id}")
+                        detail_updates["peer_review_recovery"] = st.text_input(
+                            "Peer Review / Engineering Cost Recovery",
+                            value=str(drow.get("peer_review_recovery") or ""),
+                            key=f"sapeer_{muni_id}")
+                        detail_updates["fee_calc_spec_json"] = st.text_area(
+                            "Tiered Fee Formula JSON (optional)",
+                            value=str(drow.get("fee_calc_spec_json") or ""),
+                            height=75, key=f"sajs_{muni_id}")
+                        detail_updates["fee_formula_notes"] = st.text_area(
+                            "Verified Fee Formula Notes",
+                            value=str(drow.get("fee_formula_notes") or ""),
+                            height=95, key=f"safn_{muni_id}")
+                    # Auto-compute standardized 500 / 5,000 / 15,000 m³ benchmarks on save
+                    detail_updates.update(compute_site_alt_benchmarks(detail_updates))
 
                 elif cat_code == "LGD" and not detail_df.empty:
                     drow = detail_df.iloc[0]

@@ -60,12 +60,17 @@ KEYWORD_CONFIG = {
     ],
     "SITE_ALT": [
         "Site Alteration By-law",
+        "Site Alteration Fee",
         "Fill By-law",
         "Fill Management By-law",
+        "Fill Permit Fee",
         "Topsoil Preservation",
         "Topsoil Removal",
         "Dumping of Fill",
+        "Importation of Fill",
         "Excess Soil By-law",
+        "Excess Soil Fee",
+        "Excess Soil",
         "Large Scale Fill",
         "Commercial Fill Operation",
     ],
@@ -169,6 +174,12 @@ CUSTOM_KEYWORD_PACKS = {
         "licensed producer", "agricultural cannabis", "commercial greenhouses",
         "retail-related greenhouses", "greenhouse development charge",
         "greenhouse by-law", "greenhouse abatement",
+    ],
+    "🌱 Excess Soil & Fill Permit Fees": [
+        "site alteration fee", "site alteration permit fee", "fill permit fee",
+        "per cubic metre", "per cubic meter", "excess soil", "O. Reg. 406/19",
+        "topsoil import", "importation of fill", "large fill operation",
+        "road damage contribution", "site alteration by-law",
     ],
 }
 

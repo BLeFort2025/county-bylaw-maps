@@ -84,12 +84,13 @@ SHORT_DETAIL_FIELDS = {
         ("fee_calculation", "Fee Summary", 2.90),
     ],
     "SITE_ALT": [
-        ("farm_exemption", "Farm Exempt.", 0.68),
-        ("special_provision", "Special Prov.", 0.68),
-        ("nfp_exemption_scope", "NFP Scope", 1.54),
-        ("drainage_act_exempt", "Drainage Act", 0.72),
-        ("excess_soil_reg_406_19", "O. Reg. 406/19", 0.78),
-        ("fill_captures_ag_materials", "Fill Ag Risk", 1.15),
+        ("farm_exemption", "Farm Exempt.", 0.62),
+        ("nfp_exemption_scope", "NFP Scope", 1.25),
+        ("excess_soil_reg_406_19", "O. Reg. 406/19", 0.68),
+        ("fill_captures_ag_materials", "Fill Ag Risk", 0.90),
+        ("ag_import_fee_status", "Ag Import Fee", 1.00),
+        ("per_m3_rate", "$/m³", 0.58),
+        ("est_fee_15000_m3", "15k m³ Est.", 0.72),
     ],
     "LGD": [
         ("has_lgd_definition", "LGD Def.", 0.78),
@@ -149,6 +150,10 @@ LONG_WORDING_FIELDS = {
         ("exception_wording", "Farm Exception Wording"),
         ("guidelines_wording", "Bylaw Purpose & Guidelines"),
         ("exemption_wording", "General Exemption Wording"),
+        ("fees_bylaw_name", "Site Alteration Fees / User Fee By-law"),
+        ("fee_formula_notes", "Site Alteration Fee Schedule & Rules"),
+        ("security_deposit_terms", "Security Deposit & Road Damage Terms"),
+        ("peer_review_recovery", "Peer Review & Testing Cost Recovery"),
         ("expiry_notes", "Expiry Notes"),
         ("other_notes", "Additional Notes"),
     ],
@@ -950,7 +955,9 @@ def _add_category_detail(doc, cat_code, cat_bylaws, details_df, include_full_wor
                 "apportionment_bylaw",
                 "nfp_exemption_scope",
                 "fill_captures_ag_materials",
+                "ag_import_fee_status",
                 "pricing_model",
+                "fee_pricing_model",
             }
             center_cols = [idx + 1 for idx, (f, _, _) in enumerate(short_fields) if f not in left_fields]
 
@@ -981,7 +988,15 @@ def _add_category_detail(doc, cat_code, cat_bylaws, details_df, include_full_wor
                                     val += "0"
                             except Exception:
                                 val = _clean(raw_val, single_line=True)
-                    elif field in ("est_2500_shed", "est_10000_barn", "est_10000_shed", "est_20000_barn", "base_fee", "min_fee", "flat_fee"):
+                    elif field == "per_m3_rate":
+                        if _is_empty(raw_val):
+                            val = "—"
+                        else:
+                            try:
+                                val = f"${float(raw_val):,.2f}/m³"
+                            except Exception:
+                                val = _clean(raw_val, single_line=True)
+                    elif field in ("est_2500_shed", "est_10000_barn", "est_10000_shed", "est_20000_barn", "base_fee", "min_fee", "flat_fee", "base_fee_small", "base_fee_large", "est_fee_500_m3", "est_fee_5000_m3", "est_fee_15000_m3"):
                         if _is_empty(raw_val):
                             val = "—"
                         else:

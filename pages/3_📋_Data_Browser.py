@@ -90,6 +90,7 @@ if selected_cat == "DC":
 
 sa_nfp_filter = "All"
 sa_policy_filter = "All"
+sa_fee_filter = "All"
 if selected_cat == "SITE_ALT":
     sa_nfp_filter = st.sidebar.selectbox(
         "🚜 NFP Exemption Scope",
@@ -111,6 +112,18 @@ if selected_cat == "SITE_ALT":
             "📋 References O. Reg. 406/19",
             "⚠️ Fill Captures Sod / Compost / Manure",
             "🔴 Fill Captures Compost or Manure",
+        ],
+        index=0,
+    )
+    sa_fee_filter = st.sidebar.selectbox(
+        "💰 Excess Soil / Fill Fee Filter",
+        [
+            "All",
+            "✅ Verified Fee Schedules Only",
+            "💵 Charges Per-m³ Volumetric Rate",
+            "🟢 Farm Exempt ($0) / Waiver",
+            "⚖️ Volume-Capped or Reduced Farm Tier",
+            "🚫 Out-of-Municipality Fill Ban",
         ],
         index=0,
     )
@@ -234,6 +247,20 @@ if selected_cat == "SITE_ALT":
             df = df[df["fill_captures_ag_materials"].fillna("").isin(["Sod", "Compost or Manure", "Sod + Compost/Manure"])]
         elif sa_policy_filter == "🔴 Fill Captures Compost or Manure" and "fill_captures_ag_materials" in df.columns:
             df = df[df["fill_captures_ag_materials"].fillna("").isin(["Compost or Manure", "Sod + Compost/Manure"])]
+    if sa_fee_filter != "All":
+        _fvs = df["fee_verification_status"].fillna("").astype(str) if "fee_verification_status" in df.columns else pd.Series("", index=df.index)
+        _ags = df["ag_import_fee_status"].fillna("").astype(str) if "ag_import_fee_status" in df.columns else pd.Series("", index=df.index)
+        if sa_fee_filter == "✅ Verified Fee Schedules Only":
+            df = df[_fvs.str.startswith("Verified")]
+        elif sa_fee_filter == "💵 Charges Per-m³ Volumetric Rate" and "per_m3_rate" in df.columns:
+            _pm3 = pd.to_numeric(df["per_m3_rate"], errors="coerce")
+            df = df[_pm3.notna() & _pm3.gt(0)]
+        elif sa_fee_filter == "🟢 Farm Exempt ($0) / Waiver":
+            df = df[_ags.isin(["Exempt ($0)", "Waiver Available ($0 App Fee)"])]
+        elif sa_fee_filter == "⚖️ Volume-Capped or Reduced Farm Tier":
+            df = df[_ags.isin(["Exempt up to Volume Cap", "Reduced Farm Tier"])]
+        elif sa_fee_filter == "🚫 Out-of-Municipality Fill Ban" and "out_of_muni_fill_ban" in df.columns:
+            df = df[df["out_of_muni_fill_ban"].fillna("").astype(str).str.strip().str.lower().isin(["yes", "restricted"])]
 
 if selected_cat == "BLDG_FEES":
     vs_s = df["verification_status"].fillna("").astype(str) if "verification_status" in df.columns else pd.Series("", index=df.index)
@@ -316,6 +343,17 @@ elif selected_cat == "SITE_ALT" or partial_count > 0:
     col3.metric(no_label, no_count)
     col4.metric("❓ N/A / Unknown", na_count)
     col5.metric("📅 Has Expiry Date", has_expiry)
+    if selected_cat == "SITE_ALT" and "fee_verification_status" in df.columns:
+        _sa_ver = int(df["fee_verification_status"].fillna("").astype(str).str.startswith("Verified").sum())
+        _sa_m3 = pd.to_numeric(df.get("per_m3_rate"), errors="coerce").dropna()
+        _sa_15k = pd.to_numeric(df.get("est_fee_15000_m3"), errors="coerce").dropna()
+        if _sa_ver > 0:
+            _parts = [f"💰 **Verified Fee Schedules:** {_sa_ver}"]
+            if len(_sa_m3):
+                _parts.append(f"**Per-m³ Rates:** {len(_sa_m3)} (median ${_sa_m3.median():.2f}/m³)")
+            if len(_sa_15k):
+                _parts.append(f"**Median 15,000 m³ Farm Est.:** ${_sa_15k.median():,.0f}")
+            st.caption("  •  ".join(_parts))
 else:
     col1, col1a, col2, col3, col4, col5 = st.columns(6)
     col1.metric("Total Shown", total)
@@ -365,6 +403,21 @@ CATEGORY_DETAIL_COLS = {
         "drainage_act_exempt":        "Drainage Act Exempt",
         "excess_soil_reg_406_19":     "O. Reg. 406/19",
         "fill_captures_ag_materials": "Fill Captures Ag Materials",
+        "fee_verification_status":    "Fee Audit Status",
+        "fee_year":                   "Fee Year",
+        "ag_import_fee_status":       "Ag Import Fee Status",
+        "ag_exempt_volume_cap_m3":    "Ag Exempt Cap (m³)",
+        "out_of_muni_fill_ban":       "Out-of-Muni Fill Ban",
+        "fee_pricing_model":          "Fee Pricing Model",
+        "per_m3_rate":                "Rate ($/m³)",
+        "est_fee_500_m3":             "Est. 500 m³",
+        "est_fee_5000_m3":            "Est. 5k m³",
+        "est_fee_15000_m3":           "Est. 15k m³",
+        "fees_bylaw_name":            "Fees Bylaw",
+        "fees_bylaw_link":            "Fees Bylaw Link",
+        "security_deposit_terms":     "Security / Deposit",
+        "peer_review_recovery":       "Peer Review Recovery",
+        "fee_formula_notes":          "Fee Formula Notes",
         "special_provision":          "Special Provision",
         "guidelines_wording":         "Guidelines Wording",
         "exception_wording":          "Exception Wording",
@@ -498,6 +551,25 @@ if selected_cat == "BLDG_FEES":
             lambda v: str(int(v)) if pd.notna(v) else "—"
         )
 
+if selected_cat == "SITE_ALT":
+    for _c in ("Est. 500 m³", "Est. 5k m³", "Est. 15k m³"):
+        if _c in display_df.columns:
+            display_df[_c] = pd.to_numeric(display_df[_c], errors="coerce").map(
+                lambda v: f"${v:,.0f}" if pd.notna(v) else "—"
+            )
+    if "Rate ($/m³)" in display_df.columns:
+        display_df["Rate ($/m³)"] = pd.to_numeric(display_df["Rate ($/m³)"], errors="coerce").map(
+            lambda v: f"${v:,.2f}/m³" if pd.notna(v) else "—"
+        )
+    if "Ag Exempt Cap (m³)" in display_df.columns:
+        display_df["Ag Exempt Cap (m³)"] = pd.to_numeric(display_df["Ag Exempt Cap (m³)"], errors="coerce").map(
+            lambda v: f"{v:,.0f} m³" if pd.notna(v) else "—"
+        )
+    if "Fee Year" in display_df.columns:
+        display_df["Fee Year"] = pd.to_numeric(display_df["Fee Year"], errors="coerce").map(
+            lambda v: str(int(v)) if pd.notna(v) else "—"
+        )
+
 # Clean up NaN/None values to display as "—" instead of "nan"
 display_df = display_df.fillna("—")
 display_df = display_df.replace({"nan": "—", "None": "—", "none": "—", "": "—"})
@@ -508,11 +580,11 @@ st.subheader(f"📊 {selected_label} — {total} Municipalities")
 # Highlight function for exemption status and Yes/No fields
 def highlight_status(val):
     v = str(val).strip()
-    if v in ("Yes", "✅ Explicitly Exempt", "Full NFP / Fill & Grading", "None Flagged"):
+    if v in ("Yes", "✅ Explicitly Exempt", "Full NFP / Fill & Grading", "None Flagged", "Exempt ($0)"):
         return "background-color: #d4edda; color: #155724"
-    elif v in ("No", "❌ Explicitly Excluded", "No Farm Exemption", "No NFP Exemption", "Sod + Compost/Manure", "Compost or Manure"):
+    elif v in ("No", "❌ Explicitly Excluded", "No Farm Exemption", "No NFP Exemption", "Sod + Compost/Manure", "Compost or Manure", "Standard Commercial Rate"):
         return "background-color: #f8d7da; color: #721c24"
-    elif v in ("Partial", "N/A", "NOT KNOWN", "⚠️ Silent (Standard Non-Res)", "Statutory Topsoil & Drainage Only", "Topsoil Removal Only", "Drainage Only", "Sod"):
+    elif v in ("Partial", "N/A", "NOT KNOWN", "⚠️ Silent (Standard Non-Res)", "Statutory Topsoil & Drainage Only", "Topsoil Removal Only", "Drainage Only", "Sod", "Exempt up to Volume Cap", "Reduced Farm Tier", "Waiver Available ($0 App Fee)", "Restricted"):
         return "background-color: #fff3cd; color: #856404"
     return ""
 
@@ -522,6 +594,7 @@ highlight_cols = [
     "Worker Housing Treatment",
     "NFP Exemption Scope",
     "Fill Captures Ag Materials",
+    "Ag Import Fee Status",
 ]
 for raw_col, nice_name in detail_map.items():
     if raw_col in YES_NO_DETAIL_FIELDS and nice_name in display_df.columns:
@@ -538,7 +611,8 @@ st.dataframe(
     use_container_width=True, 
     height=500,
     column_config={
-        "Bylaw Link": st.column_config.LinkColumn("Bylaw Link")
+        "Bylaw Link": st.column_config.LinkColumn("Bylaw Link"),
+        "Fees Bylaw Link": st.column_config.LinkColumn("Fees Bylaw Link"),
     }
 )
 

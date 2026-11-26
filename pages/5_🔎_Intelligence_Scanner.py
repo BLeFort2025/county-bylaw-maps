@@ -123,6 +123,8 @@ def _infer_category_for_keyword(keyword: str) -> str:
         if any(kw_low == p.lower() for p in phrases):
             if "Worker Housing" in pack_name or "Greenhouse" in pack_name:
                 return "DC"
+            if "Excess Soil" in pack_name or "Fill Permit" in pack_name:
+                return "SITE_ALT"
             if "ALTO" in pack_name:
                 return "ALTO_RAIL"
             if "Plant-Based" in pack_name:
@@ -133,7 +135,7 @@ def _infer_category_for_keyword(keyword: str) -> str:
         return "DC"
     if any(t in kw_low for t in ("stormwater", "drainage", "runoff")):
         return "STORMWATER"
-    if any(t in kw_low for t in ("site alteration", "fill", "topsoil")):
+    if any(t in kw_low for t in ("site alteration", "fill", "topsoil", "excess soil", "406/19", "cubic metre", "cubic meter", "road damage contribution")):
         return "SITE_ALT"
     if any(t in kw_low for t in ("tree", "woodland", "forest")):
         return "TREES"

@@ -22,6 +22,7 @@ from letter_engine import (
 )
 from db_utils import get_connection
 from bldg_fees_calc import evaluate_bldg_fee, fee_cost_tier_rgba
+from site_alt_fees_calc import evaluate_site_alt_fee
 
 st.set_page_config(page_title="Lower Tier Bylaw Exemptions Map", layout="wide")
 
@@ -445,6 +446,21 @@ label_to_col = {v: k for k, v in display_labels.items()}
 selected_label = st.sidebar.selectbox("Bylaw", list(display_labels.values()), index=0)
 selected_col = label_to_col[selected_label]
 is_bldg_fees = (selected_label == "Farm Building Permit Fees")
+is_site_alt = (selected_label == "Farm Exemption for SA")
+
+# Site Alteration & Excess Soil: Interactive Topsoil Import Estimator controls
+sa_volume_m3 = 15000
+if is_site_alt:
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🧮 Topsoil Import Fee Estimator")
+    sa_volume_m3 = st.sidebar.slider(
+        "Imported Clean Topsoil Volume (m³)",
+        min_value=500,
+        max_value=25000,
+        value=15000,
+        step=500,
+        help="Estimates municipal Site Alteration permit fees live for verified fee schedules (e.g., 14,000–15,000 m³ large farm topsoil import).",
+    )
 
 # Farm Building Permit Fees: Interactive Estimator & Cost-Tier controls
 bf_bldg_type = "🐄 Livestock Barn"
@@ -617,6 +633,37 @@ if is_bldg_fees:
     gdf_all["__COLOR__"] = _bf_colors
 else:
     gdf_all["__COLOR__"] = gdf_all["__STATUS__"].apply(status_color)
+
+if is_site_alt:
+    _sa_est_disp, _sa_ag_status_disp = [], []
+    for _, _row in gdf_all.iterrows():
+        _sa_pay = {
+            "fee_verification_status": _row.get("SA Fee Verification Status", ""),
+            "ag_import_fee_status": _row.get("SA Ag Import Fee Status", ""),
+            "ag_exempt_volume_cap_m3": _row.get("SA Ag Exempt Volume Cap m3", ""),
+            "fee_pricing_model": _row.get("SA Fee Pricing Model", ""),
+            "base_fee_small": _row.get("SA Base Fee Small", ""),
+            "base_fee_large": _row.get("SA Base Fee Large", ""),
+            "per_m3_rate": _row.get("SA Per m3 Rate", ""),
+            "fee_calc_spec_json": _row.get("SA Fee Calc Spec JSON", ""),
+        }
+        _sa_val = evaluate_site_alt_fee(_sa_pay, sa_volume_m3)
+        _sa_fvs = str(_row.get("SA Fee Verification Status", "") or "").strip()
+        _sa_ags = str(_row.get("SA Ag Import Fee Status", "") or "").strip()
+        _sa_pm = str(_row.get("SA Fee Pricing Model", "") or "").strip()
+        if _sa_val is not None:
+            _sa_est_disp.append(f"${_sa_val:,.0f}")
+        elif "hectare" in _sa_pm.lower():
+            _sa_est_disp.append("Area-Based ($/ha)")
+        elif "no bylaw" in _sa_fvs.lower() or "no bylaw" in _sa_ags.lower():
+            _sa_est_disp.append("No Bylaw ($0)")
+        elif _sa_fvs:
+            _sa_est_disp.append(_sa_fvs)
+        else:
+            _sa_est_disp.append("Pending Fee Audit")
+        _sa_ag_status_disp.append(_sa_ags or "—")
+    gdf_all["__SA_FEE_DISPLAY__"] = _sa_est_disp
+    gdf_all["__SA_AG_FEE_STATUS__"] = _sa_ag_status_disp
 
 # Add expiry + signal columns for the current selection (outlines + tooltip/sidebar metadata)
 gdf_all = add_expiry_signal_columns(gdf_all, selected_label)
@@ -875,6 +922,21 @@ if is_bldg_fees:
         "__LINE_WIDTH__",
         geom_col,
     ]
+elif is_site_alt:
+    prop_cols = [
+        name_field,
+        "__STATUS__",
+        "__SA_AG_FEE_STATUS__",
+        "__SA_FEE_DISPLAY__",
+        "__COLOR__",
+        "__EXPIRY__",
+        "__SIGNAL__",
+        "__BYLAW_NAME__",
+        "__BYLAW_LINK__",
+        "__BORDER_COLOR__",
+        "__LINE_WIDTH__",
+        geom_col,
+    ]
 props_df = gdf_view[prop_cols].copy()
 
 # Create GeoJSON from the VIEW
@@ -908,6 +970,15 @@ _tooltip_text = (
         "By-law: {__BYLAW_NAME__}"
     )
     if is_bldg_fees
+    else (
+        f"{{{name_field}}}\n"
+        "Status: {__STATUS__}\n"
+        "Ag Import Fee Status: {__SA_AG_FEE_STATUS__}\n"
+        f"Est. Permit Fee ({sa_volume_m3:,} m³): {{__SA_FEE_DISPLAY__}}\n"
+        "Expiry: {__EXPIRY__}\n"
+        "Bylaw: {__BYLAW_NAME__}"
+    )
+    if is_site_alt
     else (
         f"{{{name_field}}}\n"
         "Status: {__STATUS__}\n"
@@ -1003,6 +1074,47 @@ if len(detail_row) == 1:
     else:
         st.sidebar.markdown(f"**Status:** {str(r.get('__STATUS__', 'N/A') or 'N/A')}")
         st.sidebar.markdown(f"**Expiry signal:** {str(r.get('__SIGNAL__', '') or '').strip() or '—'}")
+        if is_site_alt:
+            _sa_fvs = str(r.get("SA Fee Verification Status", "") or "").strip()
+            _sa_fy = str(r.get("SA Fee Year", "") or "").strip().split(".")[0]
+            _sa_ags = str(r.get("SA Ag Import Fee Status", "") or "").strip()
+            _sa_pm = str(r.get("SA Fee Pricing Model", "") or "").strip()
+            _sa_rate = str(r.get("SA Per m3 Rate", "") or "").strip()
+            _sa_cap = str(r.get("SA Ag Exempt Volume Cap m3", "") or "").strip()
+            _sa_ban = str(r.get("SA Out-of-Muni Fill Ban", "") or "").strip()
+            _sa_fbn = str(r.get("SA Fees Bylaw Name", "") or "").strip()
+            _sa_fbl = str(r.get("SA Fees Bylaw Link", "") or "").strip()
+            _sa_sec = str(r.get("SA Security Deposit Terms", "") or "").strip()
+            _sa_peer = str(r.get("SA Peer Review Recovery", "") or "").strip()
+            _sa_fn = str(r.get("SA Fee Formula Notes", "") or "").strip()
+            if _sa_fvs and _sa_fvs != "N/A (No Bylaw)":
+                st.sidebar.markdown("---")
+                st.sidebar.markdown(f"**💰 Excess Soil / Fill Fees** ({_sa_fvs}{f' · {_sa_fy}' if _sa_fy and _sa_fy.lower() != 'nan' else ''})")
+                if _sa_ags:
+                    st.sidebar.markdown(f"**Ag Import Fee Status:** {_sa_ags}")
+                st.sidebar.metric(f"Est. Permit Fee ({sa_volume_m3:,} m³)", str(r.get("__SA_FEE_DISPLAY__", "—")))
+                if _sa_pm:
+                    st.sidebar.markdown(f"**Fee Pricing Model:** {_sa_pm}")
+                if _sa_rate and _sa_rate.lower() != "nan":
+                    try:
+                        st.sidebar.markdown(f"**Volumetric Rate:** ${float(_sa_rate):,.2f}/m³")
+                    except Exception:
+                        pass
+                if _sa_cap and _sa_cap.lower() != "nan":
+                    try:
+                        st.sidebar.markdown(f"**Ag Exempt Cap:** {float(_sa_cap):,.0f} m³")
+                    except Exception:
+                        pass
+                if _sa_ban and _sa_ban.lower() not in ("", "unknown"):
+                    st.sidebar.markdown(f"**Out-of-Muni Fill Ban:** {_sa_ban}")
+                if _sa_fbn:
+                    st.sidebar.markdown(f"**Fees By-law:** [{_sa_fbn}]({_sa_fbl})" if _sa_fbl else f"**Fees By-law:** {_sa_fbn}")
+                if _sa_sec:
+                    st.sidebar.markdown(f"**Security / Deposit:** {_sa_sec}")
+                if _sa_peer:
+                    st.sidebar.markdown(f"**Peer Review / Testing:** {_sa_peer}")
+                if _sa_fn:
+                    st.sidebar.info(_sa_fn)
 
     bylaw_name = str(r.get("__BYLAW_NAME__", "") or "").strip()
     enacted = str(r.get("__ENACTED__", "") or "").strip()
@@ -1379,6 +1491,36 @@ with st.expander("Results (filtered) – table + export", expanded=False):
                 "__BYLAW_LINK__": "Bylaw Link",
             }
         )
+    elif is_site_alt:
+        _sa_cols = [
+            name_field, "__STATUS__", "SA Fee Verification Status", "SA Ag Import Fee Status",
+            "__SA_FEE_DISPLAY__", "SA Per m3 Rate", "SA Ag Exempt Volume Cap m3",
+            "SA Out-of-Muni Fill Ban", "SA Fee Pricing Model",
+            "SA Est Fee 500 m3", "SA Est Fee 5000 m3", "SA Est Fee 15000 m3",
+            "SA Fees Bylaw Name", "SA Fees Bylaw Link",
+            "__BYLAW_NAME__", "__BYLAW_LINK__",
+        ]
+        _avail = [c for c in _sa_cols if c in gdf_match.columns]
+        table = gdf_match[_avail].copy().rename(
+            columns={
+                name_field: "Municipality",
+                "__STATUS__": "Farm Exemption",
+                "SA Fee Verification Status": "Fee Audit Status",
+                "SA Ag Import Fee Status": "Ag Import Fee Status",
+                "__SA_FEE_DISPLAY__": f"Est. ({sa_volume_m3:,} m³)",
+                "SA Per m3 Rate": "Rate ($/m³)",
+                "SA Ag Exempt Volume Cap m3": "Ag Exempt Cap (m³)",
+                "SA Out-of-Muni Fill Ban": "Out-of-Muni Ban",
+                "SA Fee Pricing Model": "Pricing Model",
+                "SA Est Fee 500 m3": "500 m³ Est.",
+                "SA Est Fee 5000 m3": "5k m³ Est.",
+                "SA Est Fee 15000 m3": "15k m³ Est.",
+                "SA Fees Bylaw Name": "Fees Bylaw",
+                "SA Fees Bylaw Link": "Fees Bylaw Link",
+                "__BYLAW_NAME__": "Site Alt. Bylaw",
+                "__BYLAW_LINK__": "Site Alt. Link",
+            }
+        )
     else:
         table = gdf_match[
             [name_field, "__STATUS__", "__EXPIRY__", "__SIGNAL__", "__BYLAW_NAME__", "__BYLAW_LINK__"]
@@ -1401,6 +1543,10 @@ with st.expander("Results (filtered) – table + export", expanded=False):
     st.download_button(
         "Download these results as CSV",
         data=csv_bytes,
-        file_name="farm_building_fees_map_results.csv" if is_bldg_fees else "bylaw_map_results.csv",
+        file_name=(
+            "farm_building_fees_map_results.csv" if is_bldg_fees
+            else "site_alteration_fees_map_results.csv" if is_site_alt
+            else "bylaw_map_results.csv"
+        ),
         mime="text/csv",
     )

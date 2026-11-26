@@ -226,6 +226,35 @@ META_BLDG_FEE_TEXT_COLS = [
 
 META_BLDG_FEE_COLS = META_BLDG_FEE_TEXT_COLS + META_BLDG_FEE_NUM_COLS
 
+META_SITE_ALT_NUM_COLS = [
+    "SA Ag Exempt Volume Cap m3",
+    "SA Base Fee Small", "SA Base Fee Large", "SA Per m3 Rate",
+    "SA Est Fee 500 m3", "SA Est Fee 5000 m3", "SA Est Fee 15000 m3",
+]
+
+META_SITE_ALT_TEXT_COLS = [
+    "SA NFP Exemption Scope", "SA Drainage Act Exempt", "SA O. Reg. 406/19",
+    "SA Fill Captures Ag Materials",
+    "SA Fee Verification Status", "SA Fee Year", "SA Fees Bylaw Name", "SA Fees Bylaw Link",
+    "SA Ag Import Fee Status", "SA Out-of-Muni Fill Ban", "SA Fee Pricing Model",
+    "SA Fee Calc Spec JSON", "SA Security Deposit Terms", "SA Peer Review Recovery",
+    "SA Fee Formula Notes",
+]
+
+META_SITE_ALT_COLS = META_SITE_ALT_TEXT_COLS + META_SITE_ALT_NUM_COLS
+
+def agg_sa_fee_status(values: pd.Series) -> str:
+    vals = [strip_nbsp_and_space(v) for v in values if strip_nbsp_and_space(v)]
+    if any(v.startswith("Verified") for v in vals):
+        return "Verified"
+    if any("Not Published" in v for v in vals):
+        return "Not Published Online"
+    if any(v == "Pending" for v in vals):
+        return "Pending"
+    if any("No Bylaw" in v for v in vals):
+        return "N/A (No Bylaw)"
+    return ""
+
 def _load_live_df(conn=None):
     """Fetch the live database wide dataframe and compute status columns."""
     from db_utils import get_connection, export_map_dataframe
@@ -261,7 +290,7 @@ def overlay_live_lower(gdf: gpd.GeoDataFrame, conn=None) -> gpd.GeoDataFrame:
     else:
         gdf = gdf.copy()
 
-    overlay_cols = [c for c in (status_cols + META_TEXT_COLS + META_EXPIRY_COLS + META_BLDG_FEE_COLS + ["Municipality Has Fence Bylaw"]) if c in df_dedup.columns]
+    overlay_cols = [c for c in (status_cols + META_TEXT_COLS + META_EXPIRY_COLS + META_BLDG_FEE_COLS + META_SITE_ALT_COLS + ["Municipality Has Fence Bylaw"]) if c in df_dedup.columns]
     for col in overlay_cols:
         gdf[col] = gdf["_MUNI_NAME"].map(df_dedup[col])
     return gdf
@@ -281,12 +310,18 @@ def _build_upper_agg_dict(tmp: pd.DataFrame, status_cols: list[str]) -> dict:
     for c in META_BLDG_FEE_TEXT_COLS:
         if c in tmp.columns:
             agg_dict[c] = agg_bf_status if c == "BF Verification Status" else agg_first_non_empty
+    for c in META_SITE_ALT_NUM_COLS:
+        if c in tmp.columns:
+            agg_dict[c] = agg_bf_median
+    for c in META_SITE_ALT_TEXT_COLS:
+        if c in tmp.columns:
+            agg_dict[c] = agg_sa_fee_status if c == "SA Fee Verification Status" else agg_first_non_empty
     return agg_dict
 
 
 def _apply_upper_direct_and_combined(upper_agg: pd.DataFrame, df: pd.DataFrame, status_cols: list[str]) -> pd.DataFrame:
     """Populate __DIRECT columns for Upper-Tier / Single-Tier view and include Upper-Tier direct status in Combined rollup."""
-    all_meta_cols = [c for c in (META_TEXT_COLS + META_EXPIRY_COLS + META_BLDG_FEE_COLS) if c in upper_agg.columns]
+    all_meta_cols = [c for c in (META_TEXT_COLS + META_EXPIRY_COLS + META_BLDG_FEE_COLS + META_SITE_ALT_COLS) if c in upper_agg.columns]
 
     # Default __DIRECT columns to the rollup values (which for Single-Tier municipalities are their own values)
     for sc in status_cols:
@@ -319,6 +354,13 @@ def _apply_upper_direct_and_combined(upper_agg: pd.DataFrame, df: pd.DataFrame, 
                             upper_agg.at[idx, f"{mc}__DIRECT"] = val
                             if val and strip_nbsp_and_space(up_row.get("BF Has Farm Tier", "")).lower() == "yes":
                                 if mc not in META_BLDG_FEE_NUM_COLS or not strip_nbsp_and_space(r.get(mc, "")):
+                                    upper_agg.at[idx, mc] = val
+                        elif mc.startswith("SA "):
+                            # For Site Alteration fee & policy metadata, __DIRECT reflects Upper Tier's own row;
+                            # Combined preserves Lower-Tier rollup unless the Upper Tier itself has a Site Alt bylaw.
+                            upper_agg.at[idx, f"{mc}__DIRECT"] = val
+                            if val and strip_nbsp_and_space(up_row.get("Bylaw Name Site Alteration", "")):
+                                if mc not in META_SITE_ALT_NUM_COLS or not strip_nbsp_and_space(r.get(mc, "")):
                                     upper_agg.at[idx, mc] = val
                         elif val and val.lower() not in ("see local municipalities", "(no bylaw)", "(no fence bylaw)"):
                             upper_agg.at[idx, f"{mc}__DIRECT"] = val
@@ -354,7 +396,7 @@ def overlay_live_upper(upper_gdf: gpd.GeoDataFrame, lower_parquet_path: str = LO
         direct_c = f"{c}__DIRECT"
         if direct_c in upper_agg_idx.columns:
             upper_gdf[direct_c] = upper_gdf["_UPPER_NAME"].map(upper_agg_idx[direct_c]).fillna("NOT KNOWN")
-    for c in (META_TEXT_COLS + META_EXPIRY_COLS + META_BLDG_FEE_COLS):
+    for c in (META_TEXT_COLS + META_EXPIRY_COLS + META_BLDG_FEE_COLS + META_SITE_ALT_COLS):
         if c in upper_agg_idx.columns:
             upper_gdf[c] = upper_gdf["_UPPER_NAME"].map(upper_agg_idx[c]).fillna("")
         direct_c = f"{c}__DIRECT"
@@ -443,7 +485,7 @@ def main():
             if c in upper.columns: upper[c] = upper[c].fillna("NOT KNOWN")
             direct_c = f"{c}__DIRECT"
             if direct_c in upper.columns: upper[direct_c] = upper[direct_c].fillna("NOT KNOWN")
-        for c in (META_TEXT_COLS + META_EXPIRY_COLS + META_BLDG_FEE_COLS):
+        for c in (META_TEXT_COLS + META_EXPIRY_COLS + META_BLDG_FEE_COLS + META_SITE_ALT_COLS):
             if c in upper.columns: upper[c] = upper[c].fillna("")
             direct_c = f"{c}__DIRECT"
             if direct_c in upper.columns: upper[direct_c] = upper[direct_c].fillna("")
