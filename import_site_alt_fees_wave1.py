@@ -167,8 +167,13 @@ def ingest_wave1(conn: sqlite3.Connection) -> tuple[int, int]:
     return munis_updated, fields_updated
 
 
-def export_qa_workbook(conn: sqlite3.Connection) -> None:
-    """Export OFA-branded Wave 1 Site Alteration & Excess Soil Fees QA Workbook."""
+def export_qa_workbook(
+    conn: sqlite3.Connection,
+    out_path: str | None = None,
+    title_label: str | None = None,
+) -> None:
+    """Export OFA-branded Site Alteration & Excess Soil Fees QA Workbook."""
+    target_xlsx = out_path or QA_XLSX
     cur = conn.cursor()
     rows = [
         dict(r)
@@ -229,7 +234,7 @@ def export_qa_workbook(conn: sqlite3.Connection) -> None:
 
     today_str = datetime.date.today().isoformat()
     ws.merge_cells("A1:J1")
-    ws["A1"] = "OFA Municipal Site Alteration & Excess Topsoil Permit Fees — Wave 1 QA Workbook"
+    ws["A1"] = title_label or "OFA Municipal Site Alteration & Excess Topsoil Permit Fees — Province-Wide QA Workbook"
     ws["A1"].font = f_title
     ws["A1"].fill = fill_red
     ws["A1"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
@@ -237,8 +242,8 @@ def export_qa_workbook(conn: sqlite3.Connection) -> None:
 
     ws.merge_cells("A2:J2")
     ws["A2"] = (
-        f"Province-Wide Audit of Non-Fully-Exempt Site Alteration By-laws + 100% of Durham Region | "
-        f"{len(audited)} Municipalities Audited (Pilot + Wave 1) | Primary Enacted Sources Only | Generated {today_str}"
+        f"Province-Wide Audit of Ontario Site Alteration & Excess Soil By-laws | "
+        f"{len(audited)} of {len(rows)} Site Alteration Municipalities Audited | Primary Enacted Sources Only | Generated {today_str}"
     )
     ws["A2"].font = f_sub
     ws["A2"].fill = fill_slate
@@ -520,8 +525,8 @@ def export_qa_workbook(conn: sqlite3.Connection) -> None:
     for ci, w in enumerate([18, 24, 22, 22, 16, 26, 68], 1):
         ws3.column_dimensions[get_column_letter(ci)].width = w
 
-    wb.save(QA_XLSX)
-    print(f"Exported OFA-branded QA workbook: {QA_XLSX} ({os.path.getsize(QA_XLSX):,} bytes)")
+    wb.save(target_xlsx)
+    print(f"Exported OFA-branded QA workbook: {target_xlsx} ({os.path.getsize(target_xlsx):,} bytes)")
 
 
 def main() -> None:

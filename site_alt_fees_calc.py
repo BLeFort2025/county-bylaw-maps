@@ -100,6 +100,8 @@ def _eval_spec(spec: dict, volume_m3: float) -> float | None:
             if in_bracket:
                 if b.get("exempt"):
                     return 0.0
+                if b.get("area_based") or b.get("not_published") or b.get("unpriced"):
+                    return None
                 if b.get("flat_fee") is not None:
                     return round(float(_to_float(b.get("flat_fee")) or 0.0), 2)
                 base = _to_float(b.get("base")) or 0.0
