@@ -11,6 +11,7 @@ Used across:
 from __future__ import annotations
 
 import json
+import math
 from typing import Any
 
 SQFT_PER_M2 = 10.7639104
@@ -100,12 +101,18 @@ def _eval_spec(
 
     if stype == "excess_over":
         # e.g. Norwich / Plympton-Wyoming: base + rate * max(0, sqft - threshold)
+        # Optional `step_sqft` rounds excess up to whole increments ("or part thereof", e.g. Calvin per 10 m²)
         branch = spec.get("livestock" if is_livestock else "other_farm") or spec
         base = _to_float(branch.get("base")) or 0.0
         thresh = _to_float(branch.get("threshold_sqft")) or 0.0
         rate = _to_float(branch.get("rate")) or 0.0
+        step = _to_float(branch.get("step_sqft"))
         mn = _to_float(branch.get("min_fee")) or 0.0
-        val = base + max(0.0, float(sqft) - thresh) * rate
+        excess = max(0.0, float(sqft) - thresh)
+        if step is not None and step > 0:
+            val = base + math.ceil(excess / step) * rate
+        else:
+            val = base + excess * rate
         return round(max(mn, val), 2)
 
     if stype == "tiered_marginal":
