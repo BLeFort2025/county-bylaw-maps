@@ -56,7 +56,7 @@ AMBER_BG = "FFF3CD"
 
 PAGE_WIDTH_IN = 7.0           # 8.5" page with 0.75" left/right margins
 
-CATEGORY_ORDER = ["DC", "STORMWATER", "SITE_ALT", "LGD", "TREES", "CHICKENS", "FENCES"]
+CATEGORY_ORDER = ["DC", "STORMWATER", "SITE_ALT", "LGD", "TREES", "CHICKENS", "FENCES", "BLDG_FEES"]
 
 CATEGORY_NAMES = {
     "DC": "Development Charges",
@@ -66,6 +66,7 @@ CATEGORY_NAMES = {
     "TREES": "Tree / Forest Conservation",
     "CHICKENS": "Backyard Chickens",
     "FENCES": "Fence Bylaws",
+    "BLDG_FEES": "Farm Building Permit Fees",
 }
 
 # Structured, short scannable fields rendered in the category comparison table.
@@ -115,6 +116,15 @@ SHORT_DETAIL_FIELDS = {
         ("electrified_fencing_exemption", "Electric Exempt", 0.82),
         ("equal_apportionment", "Equal Apport.", 0.74),
         ("apportionment_bylaw", "Cost-Sharing Bylaw", 1.15),
+    ],
+    "BLDG_FEES": [
+        ("fee_year", "Year", 0.48),
+        ("pricing_model", "Pricing Model", 1.32),
+        ("rate_per_sqft_livestock", "Barn $/ft²", 0.72),
+        ("rate_per_sqft_other_farm", "Shed $/ft²", 0.72),
+        ("est_10000_barn", "10k Barn", 0.78),
+        ("est_10000_shed", "10k Shed", 0.78),
+        ("est_2500_shed", "2.5k Shed", 0.75),
     ],
 }
 
@@ -169,6 +179,15 @@ LONG_WORDING_FIELDS = {
         ("fence_notes", "Fence Bylaw Provisions & Notes"),
         ("exemption_wording", "Exemption Wording"),
         ("expiry_notes", "Expiry Notes"),
+        ("other_notes", "Additional Notes"),
+    ],
+    "BLDG_FEES": [
+        ("formula_notes", "Verified Fee Schedule & Formula"),
+        ("shared_authority", "Building Department / Authority"),
+        ("silo_grain_bin_fee", "Silo & Grain Bin Fees"),
+        ("manure_storage_fee", "Manure Storage Fees"),
+        ("greenhouse_tarp_fee", "Greenhouse / Tarped / Special Structures"),
+        ("refundable_deposit", "Deposits & Surcharges"),
         ("other_notes", "Additional Notes"),
     ],
 }
@@ -931,6 +950,7 @@ def _add_category_detail(doc, cat_code, cat_bylaws, details_df, include_full_wor
                 "apportionment_bylaw",
                 "nfp_exemption_scope",
                 "fill_captures_ag_materials",
+                "pricing_model",
             }
             center_cols = [idx + 1 for idx, (f, _, _) in enumerate(short_fields) if f not in left_fields]
 
@@ -941,6 +961,34 @@ def _add_category_detail(doc, cat_code, cat_bylaws, details_df, include_full_wor
                     raw_val = row.get(field)
                     if field == "welfare_requirements":
                         val = _clean(resolve_welfare_codes(raw_val)) if not _is_empty(raw_val) else "—"
+                    elif field == "fee_year":
+                        if _is_empty(raw_val):
+                            val = "—"
+                        else:
+                            try:
+                                val = str(int(float(raw_val)))
+                            except Exception:
+                                val = _clean(raw_val, single_line=True)
+                    elif field in ("rate_per_sqft_livestock", "rate_per_sqft_other_farm"):
+                        if _is_empty(raw_val):
+                            val = "—"
+                        else:
+                            try:
+                                val = f"${float(raw_val):.3f}".rstrip("0")
+                                if val.endswith("."):
+                                    val += "00"
+                                elif len(val.split(".")[1]) == 1:
+                                    val += "0"
+                            except Exception:
+                                val = _clean(raw_val, single_line=True)
+                    elif field in ("est_2500_shed", "est_10000_barn", "est_10000_shed", "est_20000_barn", "base_fee", "min_fee", "flat_fee"):
+                        if _is_empty(raw_val):
+                            val = "—"
+                        else:
+                            try:
+                                val = f"${float(raw_val):,.0f}"
+                            except Exception:
+                                val = _clean(raw_val, single_line=True)
                     elif field == "fees_bylaw_name":
                         fname = _clean(raw_val, single_line=True)
                         flink = _valid_url(row.get("fees_bylaw_link"))

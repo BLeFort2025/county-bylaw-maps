@@ -37,6 +37,7 @@ FULL_REPLACE_TABLES = [
     "details_trees",
     "details_chickens",
     "details_fences",
+    "details_bldg_fees",
     "contacts",
     "lookup_values",
     "provincial_acts",

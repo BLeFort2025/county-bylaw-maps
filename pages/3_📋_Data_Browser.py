@@ -35,6 +35,7 @@ CATEGORY_OPTIONS = {
     "Tree / Forest Conservation": "TREES",
     "Backyard Chickens":      "CHICKENS",
     "Fence Bylaws":           "FENCES",
+    "Farm Building Permit Fees": "BLDG_FEES",
 }
 
 CATEGORY_ICONS = {
@@ -45,6 +46,7 @@ CATEGORY_ICONS = {
     "TREES":     "🌲",
     "CHICKENS":  "🐔",
     "FENCES":    "🏡",
+    "BLDG_FEES": "🏚️",
 }
 
 
@@ -109,6 +111,32 @@ if selected_cat == "SITE_ALT":
             "📋 References O. Reg. 406/19",
             "⚠️ Fill Captures Sod / Compost / Manure",
             "🔴 Fill Captures Compost or Manure",
+        ],
+        index=0,
+    )
+
+bf_view_filter = "All"
+bf_feature_filter = "All"
+if selected_cat == "BLDG_FEES":
+    bf_view_filter = st.sidebar.selectbox(
+        "🏚️ Audit / Jurisdiction Filter",
+        [
+            "Verified Only (Pilot & Audited)",
+            "Dedicated Farm Tiers Only",
+            "Urban / No Farm Tier (ICI)",
+            "Upper Tier (Shared & Local)",
+            "All 444 Municipalities",
+        ],
+        index=0,
+    )
+    bf_feature_filter = st.sidebar.selectbox(
+        "⚙️ Fee Structure Highlights",
+        [
+            "All",
+            "🐄 Splits Livestock vs. Shed Rates",
+            "📘 2024 OBC Group G Split",
+            "⚠️ High Minimum Floor (≥ $1,000)",
+            "🤝 County / Shared Building Authority",
         ],
         index=0,
     )
@@ -207,6 +235,31 @@ if selected_cat == "SITE_ALT":
         elif sa_policy_filter == "🔴 Fill Captures Compost or Manure" and "fill_captures_ag_materials" in df.columns:
             df = df[df["fill_captures_ag_materials"].fillna("").isin(["Compost or Manure", "Sod + Compost/Manure"])]
 
+if selected_cat == "BLDG_FEES":
+    vs_s = df["verification_status"].fillna("").astype(str) if "verification_status" in df.columns else pd.Series("", index=df.index)
+    hft_s = df["has_farm_tier"].fillna("").astype(str) if "has_farm_tier" in df.columns else pd.Series("", index=df.index)
+    if bf_view_filter == "Verified Only (Pilot & Audited)":
+        df = df[vs_s.ne("Pending") & vs_s.ne("")]
+    elif bf_view_filter == "Dedicated Farm Tiers Only":
+        df = df[hft_s.str.strip().str.lower().eq("yes")]
+    elif bf_view_filter == "Urban / No Farm Tier (ICI)":
+        df = df[hft_s.str.strip().str.lower().str.startswith("no")]
+    elif bf_view_filter == "Upper Tier (Shared & Local)":
+        df = df[df["municipal_status"].fillna("").eq("Upper Tier")]
+
+    if bf_feature_filter == "🐄 Splits Livestock vs. Shed Rates":
+        rl = pd.to_numeric(df.get("rate_per_sqft_livestock"), errors="coerce")
+        ro = pd.to_numeric(df.get("rate_per_sqft_other_farm"), errors="coerce")
+        df = df[rl.notna() & ro.notna() & (rl - ro).abs().gt(0.001)]
+    elif bf_feature_filter == "📘 2024 OBC Group G Split":
+        df = df[df["has_obc_group_g_split"].fillna("").astype(str).str.strip().str.lower().eq("yes")]
+    elif bf_feature_filter == "⚠️ High Minimum Floor (≥ $1,000)":
+        mf = pd.to_numeric(df.get("min_fee"), errors="coerce")
+        df = df[mf.notna() & mf.ge(1000)]
+    elif bf_feature_filter == "🤝 County / Shared Building Authority":
+        sa_col = df["shared_authority"].fillna("").astype(str)
+        df = df[sa_col.str.contains("County|Joint|Shared", case=False, na=False)]
+
 # ── Metrics row ──
 total = len(df)
 has_expiry = len(df[df["expiry_date"].notna() & (df["expiry_date"] != "")])
@@ -241,7 +294,20 @@ else:
     no_count = len(df[df["exemption_status"] == "No"])
     na_count = len(df[df["exemption_status"].isin(["N/A", "NOT KNOWN"])])
 
-if selected_cat == "SITE_ALT" or partial_count > 0:
+if selected_cat == "BLDG_FEES":
+    _est_10k_b = pd.to_numeric(df.get("est_10000_barn"), errors="coerce").dropna()
+    _est_10k_s = pd.to_numeric(df.get("est_10000_shed"), errors="coerce").dropna()
+    _est_2500 = pd.to_numeric(df.get("est_2500_shed"), errors="coerce").dropna()
+    _farm_tiers = int((df.get("has_farm_tier", pd.Series(dtype=str)).fillna("").astype(str).str.strip().str.lower() == "yes").sum())
+    _urban_ici = int(df.get("has_farm_tier", pd.Series(dtype=str)).fillna("").astype(str).str.strip().str.lower().str.startswith("no").sum())
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1.metric("Municipalities Shown", total)
+    c2.metric("✅ Dedicated Farm Tier", _farm_tiers)
+    c3.metric("🐄 Median 10k Barn", f"${_est_10k_b.median():,.0f}" if len(_est_10k_b) else "—")
+    c4.metric("🚜 Median 10k Shed", f"${_est_10k_s.median():,.0f}" if len(_est_10k_s) else "—")
+    c5.metric("🔧 Median 2.5k Shed", f"${_est_2500.median():,.0f}" if len(_est_2500) else "—")
+    c6.metric("🏙️ Urban / No Farm Tier", _urban_ici)
+elif selected_cat == "SITE_ALT" or partial_count > 0:
     col1, col1a, col2, colp, col3, col4, col5 = st.columns(7)
     col1.metric("Total Shown", total)
     col1a.metric("🏛️ Has Bylaw", has_bylaw_count)
@@ -313,6 +379,23 @@ CATEGORY_DETAIL_COLS = {
         "roosters_allowed":     "Roosters Allowed",
         "licence_required":     "Licence Required",
         "welfare_requirements": "Welfare Requirements",
+    },
+    "BLDG_FEES": {
+        "verification_status":      "Audit Status",
+        "fee_year":                 "Fee Year",
+        "shared_authority":         "Building Authority",
+        "pricing_model":            "Pricing Model",
+        "rate_per_sqft_livestock":  "Barn $/ft²",
+        "rate_per_sqft_other_farm": "Shed $/ft²",
+        "min_fee":                  "Min Fee",
+        "est_2500_shed":            "Est. 2.5k Shed",
+        "est_10000_barn":           "Est. 10k Barn",
+        "est_10000_shed":           "Est. 10k Shed",
+        "est_20000_barn":           "Est. 20k Barn",
+        "silo_grain_bin_fee":       "Silo / Grain Bin",
+        "manure_storage_fee":       "Manure Storage",
+        "has_obc_group_g_split":    "2024 OBC Grp G",
+        "formula_notes":            "Verified Formula Notes",
     },
 }
 
@@ -399,6 +482,22 @@ rename_map.update(detail_map)
 
 display_df = df[display_cols].rename(columns=rename_map).reset_index(drop=True)
 
+if selected_cat == "BLDG_FEES":
+    for _c in ("Min Fee", "Est. 2.5k Shed", "Est. 10k Barn", "Est. 10k Shed", "Est. 20k Barn"):
+        if _c in display_df.columns:
+            display_df[_c] = pd.to_numeric(display_df[_c], errors="coerce").map(
+                lambda v: f"${v:,.0f}" if pd.notna(v) else "—"
+            )
+    for _c in ("Barn $/ft²", "Shed $/ft²"):
+        if _c in display_df.columns:
+            display_df[_c] = pd.to_numeric(display_df[_c], errors="coerce").map(
+                lambda v: f"${v:.3f}".rstrip("0").ljust(5, "0") if pd.notna(v) else "—"
+            )
+    if "Fee Year" in display_df.columns:
+        display_df["Fee Year"] = pd.to_numeric(display_df["Fee Year"], errors="coerce").map(
+            lambda v: str(int(v)) if pd.notna(v) else "—"
+        )
+
 # Clean up NaN/None values to display as "—" instead of "nan"
 display_df = display_df.fillna("—")
 display_df = display_df.replace({"nan": "—", "None": "—", "none": "—", "": "—"})
@@ -482,6 +581,8 @@ if muni_names:
             st.markdown(f"**Zone:** {muni_row['zone'] or '—'}")
             if muni_row["website"]:
                 st.markdown(f"**Website:** [{muni_row['website']}]({muni_row['website']})")
+            if muni_row["bylaw_page_link"]:
+                st.markdown(f"**By-law Directory:** [{muni_row['bylaw_page_link']}]({muni_row['bylaw_page_link']})")
         with info_col2:
             st.markdown(f"**Contact:** {muni_row['contact_name'] or '—'}")
             st.markdown(f"**Position:** {muni_row['contact_position'] or '—'}")

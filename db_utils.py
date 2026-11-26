@@ -177,6 +177,7 @@ def get_bylaws_with_details(conn, municipality_id, category):
         'TREES': 'details_trees',
         'CHICKENS': 'details_chickens',
         'FENCES': 'details_fences',
+        'BLDG_FEES': 'details_bldg_fees',
     }.get(category)
 
     if detail_table:
@@ -225,6 +226,7 @@ def get_category_summary(conn, category):
         'TREES': 'details_trees',
         'CHICKENS': 'details_chickens',
         'FENCES': 'details_fences',
+        'BLDG_FEES': 'details_bldg_fees',
     }.get(category)
 
     if detail_table:
@@ -371,7 +373,7 @@ def get_report_data(conn, scope='provincial', scope_value=None):
         'DC': 'details_dc', 'STORMWATER': 'details_stormwater',
         'SITE_ALT': 'details_site_alt', 'LGD': 'details_lgd',
         'TREES': 'details_trees', 'CHICKENS': 'details_chickens',
-        'FENCES': 'details_fences',
+        'FENCES': 'details_fences', 'BLDG_FEES': 'details_bldg_fees',
     }
     details = {}
     for cat, table in detail_tables.items():
@@ -436,6 +438,10 @@ def export_map_dataframe(conn) -> pd.DataFrame:
     trees_map = _fetch_cat_map("TREES",      "details_trees")
     chk_map   = _fetch_cat_map("CHICKENS",   "details_chickens")
     fen_map   = _fetch_cat_map("FENCES",     "details_fences")
+    try:
+        bf_map = _fetch_cat_map("BLDG_FEES", "details_bldg_fees")
+    except Exception:
+        bf_map = {}
 
     rows = []
     for _, m in munis.iterrows():
@@ -537,6 +543,38 @@ def export_map_dataframe(conn) -> pd.DataFrame:
             row["Link to Fence Bylaw"]                                   = d["bylaw_link"]
             row["Date Bylaw Enacted 8"]                                  = d["date_enacted"]
             row["Expiry Date 8"]                                         = d["expiry_date"]
+
+        # ── BLDG_FEES (Farm Building Permit Fees) ──
+        if mid in bf_map:
+            d = bf_map[mid]
+            row["Farm Building Permit Fees"]     = d["exemption_status"]
+            row["Bylaw Name Building Fees"]      = d["bylaw_name"]
+            row["Link to Building Fees Bylaw"]   = d["bylaw_link"]
+            row["Date Bylaw Enacted 9"]          = d["date_enacted"]
+            row["Expiry Date 9"]                 = d["expiry_date"]
+            row["BF Verification Status"]        = d.get("verification_status", "")
+            row["BF Fee Year"]                   = d.get("fee_year", "")
+            row["BF Doc Type"]                   = d.get("doc_type", "")
+            row["BF Shared Authority"]           = d.get("shared_authority", "")
+            row["BF Has Farm Tier"]              = d.get("has_farm_tier", "")
+            row["BF Pricing Model"]              = d.get("pricing_model", "")
+            row["BF Base Fee"]                   = d.get("base_fee", "")
+            row["BF Min Fee"]                    = d.get("min_fee", "")
+            row["BF Rate Livestock"]             = d.get("rate_per_sqft_livestock", "")
+            row["BF Rate Other Farm"]            = d.get("rate_per_sqft_other_farm", "")
+            row["BF Flat Fee"]                   = d.get("flat_fee", "")
+            row["BF Value Rate Per 1000"]        = d.get("value_rate_per_1000", "")
+            row["BF Calc Spec JSON"]             = d.get("calc_spec_json", "")
+            row["BF Est 2500 Shed"]              = d.get("est_2500_shed", "")
+            row["BF Est 10000 Barn"]             = d.get("est_10000_barn", "")
+            row["BF Est 10000 Shed"]             = d.get("est_10000_shed", "")
+            row["BF Est 20000 Barn"]             = d.get("est_20000_barn", "")
+            row["BF Silo Grain Bin Fee"]         = d.get("silo_grain_bin_fee", "")
+            row["BF Manure Storage Fee"]         = d.get("manure_storage_fee", "")
+            row["BF Greenhouse Tarp Fee"]        = d.get("greenhouse_tarp_fee", "")
+            row["BF Refundable Deposit"]         = d.get("refundable_deposit", "")
+            row["BF OBC Group G Split"]          = d.get("has_obc_group_g_split", "")
+            row["BF Formula Notes"]              = d.get("formula_notes", "")
 
         rows.append(row)
 
@@ -902,6 +940,7 @@ CATEGORY_LABELS_MAP = {
     "TREES": "Tree / Forest Conservation",
     "CHICKENS": "Backyard Chickens",
     "FENCES": "Fence Bylaws",
+    "BLDG_FEES": "Farm Building Permit Fees",
 }
 
 

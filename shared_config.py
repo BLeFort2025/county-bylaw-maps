@@ -20,6 +20,7 @@ BYLAW_CATEGORIES = [
     ("TREES",     "Tree / Forest Conservation"),
     ("CHICKENS",  "Backyard Chickens"),
     ("FENCES",    "Fence Bylaws"),
+    ("BLDG_FEES", "Farm Building Permit Fees"),
 ]
 
 # ──────────────────────────────────────────────────────────────────
@@ -112,11 +113,23 @@ KEYWORD_CONFIG = {
         "Fence Viewer",
         "Fence-Viewer",
     ],
+    "BLDG_FEES": [
+        "Building Permit Fees",
+        "Building Permit Fee",
+        "Building By-law",
+        "Building Code Act",
+        "Building Reserve Fund",
+        "Farm Building Permit",
+        "Agricultural Building Permit",
+        "Fees and Charges By-law",
+        "Group G",
+        "Section 7 Public Meeting",
+    ],
 }
 
 
 # ──────────────────────────────────────────────────────────────────
-# CORE OFA BYLAW CATEGORY PACKS (7 core categories tracked on maps)
+# CORE OFA BYLAW CATEGORY PACKS (8 core categories tracked on maps)
 # ──────────────────────────────────────────────────────────────────
 OFA_BYLAW_CATEGORY_PACKS = {
     "🏗️ Development Charges": KEYWORD_CONFIG["DC"],
@@ -126,6 +139,7 @@ OFA_BYLAW_CATEGORY_PACKS = {
     "🐔 Backyard Chickens": KEYWORD_CONFIG["CHICKENS"],
     "🐕 Livestock Guardian Dogs": KEYWORD_CONFIG["LGD"],
     "🚧 Fence Bylaws": KEYWORD_CONFIG["FENCES"],
+    "🏚️ Farm Building Permit Fees": KEYWORD_CONFIG["BLDG_FEES"],
 }
 
 # ──────────────────────────────────────────────────────────────────

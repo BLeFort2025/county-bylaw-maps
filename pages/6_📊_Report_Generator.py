@@ -72,7 +72,7 @@ if scope_key == "provincial":
     )
     st.caption(
         "Includes: Executive Summary · Exemption Scorecard · "
-        "County-level Category Summaries (×7) · Intelligence Alerts · "
+        "County-level Category Summaries (×8) · Intelligence Alerts · "
         "Advocacy Priority Matrix (Top 30) · Methodology"
     )
 
@@ -84,7 +84,7 @@ elif scope_key == "county":
     st.info(f"**{scope_value}** report covering **{count}** municipalities.")
     st.caption(
         "Includes: Executive Summary · Exemption Scorecard · "
-        "Municipality-level Comparison Tables & Full Verbatim Bylaw Wordings/Notes (×7) · "
+        "Municipality-level Comparison Tables & Full Verbatim Bylaw Wordings/Notes (×8) · "
         "Individual Municipality Profiles · Intelligence Alerts · "
         "Advocacy Priority Matrix · Methodology"
     )
@@ -92,7 +92,7 @@ elif scope_key == "county":
 else:
     st.info(f"Detailed report for **{scope_value}**.")
     st.caption(
-        "Includes: Executive Summary · All 7 Category Deep-Dives with "
+        "Includes: Executive Summary · All 8 Category Deep-Dives with "
         "Comparison Tables & Full Verbatim Bylaw Wordings/Notes · Intelligence Alerts · Methodology"
     )
 

@@ -21,6 +21,7 @@ from letter_engine import (
     log_advocacy_action, get_advocacy_stats, build_cover_email_body
 )
 from db_utils import get_connection
+from bldg_fees_calc import evaluate_bldg_fee, fee_cost_tier_rgba
 
 st.set_page_config(page_title="Upper Tier Bylaw Exemptions Map", layout="wide")
 
@@ -262,6 +263,12 @@ META_BY_LABEL: dict[str, dict[str, str]] = {
         "enacted": "Date Bylaw Enacted 8",
         "expiry": "",
     },
+    "Farm Building Permit Fees": {
+        "bylaw_name": "Bylaw Name Building Fees",
+        "bylaw_link": "Link to Building Fees Bylaw",
+        "enacted": "Date Bylaw Enacted 9",
+        "expiry": "Expiry Date 9",
+    },
 }
 
 # --- SINGLE SOURCE OF TRUTH: Map sidebar labels -> scanner categories ---
@@ -280,6 +287,7 @@ LAYER_TO_CATEGORY = {
     "LGD and HD Exempt from Barking Restrictions": "LGD",
     "Farm Exemption for Security fencing prohibitions": "FENCES",
     "Farm Exemption for Electrified fencing prohibitions": "FENCES",
+    "Farm Building Permit Fees": "BLDG_FEES",
 }
 
 def _safe_series(df: pd.DataFrame, col: str) -> pd.Series:
@@ -373,26 +381,53 @@ label_to_col = {v: k for k, v in display_labels.items()}
 
 selected_label = st.sidebar.selectbox("Bylaw", list(display_labels.values()), index=0)
 selected_col = label_to_col[selected_label]
+is_bldg_fees = (selected_label == "Farm Building Permit Fees")
 
 view_mode = st.sidebar.radio(
     "Jurisdiction mode",
     ["Combined (County + Lower-Tier Rollup)", "Upper-Tier / Regional Bylaws Only"],
     index=0,
     help=(
-        "Combined shows the worst-case rollup across the County/Region and its local municipalities. "
-        "Upper-Tier Only shows bylaws enacted directly by the County, Region, or Single-Tier municipality."
+        "Combined shows the county rollup across local municipalities (median 10,000 ft² benchmark for Farm Building Fees). "
+        "Upper-Tier Only shows bylaws enacted directly by the County, Region, or Single-Tier municipality (e.g., Dufferin County Building Services)."
     ),
 )
 direct_only = view_mode == "Upper-Tier / Regional Bylaws Only"
 active_status_col = f"{selected_col}__DIRECT" if (direct_only and f"{selected_col}__DIRECT" in gdf.columns) else selected_col
 
-# Split filters: Status vs Expiry alerts (signals)
-status_filter = st.sidebar.selectbox("Status", ["All", "YES", "PARTIAL", "NO", "N/A"], index=0)
-signal_filter = st.sidebar.selectbox(
-    "Expiry alert",
-    ["All", "Expiring soon", "Expired", "Expiry unknown"],
-    index=0,
-)
+bf_bldg_type = "🐄 Livestock Barn"
+bf_tier_filter = "All"
+if is_bldg_fees:
+    bf_bldg_type = st.sidebar.radio(
+        "Structure Type (10,000 sq. ft. Benchmark)",
+        ["🐄 Livestock Barn", "🚜 Equipment / Drive Shed"],
+        index=0,
+    )
+    bf_tier_filter = st.sidebar.selectbox(
+        "Cost Tier Filter",
+        [
+            "All",
+            "Low (< $0.28/ft²)",
+            "Moderate ($0.28–$0.37/ft²)",
+            "High ($0.37–$0.48/ft²)",
+            "Very High (≥ $0.48/ft²)",
+            "Valuation-Based ($/$1k)",
+            "Urban / No Farm Tier (ICI)",
+            "Local Jurisdiction (Lower Tier)",
+            "Pending Audit",
+        ],
+        index=0,
+    )
+    status_filter = "All"
+    signal_filter = "All"
+else:
+    # Split filters: Status vs Expiry alerts (signals)
+    status_filter = st.sidebar.selectbox("Status", ["All", "YES", "PARTIAL", "NO", "N/A"], index=0)
+    signal_filter = st.sidebar.selectbox(
+        "Expiry alert",
+        ["All", "Expiring soon", "Expired", "Expiry unknown"],
+        index=0,
+    )
 filter_signals = st.sidebar.checkbox("🚨 Filter to Scanner Signals", value=False)
 display_mode = st.sidebar.selectbox(
     "Display mode",
@@ -417,17 +452,59 @@ gdf_all["__STATUS__"] = (
     .replace({"UNKNOWN": "NOT KNOWN", "NA": "N/A", "NOT KNOWN": "N/A"})
 )
 
-gdf_all["__COLOR__"] = gdf_all["__STATUS__"].apply(status_color)
+if is_bldg_fees:
+    _sfx = "__DIRECT" if direct_only else ""
+    _est_col = ("BF Est 10000 Barn" if bf_bldg_type == "🐄 Livestock Barn" else "BF Est 10000 Shed") + _sfx
+    if _est_col not in gdf_all.columns:
+        _est_col = "BF Est 10000 Barn" if bf_bldg_type == "🐄 Livestock Barn" else "BF Est 10000 Shed"
+    _vs_col = f"BF Verification Status{_sfx}" if f"BF Verification Status{_sfx}" in gdf_all.columns else "BF Verification Status"
+    _hft_col = f"BF Has Farm Tier{_sfx}" if f"BF Has Farm Tier{_sfx}" in gdf_all.columns else "BF Has Farm Tier"
+    _pm_col = f"BF Pricing Model{_sfx}" if f"BF Pricing Model{_sfx}" in gdf_all.columns else "BF Pricing Model"
+    _auth_col = f"BF Shared Authority{_sfx}" if f"BF Shared Authority{_sfx}" in gdf_all.columns else "BF Shared Authority"
+    _yr_col = f"BF Fee Year{_sfx}" if f"BF Fee Year{_sfx}" in gdf_all.columns else "BF Fee Year"
+    _fn_col = f"BF Formula Notes{_sfx}" if f"BF Formula Notes{_sfx}" in gdf_all.columns else "BF Formula Notes"
+
+    _bf_nums, _bf_disp, _bf_tiers, _bf_colors, _bf_auths, _bf_yrs = [], [], [], [], [], []
+    for _, _row in gdf_all.iterrows():
+        _raw_est = _row.get(_est_col, "")
+        try:
+            _est = float(_raw_est) if str(_raw_est).strip() not in ("", "nan", "None") else None
+        except Exception:
+            _est = None
+        _vs = str(_row.get(_vs_col, "") or "")
+        _hft = str(_row.get(_hft_col, "") or "")
+        _pm = str(_row.get(_pm_col, "") or "")
+        _rgba, _tier = fee_cost_tier_rgba(_est, 10000.0, _vs, _hft, _pm)
+        _bf_nums.append(_est)
+        _bf_disp.append(f"${_est:,.0f}" if _est is not None else _tier)
+        _bf_tiers.append(_tier)
+        _bf_colors.append(_rgba)
+        _bf_auths.append(str(_row.get(_auth_col, "") or "").strip() or "—")
+        _yr_s = str(_row.get(_yr_col, "") or "").strip()
+        _bf_yrs.append(_yr_s.split(".")[0] if _yr_s and _yr_s.lower() != "nan" else "—")
+    gdf_all["__BF_EST_NUM__"] = _bf_nums
+    gdf_all["__BF_EST_DISPLAY__"] = _bf_disp
+    gdf_all["__BF_TIER__"] = _bf_tiers
+    gdf_all["__BF_AUTH__"] = _bf_auths
+    gdf_all["__BF_YEAR__"] = _bf_yrs
+    gdf_all["__BF_NOTES__"] = gdf_all[_fn_col].fillna("").astype(str) if _fn_col in gdf_all.columns else ""
+    gdf_all["__COLOR__"] = _bf_colors
+else:
+    gdf_all["__COLOR__"] = gdf_all["__STATUS__"].apply(status_color)
 gdf_all = add_expiry_signal_columns(gdf_all, selected_label, direct_only=direct_only)
 
 # ---------- Build match mask ----------
 match_mask = pd.Series(True, index=gdf_all.index)
 
-if status_filter != "All":
-    match_mask &= gdf_all["__STATUS__"].eq(status_filter)
+if is_bldg_fees:
+    if bf_tier_filter != "All":
+        match_mask &= gdf_all["__BF_TIER__"].eq(bf_tier_filter)
+else:
+    if status_filter != "All":
+        match_mask &= gdf_all["__STATUS__"].eq(status_filter)
 
-if signal_filter != "All":
-    match_mask &= gdf_all["__SIGNAL__"].eq(signal_filter)
+    if signal_filter != "All":
+        match_mask &= gdf_all["__SIGNAL__"].eq(signal_filter)
 
 if search_term:
     match_mask &= gdf_all[name_field].astype(str).str.contains(search_term, case=False, na=False)
@@ -498,44 +575,64 @@ else:
     gdf_view["__LINE_WIDTH__"] = 2
 
 # ---------- Summary cards (counts reflect the matching set) ----------
-counts = gdf_match["__STATUS__"].value_counts()
-yes = int(counts.get("YES", 0))
-partial = int(counts.get("PARTIAL", 0))
-no = int(counts.get("NO", 0))
-na = int(counts.get("N/A", 0))
-
-sig_counts = gdf_match["__SIGNAL__"].value_counts()
-expiring = int(sig_counts.get("Expiring soon", 0))
-expired = int(sig_counts.get("Expired", 0))
-unknown = int(sig_counts.get("Expiry unknown", 0))
-
-if partial > 0 or selected_label == "Farm Exemption for SA":
-    c1, cp, c2, c3, c4, c5, c6 = st.columns(7)
-    c1.metric("YES (Full)", f"{yes}")
-    cp.metric("PARTIAL", f"{partial}")
-    c2.metric("NO", f"{no}")
-    c3.metric("N/A", f"{na}")
-    c4.metric("Expiring soon", f"{expiring}")
-    c5.metric("Expired", f"{expired}")
-    c6.metric("Expiry unknown", f"{unknown}")
+if is_bldg_fees:
+    _valid_bf = gdf_match[gdf_match["__BF_EST_NUM__"].notna()]
+    _n_farm = len(_valid_bf)
+    _n_local = int(gdf_match["__BF_TIER__"].eq("Local Jurisdiction (Lower Tier)").sum())
+    _n_urban = int(gdf_match["__BF_TIER__"].eq("Urban / No Farm Tier (ICI)").sum())
+    _n_pend = int(gdf_match["__BF_TIER__"].eq("Pending Audit").sum())
+    _mode_lbl = "Direct Upper/Single Tier" if direct_only else "County Median Rollup"
+    _t_lbl = "10k Barn" if bf_bldg_type == "🐄 Livestock Barn" else "10k Shed"
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric(f"Audited ({_mode_lbl})", f"{_n_farm}")
+    c2.metric(f"Lowest {_t_lbl}", f"${_valid_bf['__BF_EST_NUM__'].min():,.0f}" if _n_farm else "—")
+    c3.metric(f"Median {_t_lbl}", f"${_valid_bf['__BF_EST_NUM__'].median():,.0f}" if _n_farm else "—")
+    c4.metric(f"Highest {_t_lbl}", f"${_valid_bf['__BF_EST_NUM__'].max():,.0f}" if _n_farm else "—")
+    c5.metric("Local / Urban / Pending", f"{_n_local} / {_n_urban} / {_n_pend}")
+    st.caption(
+        f"Showing **{bf_bldg_type.split(' ', 1)[1]} (10,000 ft²)** — {_mode_lbl}.  "
+        "Legend: 🟩 Low (< $0.28/ft²) • 🟦 Moderate ($0.28–$0.37/ft²) • 🟨 High ($0.37–$0.48/ft²) • "
+        "🟥 Very High (≥ $0.48/ft²) • ⬜ Local Jurisdiction / Urban ICI • 🟫 Pending"
+    )
 else:
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
-    c1.metric("YES", f"{yes}")
-    c2.metric("NO", f"{no}")
-    c3.metric("N/A", f"{na}")
-    c4.metric("Expiring soon", f"{expiring}")
-    c5.metric("Expired", f"{expired}")
-    c6.metric("Expiry unknown", f"{unknown}")
+    counts = gdf_match["__STATUS__"].value_counts()
+    yes = int(counts.get("YES", 0))
+    partial = int(counts.get("PARTIAL", 0))
+    no = int(counts.get("NO", 0))
+    na = int(counts.get("N/A", 0))
 
-fill_legend = (
-    "Fill legend: 🟩 YES (Full NFP) • 🟨 PARTIAL (Statutory Topsoil/Drainage Only) • 🟥 NO • ⬜ N/A  •  "
-    if (partial > 0 or selected_label == "Farm Exemption for SA")
-    else ""
-)
-st.caption(
-    f"Matches: {len(gdf_match)} of {len(gdf_all)} municipalities.  {fill_legend}"
-    "Outline legend: 🟧 Expiring soon • ⬛ Expired • 🟨 Expiry unknown • ⬜ No expiry alert  •  Outline priority (if multiple signals): Expired > Expiring soon > Mentioned in minutes/agendas > Expiry unknown"
-)
+    sig_counts = gdf_match["__SIGNAL__"].value_counts()
+    expiring = int(sig_counts.get("Expiring soon", 0))
+    expired = int(sig_counts.get("Expired", 0))
+    unknown = int(sig_counts.get("Expiry unknown", 0))
+
+    if partial > 0 or selected_label == "Farm Exemption for SA":
+        c1, cp, c2, c3, c4, c5, c6 = st.columns(7)
+        c1.metric("YES (Full)", f"{yes}")
+        cp.metric("PARTIAL", f"{partial}")
+        c2.metric("NO", f"{no}")
+        c3.metric("N/A", f"{na}")
+        c4.metric("Expiring soon", f"{expiring}")
+        c5.metric("Expired", f"{expired}")
+        c6.metric("Expiry unknown", f"{unknown}")
+    else:
+        c1, c2, c3, c4, c5, c6 = st.columns(6)
+        c1.metric("YES", f"{yes}")
+        c2.metric("NO", f"{no}")
+        c3.metric("N/A", f"{na}")
+        c4.metric("Expiring soon", f"{expiring}")
+        c5.metric("Expired", f"{expired}")
+        c6.metric("Expiry unknown", f"{unknown}")
+
+    fill_legend = (
+        "Fill legend: 🟩 YES (Full NFP) • 🟨 PARTIAL (Statutory Topsoil/Drainage Only) • 🟥 NO • ⬜ N/A  •  "
+        if (partial > 0 or selected_label == "Farm Exemption for SA")
+        else ""
+    )
+    st.caption(
+        f"Matches: {len(gdf_match)} of {len(gdf_all)} municipalities.  {fill_legend}"
+        "Outline legend: 🟧 Expiring soon • ⬛ Expired • 🟨 Expiry unknown • ⬜ No expiry alert  •  Outline priority (if multiple signals): Expired > Expiring soon > Mentioned in minutes/agendas > Expiry unknown"
+    )
 
 if gdf_match.empty:
     st.warning("No municipalities match the current filters.")
@@ -565,14 +662,17 @@ def get_border_color(row):
 gdf_view["__BORDER_COLOR__"] = gdf_view.apply(get_border_color, axis=1)
 
 geom_col = gdf_view.geometry.name
-props_df = gdf_view[[name_field, "__STATUS__", "__COLOR__", "__EXPIRY__", "__SIGNAL__", "__BYLAW_NAME__", "__BYLAW_LINK__", "__BORDER_COLOR__", "__LINE_WIDTH__", geom_col]].copy()
+if is_bldg_fees:
+    props_df = gdf_view[[name_field, "__BF_EST_DISPLAY__", "__BF_TIER__", "__BF_AUTH__", "__BF_YEAR__", "__COLOR__", "__BYLAW_NAME__", "__BYLAW_LINK__", "__BORDER_COLOR__", "__LINE_WIDTH__", geom_col]].copy()
+else:
+    props_df = gdf_view[[name_field, "__STATUS__", "__COLOR__", "__EXPIRY__", "__SIGNAL__", "__BYLAW_NAME__", "__BYLAW_LINK__", "__BORDER_COLOR__", "__LINE_WIDTH__", geom_col]].copy()
 geojson = json.loads(props_df.to_json())
 
 layer = pdk.Layer(
     "GeoJsonLayer",
     geojson,
     pickable=True,
-    opacity=0.5,
+    opacity=0.65 if is_bldg_fees else 0.5,
     stroked=True,
     filled=True,
     extruded=False,
@@ -585,6 +685,25 @@ layer = pdk.Layer(
 
 view_state = pdk.ViewState(latitude=44.0, longitude=-80.0, zoom=5.8)
 
+_upper_tip = (
+    (
+        f"{{{name_field}}}\n"
+        f"{'Direct' if direct_only else 'Median'} 10,000 ft² {'Barn' if bf_bldg_type == '🐄 Livestock Barn' else 'Shed'}: {{__BF_EST_DISPLAY__}}\n"
+        "Cost Tier: {__BF_TIER__}\n"
+        "Authority: {__BF_AUTH__} | Year: {__BF_YEAR__}\n"
+        "By-law: {__BYLAW_NAME__}"
+    )
+    if is_bldg_fees
+    else (
+        f"{{{name_field}}}\n"
+        "Status: {__STATUS__}\n"
+        "Expiry: {__EXPIRY__}\n"
+        "Signal: {__SIGNAL__}\n"
+        "Bylaw: {__BYLAW_NAME__}\n"
+        "Link: {__BYLAW_LINK__}"
+    )
+)
+
 event = st.pydeck_chart(
     height=720,
     on_select="rerun",
@@ -593,16 +712,7 @@ event = st.pydeck_chart(
         layers=[layer],
         initial_view_state=view_state,
         map_style="light",
-        tooltip={
-            "text": (
-                f"{{{name_field}}}\n"
-                "Status: {__STATUS__}\n"
-                "Expiry: {__EXPIRY__}\n"
-                "Signal: {__SIGNAL__}\n"
-                "Bylaw: {__BYLAW_NAME__}\n"
-                "Link: {__BYLAW_LINK__}"
-            )
-        },
+        tooltip={"text": _upper_tip},
     ),
 )
 
@@ -635,8 +745,16 @@ if len(detail_row) == 1:
     r = detail_row.iloc[0]
 
     st.sidebar.markdown(f"**Selected bylaw topic:** {selected_label}")
-    st.sidebar.markdown(f"**Status:** {str(r.get('__STATUS__', 'N/A') or 'N/A')}")
-    st.sidebar.markdown(f"**Expiry signal:** {str(r.get('__SIGNAL__', '') or '').strip() or '—'}")
+    if is_bldg_fees:
+        st.sidebar.markdown(f"**Cost Tier:** {r.get('__BF_TIER__', '—')}")
+        st.sidebar.markdown(f"**{'Direct' if direct_only else 'Median'} 10,000 ft² {'Barn' if bf_bldg_type == '🐄 Livestock Barn' else 'Shed'}:** {r.get('__BF_EST_DISPLAY__', '—')}")
+        st.sidebar.markdown(f"**Authority:** {r.get('__BF_AUTH__', '—')}")
+        st.sidebar.markdown(f"**Fee Year:** {r.get('__BF_YEAR__', '—')}")
+        if str(r.get("__BF_NOTES__", "") or "").strip():
+            st.sidebar.info(str(r.get("__BF_NOTES__")))
+    else:
+        st.sidebar.markdown(f"**Status:** {str(r.get('__STATUS__', 'N/A') or 'N/A')}")
+        st.sidebar.markdown(f"**Expiry signal:** {str(r.get('__SIGNAL__', '') or '').strip() or '—'}")
 
     bylaw_name = str(r.get("__BYLAW_NAME__", "") or "").strip()
     enacted = str(r.get("__ENACTED__", "") or "").strip()
@@ -998,20 +1116,35 @@ with st.expander("Legend", expanded=False):
 
 # ---------- Results table + export ----------
 with st.expander("Results (filtered) – table + export", expanded=False):
-    table = gdf_match[
-        [name_field, "__STATUS__", "__EXPIRY__", "__SIGNAL__", "__BYLAW_NAME__", "__BYLAW_LINK__"]
-    ].copy()
+    if is_bldg_fees:
+        _ut_cols = [name_field, "__BF_TIER__", "__BF_EST_DISPLAY__", "__BF_YEAR__", "__BF_AUTH__", "__BYLAW_NAME__", "__BYLAW_LINK__"]
+        table = gdf_match[[c for c in _ut_cols if c in gdf_match.columns]].copy()
+        table = table.rename(
+            columns={
+                name_field: "County / Single Tier",
+                "__BF_TIER__": "Cost Tier",
+                "__BF_EST_DISPLAY__": f"{'Direct' if direct_only else 'Median'} 10k {'Barn' if bf_bldg_type == '🐄 Livestock Barn' else 'Shed'}",
+                "__BF_YEAR__": "Year",
+                "__BF_AUTH__": "Authority",
+                "__BYLAW_NAME__": "Bylaw",
+                "__BYLAW_LINK__": "Bylaw Link",
+            }
+        )
+    else:
+        table = gdf_match[
+            [name_field, "__STATUS__", "__EXPIRY__", "__SIGNAL__", "__BYLAW_NAME__", "__BYLAW_LINK__"]
+        ].copy()
 
-    table = table.rename(
-        columns={
-            name_field: "Municipality",
-            "__STATUS__": "Status",
-            "__EXPIRY__": "Expiry",
-            "__SIGNAL__": "Expiry alert",
-            "__BYLAW_NAME__": "Bylaw",
-            "__BYLAW_LINK__": "Bylaw link",
-        }
-    )
+        table = table.rename(
+            columns={
+                name_field: "Municipality",
+                "__STATUS__": "Status",
+                "__EXPIRY__": "Expiry",
+                "__SIGNAL__": "Expiry alert",
+                "__BYLAW_NAME__": "Bylaw",
+                "__BYLAW_LINK__": "Bylaw link",
+            }
+        )
 
     st.dataframe(table, use_container_width=True, hide_index=True)
 
@@ -1019,6 +1152,6 @@ with st.expander("Results (filtered) – table + export", expanded=False):
     st.download_button(
         "Download these results as CSV",
         data=csv_bytes,
-        file_name="bylaw_map_results_upper.csv",
+        file_name="farm_building_fees_upper_results.csv" if is_bldg_fees else "bylaw_map_results_upper.csv",
         mime="text/csv",
     )

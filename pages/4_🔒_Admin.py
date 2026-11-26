@@ -25,6 +25,7 @@ from db_utils import (
     get_contacts, get_audit_log, update_record, resolve_yes_no, resolve_welfare_codes,
 )
 from shared_config import ADMIN_PASSWORD_HASH, BYLAW_CATEGORIES
+from bldg_fees_calc import compute_benchmarks
 
 # ── Page config ──
 st.set_page_config(page_title="Admin — Municipal Bylaw Database", page_icon="🔒", layout="wide")
@@ -253,6 +254,7 @@ if admin_mode == "✏️ Edit Municipality":
                 new_zone = st.number_input("Zone", value=float(muni_row["zone"] or 0), step=1.0)
             with col2:
                 new_website = st.text_input("Website", value=muni_row["website"] or "")
+                new_bylaw_page = st.text_input("By-law Directory Link", value=muni_row["bylaw_page_link"] or "")
                 new_contact = st.text_input("Contact Name", value=muni_row["contact_name"] or "")
                 new_position = st.text_input("Contact Position", value=muni_row["contact_position"] or "")
                 new_email = st.text_input("Clerk Email", value=muni_row["clerk_email"] or "")
@@ -266,6 +268,7 @@ if admin_mode == "✏️ Edit Municipality":
                         "geographic_area": new_area,
                         "zone": new_zone,
                         "website": new_website,
+                        "bylaw_page_link": new_bylaw_page,
                         "contact_name": new_contact,
                         "contact_position": new_position,
                         "clerk_email": new_email,
@@ -490,6 +493,47 @@ if admin_mode == "✏️ Edit Municipality":
                         detail_updates["electrified_fencing_exemption"] = st.selectbox("Electrified Fencing Exemption?", yn_opts, index=_opt_idx(yn_opts, drow["electrified_fencing_exemption"]), key=f"efe_{cat_code}_{muni_id}")
                         detail_updates["equal_apportionment"] = st.selectbox("Equal Apportionment?", yn_opts, index=_opt_idx(yn_opts, drow["equal_apportionment"]), key=f"ea_{cat_code}_{muni_id}")
 
+                elif cat_code == "BLDG_FEES" and not detail_df.empty:
+                    drow = detail_df.iloc[0]
+                    def _num_str(v):
+                        return "" if (v is None or (isinstance(v, float) and pd.isna(v))) else str(v)
+                    def _parse_opt_float(s):
+                        s = str(s or "").strip().replace("$", "").replace(",", "")
+                        if not s:
+                            return None
+                        try:
+                            return float(s)
+                        except ValueError:
+                            return None
+                    bf1, bf2 = st.columns(2)
+                    _vs_opts = ["", "Verified", "Verified (Scanned PDF)", "Verified (County Shared)", "Urban - No Farm Tier", "Upper Tier - Local Jurisdiction", "Not Published Online", "Pending"]
+                    _hft_opts = ["", "Yes", "No — Urban/ICI Rate", "N/A", "Not Verified"]
+                    _obc_opts = ["", "Yes", "No", "N/A", "Unknown"]
+                    with bf1:
+                        detail_updates["verification_status"] = st.selectbox("Verification Status", _vs_opts, index=_opt_idx(_vs_opts, drow.get("verification_status")), key=f"bfvs_{muni_id}")
+                        _fy_in = st.text_input("Fee Year (e.g. 2026)", value=_num_str(drow.get("fee_year")).split(".")[0], key=f"bffy_{muni_id}")
+                        detail_updates["fee_year"] = int(_fy_in) if _fy_in.strip().isdigit() else None
+                        detail_updates["doc_type"] = st.text_input("Document Type", value=str(drow.get("doc_type") or ""), key=f"bfdt_{muni_id}")
+                        detail_updates["shared_authority"] = st.text_input("Building Authority (Municipal / County Shared)", value=str(drow.get("shared_authority") or ""), key=f"bfsa_{muni_id}")
+                        detail_updates["has_farm_tier"] = st.selectbox("Has Dedicated Farm Tier?", _hft_opts, index=_opt_idx(_hft_opts, drow.get("has_farm_tier")), key=f"bfhft_{muni_id}")
+                        detail_updates["pricing_model"] = st.text_input("Pricing Model", value=str(drow.get("pricing_model") or ""), key=f"bfpm_{muni_id}")
+                        detail_updates["base_fee"] = _parse_opt_float(st.text_input("Base / Admin Fee ($)", value=_num_str(drow.get("base_fee")), key=f"bfbase_{muni_id}"))
+                        detail_updates["min_fee"] = _parse_opt_float(st.text_input("Minimum Permit Floor ($)", value=_num_str(drow.get("min_fee")), key=f"bfmin_{muni_id}"))
+                        detail_updates["rate_per_sqft_livestock"] = _parse_opt_float(st.text_input("Livestock Barn Rate ($/ft²)", value=_num_str(drow.get("rate_per_sqft_livestock")), key=f"bfrl_{muni_id}"))
+                        detail_updates["rate_per_sqft_other_farm"] = _parse_opt_float(st.text_input("Equipment / Drive Shed Rate ($/ft²)", value=_num_str(drow.get("rate_per_sqft_other_farm")), key=f"bfro_{muni_id}"))
+                    with bf2:
+                        detail_updates["flat_fee"] = _parse_opt_float(st.text_input("Flat Fee ($ if applicable)", value=_num_str(drow.get("flat_fee")), key=f"bfflat_{muni_id}"))
+                        detail_updates["value_rate_per_1000"] = _parse_opt_float(st.text_input("Valuation Rate ($ per $1,000 value)", value=_num_str(drow.get("value_rate_per_1000")), key=f"bfvr_{muni_id}"))
+                        detail_updates["has_obc_group_g_split"] = st.selectbox("2024 OBC Group G Split?", _obc_opts, index=_opt_idx(_obc_opts, drow.get("has_obc_group_g_split")), key=f"bfobc_{muni_id}")
+                        detail_updates["silo_grain_bin_fee"] = st.text_input("Silo / Grain Bin Fee", value=str(drow.get("silo_grain_bin_fee") or ""), key=f"bfsilo_{muni_id}")
+                        detail_updates["manure_storage_fee"] = st.text_input("Manure Storage Fee", value=str(drow.get("manure_storage_fee") or ""), key=f"bfman_{muni_id}")
+                        detail_updates["greenhouse_tarp_fee"] = st.text_input("Greenhouse / Tarp / Special Fee", value=str(drow.get("greenhouse_tarp_fee") or ""), key=f"bfgh_{muni_id}")
+                        detail_updates["refundable_deposit"] = st.text_input("Refundable Deposit / Surcharges", value=str(drow.get("refundable_deposit") or ""), key=f"bfdep_{muni_id}")
+                        detail_updates["calc_spec_json"] = st.text_area("Stepped Bracket JSON (optional)", value=str(drow.get("calc_spec_json") or ""), height=70, key=f"bfjs_{muni_id}")
+                        detail_updates["formula_notes"] = st.text_area("Verified Formula Notes", value=str(drow.get("formula_notes") or ""), height=100, key=f"bffn_{muni_id}")
+                    # Auto-compute standardized benchmarks on save
+                    detail_updates.update(compute_benchmarks(detail_updates))
+
                 # Submit button
                 if st.form_submit_button(f"💾 Save {cat_label}"):
                     try:
@@ -527,12 +571,13 @@ if admin_mode == "✏️ Edit Municipality":
                                 "DC": "details_dc", "STORMWATER": "details_stormwater",
                                 "SITE_ALT": "details_site_alt", "LGD": "details_lgd",
                                 "TREES": "details_trees", "CHICKENS": "details_chickens",
-                                "FENCES": "details_fences",
+                                "FENCES": "details_fences", "BLDG_FEES": "details_bldg_fees",
                             }[cat_code]
                             for field, value in detail_updates.items():
+                                save_val = value if (value is not None and value != "") else None
                                 conn.execute(
                                     f'UPDATE {detail_table} SET "{field}" = %s WHERE id = %s',
-                                    (value if value else None, int(detail_id))
+                                    (save_val, int(detail_id))
                                 )
 
                         conn.commit()
@@ -588,7 +633,7 @@ elif admin_mode == "📤 Bulk Import":
     st.markdown("""
     Upload a CSV to update multiple records at once. The CSV must have these columns:
     - **municipality_name** — must match an existing municipality
-    - **category** — one of: DC, STORMWATER, SITE_ALT, LGD, TREES, CHICKENS, FENCES
+    - **category** — one of: DC, STORMWATER, SITE_ALT, LGD, TREES, CHICKENS, FENCES, BLDG_FEES
     - **field** — the field to update (e.g., `bylaw_name`, `exemption_status`, `expiry_date`)
     - **value** — the new value
     """)

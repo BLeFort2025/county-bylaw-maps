@@ -143,6 +143,8 @@ def _infer_category_for_keyword(keyword: str) -> str:
         return "LGD"
     if "fence" in kw_low:
         return "FENCES"
+    if any(t in kw_low for t in ("building permit", "building by-law", "building code act", "building reserve", "group g", "fees and charges")):
+        return "BLDG_FEES"
     return "CUSTOM"
 
 

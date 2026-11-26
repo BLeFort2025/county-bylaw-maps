@@ -24,7 +24,7 @@ st.markdown(
 
 @st.cache_data(ttl=300)
 def load_executive_summary():
-    """Compute live province-wide KPI metrics and 7-category scorecard from the database."""
+    """Compute live province-wide KPI metrics and 8-category scorecard from the database."""
     df, _ = _load_live_df()
     today = pd.Timestamp(date.today())
 
@@ -77,6 +77,13 @@ def load_executive_summary():
             "Bylaw Name Fence",
             "Expiry Date 8",
             "Farm exemption for electrified/security fencing",
+        ),
+        (
+            "Farm Building Permit Fees",
+            "Farm Building Permit Fees Status",
+            "Bylaw Name Building Fees",
+            "Expiry Date 9",
+            "Dedicated farm building fee tier (barns, drive sheds, silos)",
         ),
     ]
 

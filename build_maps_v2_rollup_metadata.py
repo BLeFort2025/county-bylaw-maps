@@ -125,6 +125,7 @@ def compute_status_columns(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
         ("Farm Exemption - Tree Cutting Bylaw",    ["Farm Exemption - Tree Cutting Bylaw"],     ["Bylaw Name Forest Conservation","Bylaw Name Tree Cutting","Bylaw Name Forestry","Tree Conservation Bylaw Name"], False),
         ("Farm Exemption for Security fencing prohibitions",  ["Farm Exemption for Security fencing prohibitions"], [], False),
         ("Farm Exemption for Electrified fencing prohibitions", ["Farm Exemption for Electrified fencing prohibitions"], [], False),
+        ("Farm Building Permit Fees",              ["Farm Building Permit Fees"],              ["Bylaw Name Building Fees"], False),
     ]
 
     for label, value_cols, name_cols, treat_text in rules:
@@ -177,6 +178,22 @@ def agg_min_date(values: pd.Series) -> str:
         return dt.min().date().isoformat()
     return ""
 
+def agg_bf_median(values: pd.Series) -> str:
+    nums = pd.to_numeric(values, errors="coerce").dropna()
+    if len(nums):
+        return f"{float(nums.median()):.4f}".rstrip("0").rstrip(".")
+    return ""
+
+def agg_bf_status(values: pd.Series) -> str:
+    vals = [strip_nbsp_and_space(v) for v in values if strip_nbsp_and_space(v)]
+    if any(v.startswith("Verified") for v in vals):
+        return "Verified"
+    if any("Not Published" in v for v in vals):
+        return "Not Published Online"
+    if any("Upper Tier" in v for v in vals):
+        return "Upper Tier - Local Jurisdiction"
+    return "Pending"
+
 # Metadata columns to carry into Upper Tier Parquet
 META_TEXT_COLS = [
     "Bylaw Name Development Charges", "Link to DC Bylaw", "Date Bylaw Enacted (Regional)",
@@ -186,12 +203,28 @@ META_TEXT_COLS = [
     "Bylaw Name Forest Conservation", "Tree Cutting Bylaw Link", "Date Bylaw Enacted 6 (Regional)",
     "Bylaw Name Backyard Chicken", "Backyard Chicken Bylaw Link", "Date Bylaw Enacted 7 (Regional)",
     "Bylaw Name Fence", "Link to Fence Bylaw", "Date Bylaw Enacted 8",
+    "Bylaw Name Building Fees", "Link to Building Fees Bylaw", "Date Bylaw Enacted 9",
 ]
 
 META_EXPIRY_COLS = [
     "Expiry Date", "Expiry date2", "Expiry date 4", "Expiry Date 5",
-    "Expiry Date 6", "Expiry Date 7", "Expiry Date 8",
+    "Expiry Date 6", "Expiry Date 7", "Expiry Date 8", "Expiry Date 9",
 ]
+
+META_BLDG_FEE_NUM_COLS = [
+    "BF Base Fee", "BF Min Fee", "BF Rate Livestock", "BF Rate Other Farm",
+    "BF Flat Fee", "BF Value Rate Per 1000",
+    "BF Est 2500 Shed", "BF Est 10000 Barn", "BF Est 10000 Shed", "BF Est 20000 Barn",
+]
+
+META_BLDG_FEE_TEXT_COLS = [
+    "BF Verification Status", "BF Fee Year", "BF Doc Type", "BF Shared Authority",
+    "BF Has Farm Tier", "BF Pricing Model", "BF Calc Spec JSON",
+    "BF Silo Grain Bin Fee", "BF Manure Storage Fee", "BF Greenhouse Tarp Fee",
+    "BF Refundable Deposit", "BF OBC Group G Split", "BF Formula Notes",
+]
+
+META_BLDG_FEE_COLS = META_BLDG_FEE_TEXT_COLS + META_BLDG_FEE_NUM_COLS
 
 def _load_live_df(conn=None):
     """Fetch the live database wide dataframe and compute status columns."""
@@ -228,15 +261,32 @@ def overlay_live_lower(gdf: gpd.GeoDataFrame, conn=None) -> gpd.GeoDataFrame:
     else:
         gdf = gdf.copy()
 
-    overlay_cols = [c for c in (status_cols + META_TEXT_COLS + META_EXPIRY_COLS + ["Municipality Has Fence Bylaw"]) if c in df_dedup.columns]
+    overlay_cols = [c for c in (status_cols + META_TEXT_COLS + META_EXPIRY_COLS + META_BLDG_FEE_COLS + ["Municipality Has Fence Bylaw"]) if c in df_dedup.columns]
     for col in overlay_cols:
         gdf[col] = gdf["_MUNI_NAME"].map(df_dedup[col])
     return gdf
 
 
+def _build_upper_agg_dict(tmp: pd.DataFrame, status_cols: list[str]) -> dict:
+    agg_dict = {c: agg_status for c in status_cols if c in tmp.columns}
+    for c in META_TEXT_COLS:
+        if c in tmp.columns:
+            agg_dict[c] = agg_first_non_empty
+    for c in META_EXPIRY_COLS:
+        if c in tmp.columns:
+            agg_dict[c] = agg_min_date
+    for c in META_BLDG_FEE_NUM_COLS:
+        if c in tmp.columns:
+            agg_dict[c] = agg_bf_median
+    for c in META_BLDG_FEE_TEXT_COLS:
+        if c in tmp.columns:
+            agg_dict[c] = agg_bf_status if c == "BF Verification Status" else agg_first_non_empty
+    return agg_dict
+
+
 def _apply_upper_direct_and_combined(upper_agg: pd.DataFrame, df: pd.DataFrame, status_cols: list[str]) -> pd.DataFrame:
     """Populate __DIRECT columns for Upper-Tier / Single-Tier view and include Upper-Tier direct status in Combined rollup."""
-    all_meta_cols = [c for c in (META_TEXT_COLS + META_EXPIRY_COLS) if c in upper_agg.columns]
+    all_meta_cols = [c for c in (META_TEXT_COLS + META_EXPIRY_COLS + META_BLDG_FEE_COLS) if c in upper_agg.columns]
 
     # Default __DIRECT columns to the rollup values (which for Single-Tier municipalities are their own values)
     for sc in status_cols:
@@ -263,7 +313,14 @@ def _apply_upper_direct_and_combined(upper_agg: pd.DataFrame, df: pd.DataFrame, 
                 for mc in all_meta_cols:
                     if mc in up_df.columns:
                         val = strip_nbsp_and_space(up_row.get(mc, ""))
-                        if val and val.lower() not in ("see local municipalities", "(no bylaw)", "(no fence bylaw)"):
+                        if mc.startswith("BF "):
+                            # For building fees, __DIRECT always reflects the Upper-Tier's own schedule/jurisdiction;
+                            # Combined keeps the lower-tier median rollup unless the Upper Tier itself has verified rates.
+                            upper_agg.at[idx, f"{mc}__DIRECT"] = val
+                            if val and strip_nbsp_and_space(up_row.get("BF Has Farm Tier", "")).lower() == "yes":
+                                if mc not in META_BLDG_FEE_NUM_COLS or not strip_nbsp_and_space(r.get(mc, "")):
+                                    upper_agg.at[idx, mc] = val
+                        elif val and val.lower() not in ("see local municipalities", "(no bylaw)", "(no fence bylaw)"):
                             upper_agg.at[idx, f"{mc}__DIRECT"] = val
                             upper_agg.at[idx, mc] = val
                         else:
@@ -281,13 +338,7 @@ def overlay_live_upper(upper_gdf: gpd.GeoDataFrame, lower_parquet_path: str = LO
     tmp = low_keys.merge(df_dedup, on="_MUNI_NAME", how="left")
     tmp["_UPPER_NAME"] = tmp[LOWER_TO_UPPER_FIELD].astype(str).map(canon)
 
-    agg_dict = {c: agg_status for c in status_cols if c in tmp.columns}
-    for c in META_TEXT_COLS:
-        if c in tmp.columns:
-            agg_dict[c] = agg_first_non_empty
-    for c in META_EXPIRY_COLS:
-        if c in tmp.columns:
-            agg_dict[c] = agg_min_date
+    agg_dict = _build_upper_agg_dict(tmp, status_cols)
 
     upper_agg = tmp.groupby("_UPPER_NAME", dropna=False).agg(agg_dict).reset_index()
     upper_agg = _apply_upper_direct_and_combined(upper_agg, df, status_cols)
@@ -303,7 +354,7 @@ def overlay_live_upper(upper_gdf: gpd.GeoDataFrame, lower_parquet_path: str = LO
         direct_c = f"{c}__DIRECT"
         if direct_c in upper_agg_idx.columns:
             upper_gdf[direct_c] = upper_gdf["_UPPER_NAME"].map(upper_agg_idx[direct_c]).fillna("NOT KNOWN")
-    for c in (META_TEXT_COLS + META_EXPIRY_COLS):
+    for c in (META_TEXT_COLS + META_EXPIRY_COLS + META_BLDG_FEE_COLS):
         if c in upper_agg_idx.columns:
             upper_gdf[c] = upper_gdf["_UPPER_NAME"].map(upper_agg_idx[c]).fillna("")
         direct_c = f"{c}__DIRECT"
@@ -380,13 +431,7 @@ def main():
     tmp = pd.DataFrame(lower.drop(columns=lower.geometry.name))
     if LOWER_TO_UPPER_FIELD in tmp.columns:
         tmp["_UPPER_NAME"] = tmp[LOWER_TO_UPPER_FIELD].astype(str).map(canon)
-        agg_dict = {c: agg_status for c in status_cols if c in tmp.columns}
-        for c in META_TEXT_COLS:
-            if c in tmp.columns:
-                agg_dict[c] = agg_first_non_empty
-        for c in META_EXPIRY_COLS:
-            if c in tmp.columns:
-                agg_dict[c] = agg_min_date
+        agg_dict = _build_upper_agg_dict(tmp, status_cols)
 
         upper_agg = tmp.groupby("_UPPER_NAME", dropna=False).agg(agg_dict).reset_index()
         upper_agg = _apply_upper_direct_and_combined(upper_agg, df, status_cols)
@@ -398,7 +443,7 @@ def main():
             if c in upper.columns: upper[c] = upper[c].fillna("NOT KNOWN")
             direct_c = f"{c}__DIRECT"
             if direct_c in upper.columns: upper[direct_c] = upper[direct_c].fillna("NOT KNOWN")
-        for c in (META_TEXT_COLS + META_EXPIRY_COLS):
+        for c in (META_TEXT_COLS + META_EXPIRY_COLS + META_BLDG_FEE_COLS):
             if c in upper.columns: upper[c] = upper[c].fillna("")
             direct_c = f"{c}__DIRECT"
             if direct_c in upper.columns: upper[direct_c] = upper[direct_c].fillna("")

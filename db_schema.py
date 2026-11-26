@@ -10,7 +10,7 @@ import os
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bylaws.db")
 
-# ── 7 active categories (Hoop Houses dropped per OFA decision) ──
+# ── 8 active categories (Hoop Houses dropped per OFA decision; BLDG_FEES added) ──
 CATEGORIES = [
     "DC",           # Development Charges
     "STORMWATER",   # Stormwater
@@ -19,6 +19,7 @@ CATEGORIES = [
     "TREES",        # Forest / Tree Conservation
     "CHICKENS",     # Backyard Chickens
     "FENCES",       # Fence Bylaws
+    "BLDG_FEES",    # Farm Building Permit Fees
 ]
 
 SCHEMA_SQL = """
@@ -166,6 +167,35 @@ CREATE TABLE IF NOT EXISTS details_fences (
     equal_apportionment TEXT,
     apportionment_bylaw TEXT,
     fence_notes     TEXT
+);
+
+-- Farm Building Permit Fees extras
+CREATE TABLE IF NOT EXISTS details_bldg_fees (
+    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+    bylaw_id                INTEGER NOT NULL REFERENCES bylaws(id) UNIQUE,
+    verification_status     TEXT,       -- Verified | Verified (Scanned PDF) | Verified (County Shared) | Urban - No Farm Tier | Upper Tier - Local Jurisdiction | Not Published Online | Pending
+    fee_year                INTEGER,    -- Effective fee schedule year (e.g. 2025, 2026)
+    doc_type                TEXT,       -- Fees & Charges By-law | Building By-law | Building Fee Schedule PDF | Webpage Fee Table | Not Published Online
+    shared_authority        TEXT,       -- Municipal | Dufferin County Building Services | Joint Building Committee | etc.
+    has_farm_tier           TEXT,       -- Yes | No — Urban/ICI Rate | N/A | Not Verified
+    pricing_model           TEXT,       -- Per Area (sq ft / m²) | Base + Per Area | Per Area + High Min Floor | Tiered Brackets | OBC Large/Small Farm Split | Flat Fee | Valuation ($/$1,000) | No Dedicated Farm Tier
+    base_fee                REAL,
+    min_fee                 REAL,
+    rate_per_sqft_livestock REAL,
+    rate_per_sqft_other_farm REAL,
+    flat_fee                REAL,
+    value_rate_per_1000     REAL,
+    calc_spec_json          TEXT,       -- Structured JSON formula for stepped / OBC Group G brackets
+    est_2500_shed           REAL,       -- Standardized 2,500 ft² Equipment / Drive Shed ($)
+    est_10000_barn          REAL,       -- Standardized 10,000 ft² Livestock Barn ($)
+    est_10000_shed          REAL,       -- Standardized 10,000 ft² Equipment / Drive Shed ($)
+    est_20000_barn          REAL,       -- Standardized 20,000 ft² Large Livestock Barn ($)
+    silo_grain_bin_fee      TEXT,
+    manure_storage_fee      TEXT,
+    greenhouse_tarp_fee     TEXT,
+    refundable_deposit      TEXT,
+    has_obc_group_g_split   TEXT,       -- Yes | No | Unknown
+    formula_notes           TEXT
 );
 
 -- ═══════════════════════════════════════════════
