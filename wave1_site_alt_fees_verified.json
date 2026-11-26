@@ -1,0 +1,1622 @@
+[
+  {
+    "municipality": "Tarbutt",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Exempt - $0)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "In Topsoil Removal By-law 24-2016 (prohibitory only; verified $0 in 2026 Fees By-law 2026-03)",
+      "fees_bylaw_link": "https://tarbutt.ca/wp-content/uploads/2026/01/Fees-and-Charges-By-law-2026-03.pdf",
+      "ag_import_fee_status": "Exempt ($0)",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Exempt ($0)",
+      "base_fee_small": 0.0,
+      "base_fee_large": 0.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt\"}",
+      "security_deposit_terms": null,
+      "peer_review_recovery": null,
+      "fee_formula_notes": "Visual inspection of all 3 pages of Topsoil Removal By-law 24-2016 (passed Dec 14, 2016) confirms it is strictly a prohibitory topsoil-removal by-law with no permit system, no fees, and does not regulate placing or importing fill (s. 3.7–3.8 exempts Drainage Act & incidental NFP topsoil removal excl. sale). Visual inspection of all 14 pages of 2026 Comprehensive Fees & Charges By-law 2026-03 (passed Jan 21, 2026, Schedules A–F) confirms $0 / no topsoil, fill, or site alteration permit fees."
+    }
+  },
+  {
+    "municipality": "Brant",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Tier)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees & Charges By-law (confirmed in 2027 Schedule, pp. 28–29) & Site Alteration By-law 87-24",
+      "fees_bylaw_link": "https://media-003-ca.cdn.govstack.com/brant-ca/media/jqpp1gi0/proposed-2027-fees-and-charges.pdf",
+      "ag_import_fee_status": "Exempt up to Volume Cap",
+      "ag_exempt_volume_cap_m3": 1000.0,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Base + Per m³",
+      "base_fee_small": 287.65,
+      "base_fee_large": 1121.52,
+      "per_m3_rate": 2.15,
+      "fee_calc_spec_json": "{\"type\": \"exempt_up_to_cap\", \"exempt_cap_m3\": 1000.0, \"charge_basis\": \"full\", \"above_cap\": {\"type\": \"base_plus_m3\", \"base\": 1121.52, \"per_m3\": 2.15}}",
+      "security_deposit_terms": "Refundable security (LOC, certified cheque, or cash) up to 100% of estimated site control/stabilization/haul-route restoration works as determined by Director (By-law 87-24 s. 11.5–11.7)",
+      "peer_review_recovery": "Fill quality/quantity testing billed at actual costs + 15% admin fee; applicant retains Qualified Person for site drawings & MECP excess soil BMP compliance",
+      "fee_formula_notes": "By-law 87-24 s. 2.1(n)(iv) exempts <1,000 m³ topsoil alteration/addition on Agricultural Lands used for an Agricultural Operation (≥1m from lot line, no adverse drainage); s. 2.1(l) also exempts ≤1,000 m³/yr (≤0.2m grade) for sod/greenhouse/nursery restoration. Above 1,000 m³, dedicated Agricultural Site Alteration Application Fee is $1,121.52 (2026 & 2027, HST exempt; vs. $2,859.27 General) + $2.15/m³ imported/exported fill fee 'at the discretion of the Director' (renewal $287.65; revision 50%). Benchmarks include the $2.15/m³ rate; if waived by Director, fee is $1,121.52 flat."
+    }
+  },
+  {
+    "municipality": "Brantford",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Schedule 1 – 2024-2027 Fees and Charges (May 26, 2026 Final, Community Development — Planning: Site Alteration SA.1-SA.39, pp. 63-64)",
+      "fees_bylaw_link": "https://media-004-ca.cdn.govstack.com/brantford-ca/media/i2cjaokh/schedule-1-2024-2027-fees-and-charges-may-26-2026-final.pdf",
+      "ag_import_fee_status": "Exempt up to Volume Cap",
+      "ag_exempt_volume_cap_m3": 1000.0,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 2000.0,
+      "base_fee_large": 2500.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"exempt_up_to_cap\", \"exempt_cap_m3\": 1000.0, \"exclusive_upper\": true, \"charge_basis\": \"full\", \"above_cap\": {\"type\": \"area_based\", \"base\": 2500.0, \"per_hectare\": 500.0, \"other_cii_flat\": 2000.0}}",
+      "security_deposit_terms": "By-law 29-2023 s. 12 & Sched 1 (SA.2-SA.35): Cash, certified cheque, surety bond, or LOC (60-day expiry notice) in amount determined by Director (residential infill $3,000; other residential $1,500; C/I/I & outside-subdivision site alterations determined by Director)",
+      "peer_review_recovery": "By-law 29-2023 s. 5.1.4, 5.1.6 & Sched A: Applicant must retain P.Eng./Qualified Person for Plans, ESC oversight, and MECP Excess Soil BMP reconciliation report at applicant's cost; Director may require soil testing of source locations",
+      "fee_formula_notes": "Site Alteration By-law 29-2023 s. 4.1.12 exempts FBRN-registered Agricultural Lands for site alteration/addition/removal of <1,000 m³ of Topsoil for an Agricultural Operation (>=1.0 m from property line, no adverse drainage; s. 4.1.11 also exempts <=1,000 m³/yr topsoil restoration <=0.2 m depth for sod/greenhouse/nurseries; s. 4.1.13 exempts Nutrient Management Act fill). Above 1,000 m³, Schedule 1 (2024-2027 Fees & Charges, May 26, 2026 Final, pp. 63-64, HST exempt): SA.34 ('site alterations outside of the subdivision process and new subdivisions', formerly 'Other Site Alteration not included above') = $2,500.00 + $500.00/ha (2026-2027; up from $1,100 + $50/ha in 2024-2025; renewal SA.36 $600); SA.29 C/I/I Other Site Alterations = $2,000.00 flat (renewal $450; live webpage still displays pre-May-2026 $2,000 flat for other site alterations); Residential SA.1/SA.20 = $600 ($350 minor SA.17); Amendment SA.38 up to 50% of fee. No out-of-municipality fill ban in By-law 29-2023."
+    }
+  },
+  {
+    "municipality": "Amaranth",
+    "fields": {
+      "fee_verification_status": "Verified (Scanned PDF)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Fees & Charges By-law 2025-61 (amended 2026-09, p. 9) & Site Alteration By-law 65-2009",
+      "fees_bylaw_link": "https://media-001-ca.cdn.govstack.com/amaranth-007-ca/media/rihlxukc/by-law-2025-61-fees-and-charges-with-amendments-2025-65-2026-02-2026-09.pdf",
+      "ag_import_fee_status": "Exempt up to Volume Cap",
+      "ag_exempt_volume_cap_m3": 400.0,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 500.0,
+      "base_fee_large": 2000.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 400, \"exempt\": true}, {\"up_to_m3\": 2000, \"flat_fee\": 500.0}, {\"up_to_m3\": null, \"flat_fee\": 2000.0}]}",
+      "security_deposit_terms": ">400 to <2,000 m³: $2,000 deposit; >2,000 m³: $5,000/ha of area + $5,000 damage deposit (includes mud tracking & dust control)",
+      "peer_review_recovery": "Any other costs incurred in excess of listed fees charged on a full cost recovery basis; chemical fill analysis & grading plans required (By-law 65-2009 s. 6)",
+      "fee_formula_notes": "By-law 2025-61 (amended 2026-09, p. 9, visually verified): ≤400 m³/yr (~20 tri-axle loads, By-law 65-2009 s. 7(g)) exempt ($0; extension $150); >400 to <2,000 m³ = $500 flat permit fee (may be waived under delegated authority); >2,000 m³ = $2,000 flat permit fee (NO $/m³ charge). Separate Site Alteration Agreement preparation fee: $1,000 Medium Scale (250–2,000 m³) or $2,500 Large Scale (>2,000 m³) if required; amendment $500/$1,000."
+    }
+  },
+  {
+    "municipality": "East Garafraxa",
+    "fields": {
+      "fee_verification_status": "Verified (Scanned PDF)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "In Site Alteration By-law No. 14-2015 (s. 6.2(c) & Sched. B; confirmed active on 2026 Township portal)",
+      "fees_bylaw_link": "https://media-003-ca.cdn.govstack.com/eastgarafraxa-018-ca/media/5uyjrjcy/14-2015-site-alterations.pdf",
+      "ag_import_fee_status": "Exempt up to Volume Cap",
+      "ag_exempt_volume_cap_m3": 300.0,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 2000.0,
+      "base_fee_large": 2000.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt_up_to_cap\", \"exempt_cap_m3\": 300.0, \"charge_basis\": \"full\", \"above_cap\": {\"type\": \"flat\", \"flat_fee\": 2000.0}}",
+      "security_deposit_terms": "By-law 14-2015 s. 6.2(c)-(e): Mandatory $20,000.00 refundable deposit with application to cover engineering/professional review costs, replenished to full $20,000.00 prior to commencing approved site alteration (unused balance refunded without interest on completion); Township may also fix liquidated damages for haul routes (s. 7.2).",
+      "peer_review_recovery": "By-law 14-2015 s. 6.2(c) & Sched. A: Township engineering and professional review costs recovered from $20,000.00 deposit; applicants must submit Soil Management Plan (MOE BMP), Hydrogeology Report, Surface Water Drainage Report, EIS, Agricultural Rehabilitation Plan, and Traffic Impact Study.",
+      "fee_formula_notes": "Site Alteration By-law 14-2015 (passed Apr 14, 2015, visually verified from scanned PDF and confirmed active on 2026 Township webpage https://www.eastgarafraxa.ca/business-and-development/site-alteration/): s. 3.1(b) exempts topsoil removal incidental to NFP only; s. 3.1(g) exempts placing/dumping/removing ≤15 tri-axle truck loads (≈300 m³) in any 1-year period with no drainage impact ($0). Above 300 m³/yr requires public Council Approval (s. 6.1–6.6, evaluating agricultural capability/NFP): $2,000.00 non-refundable flat processing fee + $20,000.00 refundable review deposit (no $/m³ volumetric fee). Approval valid 1 year; 6-month renewal = $1,000.00 (Sched. B s. 1(c))."
+    }
+  },
+  {
+    "municipality": "Melancthon",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees and Charges By-law (Schedule F — Public Works Applications; matching By-law 29-2004 Sched. D)",
+      "fees_bylaw_link": "https://melancthontownship.ca/wp-content/uploads/2026/09/Final-Township-of-Melancthon-Fees-and-Charges-By-law-1.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 500.0,
+      "base_fee_large": 500.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 500.0}",
+      "security_deposit_terms": "By-law 29-2004 s. 12: Written agreement may require a security deposit equal to 100% of the approved cost estimate for the work authorized by the permit.",
+      "peer_review_recovery": "By-law 29-2004 s. 12 & Sched. D: Owner pays Corporation's actual costs of reviewing and approving plans and work plus actual costs for preparation and registration of any required agreement.",
+      "fee_formula_notes": "2026 Fees & Charges By-law Schedule F (p. 12, HST exempt, unchanged from By-law 29-2004 Sched. D): Site Alteration Permit = $100.00 for Residential 90-day permit; $500.00 for all other properties (including farms) 90-day permit; +$100.00 extra for 180-day permit ($600.00 total). Renewal = 50% of original fee (By-law 29-2004 s. 10). No $/m³ volumetric fee. By-law 29-2004 s. 3–4 exempt tillage, Drainage Act/Tile Drainage Act, incidental NAP topsoil removal, and land holdings <2,800 m² outside 120 m of hazard/EP zones (no NFP fill import exemption)."
+    }
+  },
+  {
+    "municipality": "Mono",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2020,
+      "fees_bylaw_name": "In Site Alteration By-law 2014-31 (s. 6.2 & Schedule A, amended by 2020-27)",
+      "fees_bylaw_link": "https://mono.civicweb.net/document/26719/",
+      "ag_import_fee_status": "Exempt up to Volume Cap",
+      "ag_exempt_volume_cap_m3": 250.0,
+      "out_of_muni_fill_ban": "Restricted",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 2000.0,
+      "base_fee_large": 2000.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 250, \"exclusive_upper\": true, \"exempt\": true}, {\"up_to_m3\": null, \"flat_fee\": 2000.0}]}",
+      "security_deposit_terms": "$20,000.00 refundable deposit for Town engineering/professional reviews (s. 6.2) + $20,000.00 refundable performance/road security deposit (Schedule A s. 1(h))",
+      "peer_review_recovery": "Town engineering & professional review costs drawn from $20,000 refundable review deposit; P.Eng./OLS final grading certification required prior to deposit release",
+      "fee_formula_notes": "By-law 2014-31 s. 3.1(g) exempts <250 m³/yr of locally sourced fill per lot. Any fill ≥250 m³ (or non-local fill) requires a Council Variance/Exception under s. 6.2 with a $2,000.00 non-refundable flat processing fee (no $/m³ fee), public hearing (500m neighbour notice), and $20,000 engineering review deposit + $20,000 security deposit. Council considers agricultural capability & NFP criteria (s. 6.6)."
+    }
+  },
+  {
+    "municipality": "Oshawa",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Consolidated Fees and Charges By-law 109-2024 (amended through By-law 3-2026, Schedule D, pp. 70-71)",
+      "fees_bylaw_link": "https://www.oshawa.ca/media/r4um2yk5/109-2024-consolidated-fees-and-charges-by-law-with-schedules-feb-2026.pdf",
+      "ag_import_fee_status": "Exempt up to Volume Cap",
+      "ag_exempt_volume_cap_m3": 500.0,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Tiered Volume + Per m³",
+      "base_fee_small": 257.5,
+      "base_fee_large": 500.0,
+      "per_m3_rate": 1.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt_up_to_cap\", \"exempt_cap_m3\": 500.0, \"charge_basis\": \"full\", \"above_cap\": {\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 20, \"exclusive_upper\": true, \"exempt\": true}, {\"up_to_m3\": 100, \"flat_fee\": 257.5}, {\"up_to_m3\": null, \"base\": 500.0, \"per_m3\": 1.0}]}}",
+      "security_deposit_terms": "By-law 85-2006 s. 5.2(h): Security in a form and amount determined by the Director to secure performance of the work",
+      "peer_review_recovery": "By-law 85-2006 s. 6.3: Testing of any Fill by a City-retained qualified expert at Applicant's expense; Fees By-law 109-2024 Sched D (p. 69): Peer Review of development application = 100% of City costs + 10% admin fee",
+      "fee_formula_notes": "Consolidated Fees & Charges By-law 109-2024 (amended through By-law 3-2026, Schedule D, eff. Jan 1, 2026, pp. 70-71): Agricultural Fill Operations — importation of 500 m³ or less and up to 4 inches in depth of topsoil for Agricultural purposes = No Charge ($0). Standard Fill Operations (import/export of topsoil): <20 m³ = No Charge; 20-100 m³ = $257.50; >100 m³ = $500.00 + $1.00/m³ (replaced 2025 >500 m³ flat $4,000 tier, now marked N/A). Renewal = 50% of initial fee (By-law 85-2006 s. 7.2); Violation & Investigation = 100% of applicable fee. No out-of-municipality fill ban in By-law 85-2006."
+    }
+  },
+  {
+    "municipality": "Pickering",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "General Municipal Fees By-law 6191/03 (Schedule I — 2026 User Fees, approved Nov 24, 2025; amended by By-law 8264/26, p. 36)",
+      "fees_bylaw_link": "https://corporate.pickering.ca/WebLink/0/edoc/261891/2026%20User%20Fees.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 1215.0,
+      "base_fee_large": 1215.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"area_based\", \"base\": 1215.0, \"per_hectare\": 1215.0, \"max_fee\": 6075.0}",
+      "security_deposit_terms": "By-law 6060/02 Sched A & 2026 User Fees (p. 36): Irrevocable LOC/security for 100% of estimated cost of Erosion & Sediment Control and site control measures + Road Damage Security ($7,700/km Paved Road; $12,845/km Surface Treated/Gravel Road, eff. Jan 6, 2026)",
+      "peer_review_recovery": "Qualified professional ESC Plan & Design Report required (By-law 6060/02 s. 7-8); external Peer Reviews charged to applicant under 2026 User Fees",
+      "fee_formula_notes": "2026 User Fees (Development Services, p. 36, eff. Jan 6, 2026, HST exempt): Fill/Topsoil Permit (1-year) = $1,215.00 + $1,215.00/ha to a max total fee of $6,075.00 (up from $1,185 + $1,185/ha max $5,925 in 2025). One-year extension = $1,215.00; Penalty & Investigation Fee = $6,090.00. By-law 6060/02 s. 2(h) exempts incidental normal farm practice topsoil removal only (no fill-import exemption); City webpage notes >20 m³ (2 dump trucks) triggers a permit. No out-of-municipality fill ban in By-law 6060/02."
+    }
+  },
+  {
+    "municipality": "Uxbridge",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Exempt - $0)",
+      "fee_year": 2021,
+      "fees_bylaw_name": "Site Alteration By-law 2010-084 (Schedule A — 2021 Fees, p. 19; Cloudpermit administered)",
+      "fees_bylaw_link": "https://www.uxbridge.ca/public/download/files/310553",
+      "ag_import_fee_status": "Exempt ($0)",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Exempt ($0)",
+      "base_fee_small": 560.0,
+      "base_fee_large": 800.0,
+      "per_m3_rate": 5.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt\"}",
+      "security_deposit_terms": "Non-exempt permits: $3,000 or 100% of land restoration cost (whichever is greater) + highway maintenance security TBD by CBO (Schedule A)",
+      "peer_review_recovery": "Non-exempt permits: all external legal, engineering, hydrology, environmental, arborist & consultant evaluation costs charged back + 5% admin fee (s. 4.9, 6.1(g))",
+      "fee_formula_notes": "By-law 2010-084 s. 3.1(m) & s. 3.2(f) exempt topsoil removal and replacement of topsoil for restoration of agricultural lands used for normal agricultural practices (storage ≤1,000 m³; tracked as Farm Exempt = Yes). For non-exempt/commercial fill permits, Schedule A (2021) charges $560 + $5.00/m³ (<1,000 m³) and $800 + $5.00/m³ (>1,000 m³) + external costs + 5% admin (extension $275/$440; double fees + $250/inspection if unpermitted). Note: Uxbridge processes permits via Cloudpermit; confirm latest Fees By-law indexing for commercial rates."
+    }
+  },
+  {
+    "municipality": "Whitby",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Consolidated Fees & Charges By-law 7220-17 (amended through 8201-25 & 8251-25, Schedule T Engineering Services, pp. 75-78)",
+      "fees_bylaw_link": "https://www.whitby.ca/media/qn4ida1s/7220-17_fees-and-charges-by-law_consolidation.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Tiered Volume + Per m³",
+      "base_fee_small": 2929.0,
+      "base_fee_large": 5857.0,
+      "per_m3_rate": 2.3,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 500, \"exclusive_upper\": true, \"flat_fee\": 2929.0}, {\"up_to_m3\": null, \"base\": 5857.0, \"per_m3\": 2.3}]}",
+      "security_deposit_terms": "Schedule T & Site Alteration Guideline App B (cash or LOC): Cat 2 (<500 m³) = $1,500 on-site controls + $3,127 immediate road damage (ENG-15) + $1,000 overfill; Cat 3 (>=500 m³) = Engineer's estimate + 30% + HST on-site controls + $5,212 immediate road damage (ENG-16) + 15% of Road Damage/Inspection Fee overfill security + $2,000 signage + $10,000 soil testing/peer review (+ $10,000 per additional 50,000 m³)",
+      "peer_review_recovery": "100% of Municipality's Peer Review costs (Guideline App C & Sched T) + 15% Engineering Peer Review Admin Fee (+ HST, ENG-5); $10,000 upfront soil testing/peer review security (Cat 3); Registered Agrology Practitioner Report required for agricultural topsoil",
+      "fee_formula_notes": "Consolidated Fees By-law 7220-17 Schedule T (eff. Jan 1, 2026, HST exempt) + By-law 7425-18 (amended by 8292-26) & Guideline v1.5/v1.6: Cat 2 Small (<500 m³, ENG-44) = $2,929.00 flat (no initial Road Damage/Inspection Fee per Guideline s. 5.2.15); Cat 3 Large (>=500 m³, ENG-45) = $5,857.00 + $2.30/m³ Road Damage Contribution/Inspection Fee (ENG-11). Extension (ENG-9) = 50% of initial app fee; Condition Amendment (ENG-8) = $309.61; Overfill Fee (ENG-10) = $2.30/m³ (1x/2x/4x sliding penalty per App E); Road Replacement (ENG-12..14) = $19.91-$352.14/m² if required. By-law 7425-18 s. 3.5 exempts topsoil removal/restoration incidental only to sod-farming/greenhouses/nurseries (Agrology Report required); s. 3.6 requires permit for other agricultural grade alterations. No out-of-municipality fill ban."
+    }
+  },
+  {
+    "municipality": "St Thomas",
+    "fields": {
+      "fee_verification_status": "Verified (Scanned PDF)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Environmental & Infrastructure Fees By-law 94-2025 (Schedule A, p. 7, eff. Jan 1, 2026)",
+      "fees_bylaw_link": "https://cdnsm5-hosted.civiclive.com/UserFiles/Servers/Server_12189721/File/City%20Hall/Environmental%20Services/By-law%2094-2025%20Impose%20and%20Consolidate%20Environmental%20and%20Infrastructure%20Fees%20and%20Charges.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 110.0,
+      "base_fee_large": 110.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 110.0}",
+      "security_deposit_terms": "By-law 140-2025 Sched B Table 1: Irrevocable LOC, certified cheque or bank draft — Cat 1 Res R1–R4 $1,000 + HST; Cat 2 Dev <1 ac = 5% grading/ESC + 50% site stabilization; Cat 3 Dev >1 ac (excl. subdiv) = 10% grading/ESC + 50% stabilization; Cat 4 Subdivisions = 15% grading/ESC + 100% stabilization.",
+      "peer_review_recovery": "By-law 140-2025 s. 3.1(i) & s. 7.3: Director may retain/appoint peer review consultant; By-law 94-2025 Sched A p. 7 execution of orders = Costs + 15%.",
+      "fee_formula_notes": "By-law 94-2025 (passed Sept 8, 2025, eff. Jan 1, 2026, visually verified scanned PDF Schedule A p. 7): Site Alteration Application Fee = $110.00 flat (R1–R4 residential lots exempt); Additional Inspection = $130.00; Extension = $55.00 (50%); Minor Amendment = $55.00 (50%); Transfer/Renewal = $27.50; Administration Fee = $50.00 (+ HST where applicable). Site Alteration By-law 140-2025 (passed Dec 1, 2025) s. 5.1(a) exempts only statutory Drainage Act & incidental NFP topsoil removal (excl. sale); s. 7.5 allows discretionary Director waiver."
+    }
+  },
+  {
+    "municipality": "Essex, T",
+    "fields": {
+      "fee_verification_status": "Verified (Scanned PDF)",
+      "fee_year": 2024,
+      "fees_bylaw_name": "Fill and Grade By-law 1799 (Schedule A, as amended by By-law 2336, June 3, 2024)",
+      "fees_bylaw_link": "https://www.essex.ca/media/aq3icmcu/by-law-no-1799-fill-and-grade-signed.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 500.0,
+      "base_fee_large": 500.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 1200, \"flat_fee\": 500.0}]}",
+      "security_deposit_terms": "By-law 2336 (amending 1799 Sched A): Refundable security deposit of $500.00 + $0.50/m³ of fill (Officer may increase for rehabilitation/drainage/erosion); Road Damage Undertaking & $2M CGL insurance",
+      "peer_review_recovery": "P.Eng. design & post-completion certification of grade changes required (By-law 1799 s. 4.3, Sched A s. 5(h))",
+      "fee_formula_notes": "By-law 2336 (passed June 3, 2024) amended Fill & Grade By-law 1799 to cap lifetime fill importation at 1,200 m³ per property (s. 4.3), set the Fill Permit application fee at $500.00 flat (up from $200/$300/$400 in original 1799 Sched A), and set the refundable security deposit at $500.00 + $0.50/m³. Benchmarks above 1,200 m³ (5,000 & 15,000 m³) are intentionally left blank because >1,200 m³ lifetime fill is prohibited."
+    }
+  },
+  {
+    "municipality": "LaSalle",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 User Fees By-law 2026-009 (p. 22, Fill Permit) & Fill By-law 7080",
+      "fees_bylaw_link": "https://www.lasalle.ca/media/syylbp5l/by-law-2026-009-user-fees_ua.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 55.0,
+      "base_fee_large": 55.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 55.0}",
+      "security_deposit_terms": "Not specified in By-law 7080 or 2026-009; unpaid remediation work added to tax roll",
+      "peer_review_recovery": "Fill-control/grading plan required when requested by CBO or Town Engineer (By-law 7080 s. 5(2)(c))",
+      "fee_formula_notes": "2026 User Fees By-law 2026-009 (p. 22): Fill Permit = $55.00 flat (increased from $50.00 in 2025; no $/m³ fee). Permit renewal within expiry window = 50% of original fee (By-law 7080 s. 7). Farm exemption covers statutory topsoil removal only (s. 4(l))."
+    }
+  },
+  {
+    "municipality": "Tecumseh",
+    "fields": {
+      "fee_verification_status": "Verified (Scanned PDF)",
+      "fee_year": 2004,
+      "fees_bylaw_name": "In Dumping, Filling, Grading & Topsoil Removal By-law 2004-29 (Schedule A, p. 8; active in 2026)",
+      "fees_bylaw_link": "https://media-002-ca.cdn.govstack.com/tecumseh-009-ca/media/onzc5q1d/bylaw-2004-29-dumping-and-grading.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 100.0,
+      "base_fee_large": 100.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 100.0}",
+      "security_deposit_terms": "By-law 2004-29 s. 4.4: Officer may require security/bond/agreement conditions as part of permit issuance.",
+      "peer_review_recovery": "By-law 2004-29 s. 3.1: Applicant provides grading/drainage plan & engineering details at own expense; 2026 Building Fees By-law 2025-128 Sched 3 lists Lot Grading Review Fee $380 non-residential ($270 residential).",
+      "fee_formula_notes": "Dumping, Filling, Grading & Topsoil Removal By-law 2004-29 (passed May 18, 2004, visually verified 8p scanned PDF) s. 4.1 & Schedule A (p. 8): Permit Fee = $100.00 flat (waived under s. 4.2 when accompanying a building permit). Verified 2026 Admin Fees By-law 2025-119 (19p) and 2026 Building Fees By-law 2025-128 Sched 3 do not supersede By-law 2004-29's $100 fill permit fee (Building Sched 3 only sets Lot Grading Review Fees: $270 res / $380 all other). s. 5.1–5.2 requires a permit on Agricultural zones for OMAFRA-approved farm practice or altering irregular features; s. 4.5(g) restricts exporting removed topsoil outside Town limits (not importing fill)."
+    }
+  },
+  {
+    "municipality": "Windsor",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Approved User Fee Schedule (Building Services — Permit/Policy & Regulatory Services, Items 21–23)",
+      "fees_bylaw_link": "https://www.citywindsor.ca/documents/city-hall/budget/2026%20Approved%20User%20Fee%20Schedule.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 75.0,
+      "base_fee_large": 75.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"area_based\", \"min_fee\": 75.0, \"rate_500_to_1000_m2\": 0.05, \"rate_over_1000_m2\": 0.03, \"unit\": \"m2\"}",
+      "security_deposit_terms": null,
+      "peer_review_recovery": "2026 Approved User Fee Schedule lists related Lot Grading Review (non-house) at $555.00/review.",
+      "fee_formula_notes": "2026 Approved User Fee Schedule (Building Services, Items 21–23, HST exempt) under By-law 6938 — area-based in m² (not $/m³): <500 m² = $75.00 minimum fee (2025: $70.00); 500–1,000 m² = $75.00 + $0.05/m²; >1,000 m² = $75.00 + $0.03/m². Renewal within 6 months = 50% of original fee (By-law 6938 s. 5). Urban bylaw with no agricultural/NFP exemption (exempts ≤25 mm lawn/garden dressing >1 m from lot line, building permits, subdivisions, CA regulated areas)."
+    }
+  },
+  {
+    "municipality": "Kingston",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Exempt - $0)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees and Charges By-law 2026-7 (and Site Alteration By-law 2008-128 s. 4(d) NFP Exemption)",
+      "fees_bylaw_link": "https://www.cityofkingston.ca/by-laws-and-animal-services/commonly-requested-by-laws/by-law-library/fees-and-charges-by-law/",
+      "ag_import_fee_status": "Exempt ($0)",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Exempt ($0)",
+      "base_fee_small": 491.68,
+      "base_fee_large": 491.68,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt\"}",
+      "security_deposit_terms": "When permit required (non-exempt works >$50,000, By-law 2008-128 s. 8(2)): cash, certified cheque, or irrevocable bank LOC = 10% of first $200,000 estimated works cost + 1% of cost exceeding $200,000.",
+      "peer_review_recovery": "When permit required (By-law 2008-128 s. 8(3)): Applicant must submit Control Plan, EIS (if natural heritage), Stage 1+ Archaeological Assessment, and P.Eng./qualified person completion certification at owner's expense.",
+      "fee_formula_notes": "Site Alteration By-law 2008-128 (cons. 2009-11) s. 4(d) verbatim exempts all Site Alteration (placing/dumping fill, grade alteration) undertaken 'as part of a Normal Farm Practice, including, but not limited to, sod-farming, greenhouse operations, nurseries, and Agricultural Operations, but not including the removal of topsoil for sale, exchange, or other disposition' ($0; s. 4(k) also exempts rural landscaping fill outside EP/OS with ≤3:1 slope; s. 5(5) Drainage Act). For non-exempt sites, 2026 Fees & Charges By-law 2026-7 (passed Dec 16, 2025, updated Oct 1, 2026) sets: Site Alteration Permit = $491.68 + HST; Renewal (≥30 days pre-expiry) = $245.04 + HST."
+    }
+  },
+  {
+    "municipality": "Chatsworth",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Exempt - $0)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees and Charges By-law 2026-22 (Schedule G — Planning & Development, p. 10)",
+      "fees_bylaw_link": "https://chatsworth.ca/wp-content/uploads/2026/04/2026-22-Fees-and-Charges.pdf",
+      "ag_import_fee_status": "Exempt ($0)",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Exempt ($0)",
+      "base_fee_small": 70.0,
+      "base_fee_large": 2000.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt\"}",
+      "security_deposit_terms": "When non-exempt (By-law 2026-22 Sched G p. 10): Fill >500–<2,000 m³ = $2,000 security deposit; Fill >2,000 m³ = $5,000/ha security deposit + $5,000 mud-tracking/dust damage deposit.",
+      "peer_review_recovery": "By-law 2026-22 Sched G p. 10: Site Alteration Agreement prep = $1,000 (Medium 250–2,000 m³) or $2,500 (Large >2,000 m³; amendment $1,000); 'Any other costs incurred in excess of the fees listed above will be charged at a full cost recovery basis.'",
+      "fee_formula_notes": "Site Alteration By-law 2018-49 (visually verified scanned PDF) s. 1.41.3 excludes 'The carrying out of Agricultural Uses' from 'Site Alteration', AND s. 7.3.9 explicitly exempts 'Placement or Removal of Topsoil as an incidental part of normal agricultural practices' (excl. topsoil removal for sale) -> $0 for clean farm topsoil import. Also s. 7.1–7.2 exempts <0.5 ha not adjacent to EP. For non-exempt fill (By-law 2026-22 Sched G p. 10, eff. Feb 19, 2026): <500 m³ = $70.00 (may be waived); >500 to <2,000 m³ = $500.00 (+ $1,000 agmt); >2,000 m³ = $2,000.00 (+ $2,500 agmt); extension ≤500 m³ = $150.00."
+    }
+  },
+  {
+    "municipality": "Grey Highlands",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Fees & Charges By-law 2025-009 (Consolidated 2026, Schedule E p. 11) & Site Alteration By-law 2023-083",
+      "fees_bylaw_link": "https://greyhighlands.civicweb.net/filepro/document/384906/Consolidated%20By-law%20No.%202025-009%20-%20Fees%20and%20Charges%20-%20Pdf.pdf",
+      "ag_import_fee_status": "Exempt up to Volume Cap",
+      "ag_exempt_volume_cap_m3": 1000.0,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Base + Per m³",
+      "base_fee_small": 150.0,
+      "base_fee_large": 300.0,
+      "per_m3_rate": 1.1,
+      "fee_calc_spec_json": "{\"type\": \"exempt_up_to_cap\", \"exempt_cap_m3\": 1000.0, \"charge_basis\": \"full\", \"above_cap\": {\"type\": \"base_plus_m3\", \"base\": 300.0, \"per_m3\": 1.1}}",
+      "security_deposit_terms": "Haul Route Agreement required for permits >1,000 m³ on municipal highways; securities for road improvements/damage repair TBD by Director (By-law 2023-083 s. 5.1, 5.5)",
+      "peer_review_recovery": "Qualified Person pre- & post-construction topographic surveys and monthly scale load tickets required to reconcile actual volume (s. 11.3, 12.6); O. Reg. 406/19 compliance",
+      "fee_formula_notes": "By-law 2023-083 s. 2.4 & s. 2.6 exempt ≤1,000 m³ in any consecutive 12-month period ($0; no permit or registration required). Above 1,000 m³ (By-law 2025-009 Sched E p. 11, excl. HST): Permit Fee = $300.00 + Haul Route Fee = $1.10/m³ when utilizing Municipal Highways (50% of volume fee due upfront on est. +10%, reconciled to actual; 50% fee reduction under s. 11.5 if owner completes structural road improvements; extension $150). Projects >1,000 m³ not using municipal highways require $150 Registration only."
+    }
+  },
+  {
+    "municipality": "Meaford",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees & Charges By-law 2026-09 (Schedule E p. 20 & Sched C p. 15–16) & Grading By-law 058-2010",
+      "fees_bylaw_link": "https://www.meaford.ca/wp-content/uploads/2026/06/2026-09-fees-charges-2026-schedule-m-omitted.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 225.0,
+      "base_fee_large": 225.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 225.0}",
+      "security_deposit_terms": "$1,500.00 refundable grading/security deposit per By-law 058-2010 s. 4(c) (Schedule E also lists Grading Permit First Lot $1,500 / Second Lot $750 / Subsequent $500; Rural Road Damage Deposit $1,000)",
+      "peer_review_recovery": "Drainage & grading plan prepared and certified upon completion by P.Eng. or OLS (By-law 058-2010 s. 4(b),(d)); additional engineering review fees where required (Sched C p. 15)",
+      "fee_formula_notes": "2026 Fees & Charges By-law 2026-09 Schedule E (p. 20): Grading Permit Application – Fill & Alteration Inspection Fee (Non-refundable) = $225.00 flat (up from $120.00 in By-law 058-2010 s. 4(a); waived if issued with a Building Permit). Note: Schedule E also lists Grading Permit – First Lot $1,500.00 (corresponding to By-law 058-2010 $1,500 grading deposit referenced in Sched C Note 5), and Sched C Building lists Lot Grading $1,545.00 + review fees. No $/m³ fee."
+    }
+  },
+  {
+    "municipality": "The Blue Mountains",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2021,
+      "fees_bylaw_name": "In Fill By-law 2002-78 (Office Consolidation, s. 4)",
+      "fees_bylaw_link": "https://www.thebluemountains.ca/sites/default/files/2021-09/Fill-By-law-2002-78-Office-Consolidation.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 100.0,
+      "base_fee_large": 100.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 100.0}",
+      "security_deposit_terms": "$3,000.00 refundable security deposit required as a condition of any fill permit (By-law 2002-78 s. 4(c))",
+      "peer_review_recovery": "Drainage & grading plan prepared and post-completion certified by P.Eng. or OLS prior to release of $3,000 deposit (s. 4(b),(d))",
+      "fee_formula_notes": "Fill By-law 2002-78 (Office Consolidation) s. 4(a): Flat $100.00 permit fee (no $/m³ rate; waived if issued in conjunction with a Building Permit) + $3,000.00 security deposit. Administered via Cloudpermit; cross-check Building/Engineering schedules for any future CPI updates."
+    }
+  },
+  {
+    "municipality": "Dysart et al",
+    "fields": {
+      "fee_verification_status": "Not Published Online",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Fees and Charges By-law No. 2026-15 (No Site Alteration / Relief Fee Published; By-law 2023-101 Shoreline/EP Only)",
+      "fees_bylaw_link": "https://media-003-ca.cdn.govstack.com/dysartetal-ca/media/irub0pri/by-law-2026-15-fees-and-charges.pdf",
+      "ag_import_fee_status": "Pending",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Not Published",
+      "base_fee_small": null,
+      "base_fee_large": null,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"not_published\"}",
+      "security_deposit_terms": "No site alteration security deposit published in By-law 2023-101 or 2026 Fees By-law 2026-15.",
+      "peer_review_recovery": "By-law 2023-101 s. 8.1 requires a landscape and/or grading and drainage plan at applicant expense for relief requests; no standalone site alteration peer-review tariff is itemized in By-law 2026-15 (Planning Sched. E lists $5,000 peer review deposit for Planning Act applications).",
+      "fee_formula_notes": "Site Alteration By-law 2023-101 (passed Nov 28, 2023) s. 3.1 applies ONLY within 30 m of a high water mark and within Environmental Protection (EP) zones (agricultural lands outside 30 m shoreline buffers/EP zones are unregulated). Within shoreline/EP zones there is no standard fill permit tier or agricultural exemption — only s. 8.1 Relief requests to the CBO ('with the applicable fee') and POA set fines ($500–$700). Checked 2026 Fees & Charges By-law 2026-15 (Schedules A–F) and 2026 Building By-law 2025-106: no Site Alteration or s. 8.1 Relief fee dollar amount is published online."
+    }
+  },
+  {
+    "municipality": "Halton Hills",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Municipal Rates and Service Charges By-law No. 2025-0104 (Transportation & Public Works — Engineering Site Alteration, p. 16)",
+      "fees_bylaw_link": "https://www.haltonhills.ca/getContentAsset/7d8c9929-ae86-45a9-82ca-de35945343f9/5765e65f-0e8b-4885-a5ce-2084ab89c9fb/BY-LAW-NO-2025-0104.pdf",
+      "ag_import_fee_status": "Exempt up to Volume Cap",
+      "ag_exempt_volume_cap_m3": 29.0,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 1622.0,
+      "base_fee_large": 5320.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"exempt_up_to_cap\", \"exempt_cap_m3\": 29.0, \"charge_basis\": \"full\", \"above_cap\": {\"type\": \"area_based\", \"small_base_under_5000m3\": 1622.0, \"small_per_hectare\": 50.0, \"large_base_5000m3_plus\": 5320.0, \"large_per_m2_disturbed\": 0.15}}",
+      "security_deposit_terms": "By-law 2025-0009 s. 11.1: 100% of estimated cost of site control measures, stabilization, completion, municipal highway/public works restoration, and Town inspection/consulting costs (certified cheque <$5,000; irrevocable LOC or certified cheque >=$5,000)",
+      "peer_review_recovery": "By-law 2025-0009 s. 11.1(a)(vii) & Schedules C/E/H: Applicant guarantees payment of all Town peer review, QA/QC, inspection, sampling, and consulting costs; By-law 2025-0104 Engineering staff time $104/hr regular ($155/hr after-hours) + 15% admin",
+      "fee_formula_notes": "Site Alteration By-law 2025-0009 (eff. Apr 1, 2025) Sched B s. 3.1(a) exempts Rural Agricultural Use zoned lots up to 29 m³ topsoil per consecutive 6-month period (<=0.15 m grade increase, >=0.6 m from lot line). Above 29 m³, By-law 2025-0104 (eff. Jan 1, 2026, p. 16, HST exempt): Alteration of a Site (Small Scale <5,000 m³) = $1,622.00 + $50.00/ha; Large Scale (>=5,000 m³) or Commercial (no SPA) = $5,320.00 + $0.15/m² ($1,500.00/ha) of disturbed area; Subwatershed Impact Study site = $4,015.00 + $125.00/ha of entire property. Agreement = $300 (mandatory & registered on title for >=5,000 m³); Renewal = 50% of current fee; Additional Review (after 2nd) = $619; Additional Inspection = $426; Appeal = $500; Residential tiers $440-$3,000. No out-of-municipality fill ban in By-law 2025-0009."
+    }
+  },
+  {
+    "municipality": "Milton",
+    "fields": {
+      "fee_verification_status": "Verified (Scanned PDF)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "User Fees By-law No. 064-2026 (Schedule I, Table I-1 — Engineering Services, eff. Jan 1, 2026; corroborated by Report ES-038-26)",
+      "fees_bylaw_link": "https://media-003-ca.cdn.govstack.com/milton-ca/media/srujzzen/064-2026_-user-fees-by-law.pdf",
+      "ag_import_fee_status": "Exempt up to Volume Cap",
+      "ag_exempt_volume_cap_m3": 20.0,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 2974.0,
+      "base_fee_large": 2974.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"exempt_up_to_cap\", \"exempt_cap_m3\": 20.0, \"charge_basis\": \"full\", \"above_cap\": {\"type\": \"area_based\", \"base\": 2974.0, \"per_hectare\": 424.0, \"min_hectares\": 1.0}}",
+      "security_deposit_terms": "By-law 094-2022 s. 8.2: 100% of estimated cost of site control measures, stabilization, and works (Director may waive cost estimate <=50 m³); By-law 064-2026 Table I-1: Road Damage Deposit = $10,000 min + $8,000 per 100m of road lane",
+      "peer_review_recovery": "By-law 064-2026 Schedule I: Applicant pays 100% of actual peer review consultant costs (Town Peer Review Roster) + staff time; By-law 094-2022 s. 7.2(1)-(2): Applicant pays all certified lab soil testing & O. Reg. 406/19 QP certification costs",
+      "fee_formula_notes": "Visually verified from scanned By-law 064-2026 Table I-1 (and ES-038-26 text, eff. Jan 1, 2026, HST exempt): Site Alteration Permit = $2,974.00 ($3,068 eff. Jan 1, 2027) + Site Alteration Per Hectare Fee = $424.00/ha ($437 eff. Jan 1, 2027) on total combined disturbed area (min 1 ha charge per Town webpage, which still displays older $2,783 + $397/ha); Extension = $1,487.00 ($1,534 in 2027). By-law 094-2022 s. 3.5(1) exempts Rural Agricultural lots up to lesser of 20 m³ or 2 triaxle loads per consecutive 4-month period (<=0.15 m grade increase, >=0.6 m from lot line); NFP permit applications require FBRN/tax proof (s. 4.4(16)). No out-of-municipality fill ban in By-law 094-2022 (s. 2.18 prohibits tipping fees unless zoned landfill)."
+    }
+  },
+  {
+    "municipality": "Hamilton, C",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Growth Management User Fees & Charges (eff. Jan 1, 2026) & Site Alteration Application Form (Rev. Jan 2, 2026) under By-law 19-286 (amended by 23-068)",
+      "fees_bylaw_link": "https://www.hamilton.ca/build-invest-grow/planning-development/planning-policies-guidelines/comprehensive-development",
+      "ag_import_fee_status": "Exempt up to Volume Cap",
+      "ag_exempt_volume_cap_m3": 500.0,
+      "out_of_muni_fill_ban": "Yes",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 1155.0,
+      "base_fee_large": 3540.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt_up_to_cap\", \"exempt_cap_m3\": 500.0, \"charge_basis\": \"full\", \"above_cap\": {\"type\": \"flat\", \"flat_fee\": 3540.0}}",
+      "security_deposit_terms": "By-law 19-286 s. 21 & Schedule B (cash or irrevocable LOC): 50% of value of earthworks + 100% of estimated cost to restore affected lands (grade & seed), soil testing, erosion/siltation controls, and municipal road/infrastructure remediation",
+      "peer_review_recovery": "By-law 19-286 s. 33 & s. 36(a): City may retain consultants/experts/legal counsel for peer review, testing, or sampling and recover actual costs + 15% admin/staff fee + 15% annual interest (collectible via tax roll); Agronomist Report & QP Soil Management Plan required >500 m³ (Jan 2026 App Form); Engineering Special Studies = Consultant + 25% PM fee + $2,095 admin",
+      "fee_formula_notes": "Verified from Growth Management 2026 User Fees (eff. Jan 1, 2026, HST n/a), Jan 2, 2026 Site Alteration Application Form (https://www.hamilton.ca/sites/default/files/2026-01/pedapplications-site-plan-alteration-permit-application-jan2026.pdf), and consolidated By-law 19-286 (amended by 23-068): (1) s. 7(2)(a) grants a one-time per-property $0 Exemption Permit in the Rural Area up to 500 m³ for improving site drainage/soil quality (Hamilton-origin fill only, 48h advance notice); (2) s. 14 Minor Agricultural (<=500 m³ NFP, if one-time exemption already used/inapplicable) & Residential Minor Permit = $1,155.00 flat (up from $696 in 2019 Sched A); (3) s. 15(4) Major Agricultural (>500 m³) & Non-Residential Major Permit = $3,540.00 flat (up from $2,770 in 2019 Sched A; $0/m³). 4th+ submission = $845/plan type; contravention/Order = 2x fee (s. 20(2)); s. 25(1) strictly bans transporting fill/topsoil from outside Hamilton on all rural/agricultural lands (By-law 23-068 s. 7 / s. 25(2) exempts Urban Employment Areas only)."
+    }
+  },
+  {
+    "municipality": "Quinte West",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2025-2027 Consolidated Fees & Charges By-law 24-154 (2026 Schedule, p. 17)",
+      "fees_bylaw_link": "https://quintewest.ca/wp-content/uploads/2025/02/24-154-2025-2027-Consolidated-Fees-and-Charges-By-law.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": 50.0,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 175.0,
+      "base_fee_large": 3500.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"area_based\", \"under_0_3_ha\": 175.0, \"0_3_to_1_0_ha\": 1000.0, \"over_1_0_ha\": 3500.0}",
+      "security_deposit_terms": "Not explicitly itemized on p. 17 fee schedule; Director may require agreement/conditions under By-law 08-30",
+      "peer_review_recovery": "Staff/equipment cost recovery for claims/remediation at actual cost (p. 17)",
+      "fee_formula_notes": "By-law 08-30 s. 5(ii) triggers a Site Alteration Permit when fill volume exceeds 50 m³. 2025–2027 Consolidated Fees By-law 24-154 (p. 17, 2026 rate, HST incl.) prices permits by site AREA (not $/m³): <0.3 ha = $175; 0.3–1.0 ha = $1,000; >1.0 ha = $3,500 (renewal 50%). Volumetric benchmarks left blank because fee depends on disturbed acreage."
+    }
+  },
+  {
+    "municipality": "Ashfield-Colborne-Wawanosh",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Consolidated Fee By-law 25-2026 (Section S, p. 10) & Site Alteration By-law 28-2023",
+      "fees_bylaw_link": "https://acwtownship.ca/content/government/by-laws/treasury/25-2026-consolidated-fees.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 300.0,
+      "base_fee_large": 300.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 300.0}",
+      "security_deposit_terms": "Securities may be required by the Director per By-law 28-2023 s. 4(i) & s. 13",
+      "peer_review_recovery": "Qualified Person tests, reports, plans or studies per Schedule B as required by Director (By-law 28-2023 s. 4(g))",
+      "fee_formula_notes": "2026 Consolidated Fee By-law 25-2026 Section S (p. 10): 'Site Alteration Permit, Plus Drainage Area' = $300.00 flat (no $/m³ charge). Farm exemption under By-law 28-2023 is Drainage Act / Tile Drainage Act only."
+    }
+  },
+  {
+    "municipality": "South Huron",
+    "fields": {
+      "fee_verification_status": "Not Published Online",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees and Charges By-law 77-2025 (checked — no standalone Site Alteration / Fill by-law or fee)",
+      "fees_bylaw_link": "https://www.southhuron.ca/media/ot2izc3r/77-2025-fees-and-charges-by-law.pdf",
+      "ag_import_fee_status": "Pending",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Not Published",
+      "base_fee_small": null,
+      "base_fee_large": null,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"not_published\"}",
+      "security_deposit_terms": null,
+      "peer_review_recovery": "General Planning Schedule A cost recovery applies only to Planning Act subdivision/lot-grading/drainage agreements.",
+      "fee_formula_notes": "Existing DB record referenced Comprehensive Zoning By-law 69-2018 rather than a Site Alteration by-law. Search of South Huron municipal by-laws and full inspection of 17-page 2026 Fees and Charges By-law 77-2025 confirm no standalone Site Alteration, Fill, or Topsoil Removal by-law or permit fee schedule is published online."
+    }
+  },
+  {
+    "municipality": "Lambton Shores",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees & Charges By-law 80-2025 (Amended July 2026, Sched B s. 10.14 & Sched D s. 4.1)",
+      "fees_bylaw_link": "https://media-003-ca.cdn.govstack.com/lambtonshores-018-ca/media/pjblcp1i/2026-fees-and-charges-schedule-amended-july-2026.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 100.0,
+      "base_fee_large": 100.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 100.0}",
+      "security_deposit_terms": "Heavy Load Road Deposit $5,000.00 minimum (or actual value if >$5,000) + $200 Heavy Load Permit if applicable (Sched D s. 3.1–3.2)",
+      "peer_review_recovery": "Development inspection $95/hr where applicable (Sched D s. 1.29)",
+      "fee_formula_notes": "2026 Fees & Charges By-law 80-2025 (amended July 2026): Site Alteration Permit Application = $100.00 flat (listed in both Schedule B s. 10.14 Building & Bylaw and Schedule D s. 4.1 Public Works; no $/m³ fee). Note separate Heavy Load Permit ($200) and $5,000 minimum Road Deposit if heavy haul trucks trigger Sched D s. 3.1."
+    }
+  },
+  {
+    "municipality": "Drummond-North Elmsley",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Exempt - $0)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Tariff of Fees By-law 2025-050 (Schedule C, p. 5) & Topsoil Removal By-law 2012-056",
+      "fees_bylaw_link": "https://www.dnetownship.ca/images/By-Law_No._2025-050_-_Tariff_of_Fees_By-Law.pdf",
+      "ag_import_fee_status": "Exempt ($0)",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Exempt ($0)",
+      "base_fee_small": 800.0,
+      "base_fee_large": 800.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt\"}",
+      "security_deposit_terms": "N/A for topsoil import (By-law 2012-056 regulates topsoil removal only)",
+      "peer_review_recovery": null,
+      "fee_formula_notes": "By-law 2012-056 is a Topsoil Removal By-law ONLY — it does not regulate or charge fees for importing clean topsoil/fill onto farms ($0 for import; removal incidental to normal ag practice is also exempt). For non-exempt commercial topsoil stripping, 2026 Tariff of Fees By-law 2025-050 (Schedule C, p. 5) charges an $800.00 flat 'Top Soil Removal Application' fee."
+    }
+  },
+  {
+    "municipality": "Gananoque",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "General Fees & Rates By-law 2025-015 (Consolidated May 20, 2026, Schedule L p. 20)",
+      "fees_bylaw_link": "https://s3.ca-central-1.amazonaws.com/gananoque.ca/s3fs-public/by-laws/By-law%20No.%202025-015-Establish%20a%20General%20Fees%20&%20Rates%20By-law-CONSOLIDATED-20May2026.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 550.0,
+      "base_fee_large": 1000.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"area_based\", \"base\": 550.0, \"per_hectare\": 275.0, \"max_fee\": 1000.0}",
+      "security_deposit_terms": "Cash, certified cheque, or irrevocable LOC in an amount approved by Director (By-law 2016-050 s. 3(c))",
+      "peer_review_recovery": "P.Eng. completion certification if required by Director; EIS required for Environmentally Sensitive designations (s. 3(c),(e))",
+      "fee_formula_notes": "General Fees & Rates By-law 2025-015 (Consolidated May 20, 2026, Schedule L p. 20): Fill / Alteration of Grade Permit = $550.00 + $275.00/ha or part hectare, capped at an overall maximum of $1,000.00 (+ HST; renewal same fee; permit valid 2 years). Area-based so volumetric benchmarks are left blank. Note: By-law 2016-050 p. 5 also includes a commonly accepted ag practice reference for Prime Agricultural/Rural lands."
+    }
+  },
+  {
+    "municipality": "Loyalist",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Exempt - $0)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Miscellaneous Fees & Charges By-law 2025-59 (and Fill By-law 2003-22 s. 2(c)(viii) Ag Exemption)",
+      "fees_bylaw_link": "https://loyalist.civicweb.net/filepro/document/218690/2025-59-2026FeesandChargesBy-law.pdf",
+      "ag_import_fee_status": "Exempt ($0)",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Exempt ($0)",
+      "base_fee_small": 300.0,
+      "base_fee_large": 1000.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt\"}",
+      "security_deposit_terms": "When permit required (Fill By-law 2003-22 s. 3(c)): Cash, certified cheque, or irrevocable bank LOC in amount approved by Director (release may require P.Eng. seal).",
+      "peer_review_recovery": "When permit required (Fill By-law 2003-22 s. 3(e) & s. 4(b)): EIS by qualified professional if Environmentally Sensitive; P.Eng. certifications prior to permit issuance and upon completion at owner's expense.",
+      "fee_formula_notes": "Fill By-law 2003-22 s. 2(c)(viii) verbatim exempts permit requirements where 'fill is dumped or placed on lands zoned Prime Agricultural or Rural where there is a alteration to the grade of land as an incidental part of a commonly accepted agricultural practice' ($0; s. 2(c)(xvi) Drainage Act). For non-exempt sites, 2026 Fees & Charges By-law 2025-59 (passed Nov 11, 2025, eff. 2026–2027) & By-law 2003-22 Sched A charge $300.00 + $250.00 per hectare or part hectare (overall maximum fee $1,000.00; same fee for 2-yr renewal)."
+    }
+  },
+  {
+    "municipality": "Central Manitoulin",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Exempt - $0)",
+      "fee_year": 2008,
+      "fees_bylaw_name": "In Topsoil Preservation By-law 2008-04 (Schedule A, p. 6 — Topsoil Removal Only)",
+      "fees_bylaw_link": "https://www.centralmanitoulin.ca/media/tkedcu2u/2008-04_topsoil_preservation_by-law_with_application_attached_0.pdf",
+      "ag_import_fee_status": "Exempt ($0)",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Exempt ($0)",
+      "base_fee_small": 100.0,
+      "base_fee_large": 100.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt\"}",
+      "security_deposit_terms": "For non-exempt topsoil removal: LOC or certified cheque equal to engineer's estimated rehabilitation cost (max assessed property value)",
+      "peer_review_recovery": "Engineer's Control & Rehabilitation Plan required for non-exempt topsoil removal permits",
+      "fee_formula_notes": "By-law 2008-04 is a Topsoil Preservation (Removal Only) by-law — it does not regulate or charge fees for importing clean topsoil/fill onto farms ($0 for import; removal incidental to normal ag practice is also exempt). Non-exempt commercial topsoil removal permits are $100.00/hectare (Schedule A, p. 6)."
+    }
+  },
+  {
+    "municipality": "Georgian Bay",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Exempt - $0)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "In Site Alteration By-law 2014-72 (cons. May 2024; verified $0 in 2026 Fees By-law 2025-083)",
+      "fees_bylaw_link": "https://media-003-ca.cdn.govstack.com/gbtownship-ca/media/lvignhsh/consolidated-site-alteration-by-law-2014-72.pdf",
+      "ag_import_fee_status": "Exempt ($0)",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Exempt ($0)",
+      "base_fee_small": 0.0,
+      "base_fee_large": 0.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt\"}",
+      "security_deposit_terms": null,
+      "peer_review_recovery": null,
+      "fee_formula_notes": "Consolidated Site Alteration By-law 2014-72 (amended by 2017-65 & 2024-039) applies solely to shoreline areas and EP/OS zones and explicitly states: 'There are no licenses, permits or fees required with this By-law. Council may grant exceptions from this By-law.' Inland agricultural lands are outside scope, s. 4(i) exempts statutory NFP topsoil removal, and full check of 42-page 2026 Fees & Charges By-law 2025-083 confirms $0 / no Site Alteration permit fee."
+    }
+  },
+  {
+    "municipality": "Gravenhurst",
+    "fields": {
+      "fee_verification_status": "Verified (Scanned PDF)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 User Fees and Service Charges By-law 2025-69 (Schedule 1, B-1 Planning, p. 4, eff. Jan 1, 2026)",
+      "fees_bylaw_link": "https://www.gravenhurst.ca/media/stwh34p1/2025-069-repeals-2024-88-2026-user-fees-and-service-charges.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 370.0,
+      "base_fee_large": 370.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 370.0}",
+      "security_deposit_terms": null,
+      "peer_review_recovery": "By-law 2014-27 s. 5(c) & Sched A: Town may require Sedimentation Control Plan, archaeological, EIA, geotechnical, or hydrogeological reports at owner's expense.",
+      "fee_formula_notes": "Signed 2026 User Fees By-law 2025-69 (passed Sept 16, 2025, eff. Jan 1, 2026, Schedule 1 B-1 Planning p. 4): Site Alteration Permit (prior to work) = $370.00 flat; Site Alteration Permit (unauthorized works started prior to permit) = $738.00. Note: Site Alteration By-law 2014-27 s. 2 applies only within 60 m of lake/river OSWL, EP/FP/FF/FW zones, shoreline buffer, 45 m of Hwy 11, and 20 m of listed Scenic Corridors (inland farmland outside s. 2 zones is unregulated; s. 4(e) exempts statutory Drainage Act & incidental NFP topsoil removal excl. sale)."
+    }
+  },
+  {
+    "municipality": "Muskoka Lakes",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees & Charges By-law 2025-136 (Schedule D eff. Oct 7, 2026, p. 10)",
+      "fees_bylaw_link": "https://muskokalakes.civicweb.net/filepro/document/191477/FeesandChargesBy-law2025-136.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 500.0,
+      "base_fee_large": 500.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 500.0}",
+      "security_deposit_terms": "Order non-compliance work billed at cost recovery + 50%; registration on title cost recovery + 25%",
+      "peer_review_recovery": "Additional non-compliance inspections $200 each (Sched D p. 10)",
+      "fee_formula_notes": "2026 Fees & Charges By-law 2025-136 Schedule D (effective Oct 7, 2026, p. 10, referencing By-law 2022-108): Site Alteration Permit Application Fee = $500.00 flat (no $/m³ charge); Renewal = $250.00; Review of Director Decision = $250.00."
+    }
+  },
+  {
+    "municipality": "Lincoln",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees & Charges By-law 2025-61 (Schedule A, p. 40/44) & By-law 2024-50",
+      "fees_bylaw_link": "https://www.lincoln.ca/sites/default/files/2025-12/2025-61%202026%20Fees%20%26%20Charges.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 459.0,
+      "base_fee_large": 765.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"area_based\", \"lte_0_4_ha_base\": 459.0, \"gt_0_4_ha_base\": 765.0, \"per_hectare\": 25.0, \"inspection_fee\": 153.0}",
+      "security_deposit_terms": "Security in a form and amount acceptable to Director required upon permit/transfer (By-law 2024-50 s. 8.10)",
+      "peer_review_recovery": "Proof of soil/fill testing & external approvals at applicant's expense (By-law 2024-50 s. 8.3)",
+      "fee_formula_notes": "2026 Fees & Charges By-law 2025-61 Schedule A (p. 40, HST exempt): Site Alteration Permit Class 1 (Fill/Alteration) Base Fee = $459.00/yr (≤0.4 ha) or $765.00/yr (>0.4 ha) + $25.00/ha/yr Fill Area Fee + $153.00 Site Inspection Fee (revision $124; renewal 50%; unpermitted work doubled). Schedule also lists Fill Permit at 10% of work value up to $250 + $113 inspection flat fee. Area-based so volumetric benchmarks are left blank."
+    }
+  },
+  {
+    "municipality": "Niagara Falls",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "City of Niagara Falls 2026 Schedule of Fees (Effective Jan 1, 2026 — Official Webpage)",
+      "fees_bylaw_link": "https://niagarafalls.ca/city-government/budget-and-finances/schedule-of-fees/",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 200.0,
+      "base_fee_large": 200.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 200.0}",
+      "security_deposit_terms": "2026 Schedule of Fees: Applicable security deposit required in addition to $200 application fee (amount determined per application; separate residential lot grading deposits listed at $1,000/lot unassumed subdivision or $1,500/lot infill)",
+      "peer_review_recovery": "Not published on 2026 Schedule of Fees; truck route diagram, engineering drawings, and environmental reports may be required at applicant's cost",
+      "fee_formula_notes": "Official 2026 Schedule of Fees live webpage (eff. Jan 1, 2026, Road Permits / Site Alteration Permits section): Site Alteration Permit Application = $200.00 flat (HST N/A) plus applicable security deposit. Governing By-law 2007-260 (amended by 2015-08) s. 25-26 exempts statutory incidental NFP topsoil removal only (excluding sale/exchange); no agricultural fill-import exemption or volumetric fee. Full By-law 2007-260 PDF is not publicly accessible online (behind municipal archives), so out-of-municipality fill ban status is Unknown."
+    }
+  },
+  {
+    "municipality": "Port Colborne",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 User Fees & Charges (Report 2025-165, Schedule N pp. 41–42) & By-law 5528-125-10",
+      "fees_bylaw_link": "https://www.portcolborne.ca/media/file/report-2025-165-2026-proposed-user-fees-charges",
+      "ag_import_fee_status": "Exempt up to Volume Cap",
+      "ag_exempt_volume_cap_m3": 500.0,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 580.0,
+      "base_fee_large": 1155.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 500, \"exempt\": true}, {\"up_to_m3\": 1000, \"flat_fee\": 580.0}, {\"up_to_m3\": null, \"flat_fee\": 1155.0}]}",
+      "security_deposit_terms": "$1,000.00 refundable security deposit required (returned after final inspection; Schedule N p. 42)",
+      "peer_review_recovery": "Peer review costs paid by applicant; Haul Route Inspection $115.00; Post-issuance engineering/zoning review $1,150.00; separate Niagara Region & NPCA review fees may apply",
+      "fee_formula_notes": "2026 User Fees Schedule N (pp. 41–42, plus HST where applicable): Exempt up to lot-size cap (≤500 m³ on lots >0.5 ha; smaller caps of 10/50/100 m³ on smaller lots). Above threshold: >500 to <1,000 m³ = $580.00 flat (up from $550 in 2025); >1,000 m³ = $1,155.00 flat (up from $1,100 in 2025; NO $/m³ fee). Plus $115 haul route inspection & $1,000 security. Post-commencement surcharge = 150%; unpermitted violation investigation = 100% of app fee."
+    }
+  },
+  {
+    "municipality": "Welland",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "City of Welland 2026 Fees and Charges (Appendix I, Infrastructure Services — Engineering, p. 10)",
+      "fees_bylaw_link": "https://www.welland.ca/media/bzwjrlgm/2026-fees-and-charges.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 357.0,
+      "base_fee_large": 663.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 663.0}",
+      "security_deposit_terms": "By-law 2010-81 Schedule A: Irrevocable Letter of Credit for 110% of estimated cost of ESC/site control/site alteration measures + $5,000.00 cash deposit for municipal road damages (mud tracking & dust control)",
+      "peer_review_recovery": "P.Eng.-certified Site Alteration Plan & Report required (s. 4.1.5, 4.1.7); Agricultural Lands require P.Eng./soil scientist soil fertility report (s. 2.8, 4.1.9); Director may require additional inspection fees on 180-day extensions (s. 5.0)",
+      "fee_formula_notes": "2026 Fees & Charges Appendix I (p. 10, HST exempt): Site Alteration Permit = $357.00 (<=2 dwelling units; $350 in 2025) or $663.00 (>2 dwelling units, any permitted use other than dwelling units including Agricultural Lands, or properties subject to development application; $650 in 2025). By-law 2010-81 s. 3.6-3.7 exempts statutory Drainage Act & incidental NFP topsoil removal; s. 3.9 exempts <=5 m³ topsoil; s. 2.8 caps Agricultural Lands depth at 300 mm (unless Director approves depression fill) with fertility certificate; s. 4.1.12 states 'None or a negligible amount of fill is imported or exported' as a general permit condition (not a geographic out-of-municipality ban); $5M liability insurance required (s. 4.1.4)."
+    }
+  },
+  {
+    "municipality": "West Lincoln",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Consolidated Schedule of Fees & Charges (Schedule A, pp. 20–21) & By-law 2016-41",
+      "fees_bylaw_link": "https://media-003-ca.cdn.govstack.com/westlincoln-002-ca/media/v5ijx5b0/schedule-a-consolidated-schedule-of-fees-and-charges-2026-final.pdf",
+      "ag_import_fee_status": "Exempt up to Volume Cap",
+      "ag_exempt_volume_cap_m3": 1000.0,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 603.0,
+      "base_fee_large": 1200.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt_up_to_cap\", \"exempt_cap_m3\": 1000.0, \"charge_basis\": \"full\", \"above_cap\": {\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 5000, \"flat_fee\": 1194.0}, {\"up_to_m3\": null, \"flat_fee\": 1200.0}]}}",
+      "security_deposit_terms": "Road Damage Deposit not exceeding $5,000.00 (By-law 2016-41 s. 14(c)); additional non-interest-bearing security 'As needed' via Council Site Alteration Agreement (>1,000 m³, s. 22)",
+      "peer_review_recovery": "Site Alteration Plan & any Director-requested studies/NPCA approvals at applicant expense (s. 14); >1,000 m³/yr requires Council hearing & 120m neighbour notice (s. 21–23)",
+      "fee_formula_notes": "By-law 2016-41 s. 12(i)(b) (as amended by By-law 2018-80) exempts topsoil import improving agricultural soil capability on Agricultural Lands as Normal Farm Practice up to 1,000 m³/calendar year ($0; Schedule D notice still required). Above 1,000 m³/yr (2026 Consolidated Fees pp. 20–21, HST exempt, visually verified): 1,000–5,000 m³/yr = $1,194.00; >5,000 m³/yr = $1,200.00 flat in 2026 column (note: 2025 column printed '$1,137 + $1,000/1,000 m³ > 5,000 m³'; non-ag <500 m³ = $250, 500–1,000 m³ = $603). Fees double if fill hauled prior to approval; commercial fill operations prohibited (s. 7)."
+    }
+  },
+  {
+    "municipality": "Alnwick-Haldimand",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Exempt - $0)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "In Fill By-law No. 46-2012 (s. 3.3 NAP Topsoil Exemption); Commercial Fee Not Published in By-law 90-2025 / 2026-29",
+      "fees_bylaw_link": "https://www.ahtwp.ca/s/Fill-By-law-46-2012.pdf",
+      "ag_import_fee_status": "Exempt ($0)",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Exempt ($0)",
+      "base_fee_small": null,
+      "base_fee_large": null,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt\"}",
+      "security_deposit_terms": "By-law 46-2012 s. 5.2(h): Security in a form and amount determined by the CBO/BLEO to secure work performance and address potential damage to municipal roads/infrastructure (when a permit is required); non-compliance mud/dust remediation charged at cost + 30% admin fee (s. 5.4).",
+      "peer_review_recovery": "By-law 46-2012 s. 6.3: Fill Quality Auditing Program & fill testing by Township-retained qualified expert at applicant expense (when permit applies). By-law 2026-29 (amending 90-2025, Building Sched. F): Lot Grading & Drainage Peer Review $1,000.00 (100% applicant cost recovery).",
+      "fee_formula_notes": "Fill By-law 46-2012 (passed Apr 25, 2012, verified from scanned PDF) s. 3.3 exempts topsoil removed OR placed as an incidental part of bona fide Normal Agricultural Practice ($0 for clean agricultural topsoil import; excludes sale/exchange/disposition of topsoil per s. 1.12; Drainage Act/Tile Drainage Act exempt under s. 3.1(g)). For non-topsoil/commercial fill requiring a permit, s. 5.2(b) defers to prescribed municipal fees (90-day permit; renewal 50% per s. 7.2), but no standalone Fill Permit fee line item is published in the 2026 Fees & Charges By-law 90-2025 / amending By-law 2026-29 schedules (Administration, Building, Planning, Public Works all checked at https://ahtwp.squarespace.com/arena-1)."
+    }
+  },
+  {
+    "municipality": "Brighton",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Exempt - $0)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "General Fees and Charges By-law No. 022-2026 (and Fill By-law No. 114-2016 s. 3.3)",
+      "fees_bylaw_link": "https://brighton.civicweb.net/document/180901/",
+      "ag_import_fee_status": "Exempt ($0)",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Exempt ($0)",
+      "base_fee_small": 500.0,
+      "base_fee_large": 500.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt\"}",
+      "security_deposit_terms": "By-law 022-2026 (non-exempt fill permits): $2,000.00 trust deposit at application + Security Deposit of $3,000.00/ha or $10,000.00 minimum, whichever is greater, at permit issuance; non-compliance mud/dust control billed at cost + 30% admin fee (By-law 114-2016 s. 5.5).",
+      "peer_review_recovery": "By-law 022-2026 item 6: Applicant pays peer review fees (drawn against $2,000.00 trust deposit); By-law 114-2016 s. 5.2(f) & 6.2 require Qualified Person non-contaminated fill certification (when permit applies).",
+      "fee_formula_notes": "Fill By-law 114-2016 (passed Nov 7, 2016) s. 3.3 explicitly exempts topsoil removed OR placed as an incidental part of a bona fide Normal Agricultural Practice ($0 for clean agricultural topsoil import; Drainage Act/Tile Drainage Act exempt under s. 3.1(f)). For non-exempt/subsoil or commercial fill (General Fees & Charges By-law 022-2026, items 6–8): Fill Control Application $200.00 + $2,000 trust deposit + peer review fees; Fill Control Initial Permit $500.00 (includes app fee) + $2.00/m³ of fill + security deposit max($3,000/ha, $10,000); 90-day extension = 50% of Initial Permit Fee."
+    }
+  },
+  {
+    "municipality": "Cobourg",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2025,
+      "fees_bylaw_name": "Fees and Charges By-law No. 059-2024 (Engineering Services Item 55; citing Fill By-law 035-2012)",
+      "fees_bylaw_link": "https://media-001-ca.cdn.govstack.com/cobourg-008-ca/media/13zb2jil/059-2024-fees-and-charges-by-law.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 500.0,
+      "base_fee_large": 500.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 500.0}",
+      "security_deposit_terms": "By-law 059-2024 Item 50 (not governed by development agreement): Refundable lot grading deposit $2,500/lot or $5,000/block. Specific Fill By-law 035-2012 security deposit terms not published online.",
+      "peer_review_recovery": "Not itemized under Fill Permit Application in By-law 059-2024 (full text of Fill By-law 035-2012 not published online).",
+      "fee_formula_notes": "Fees and Charges By-law 059-2024 (p. 62, Engineering Services Fees Not Governed by Development Agreement, Item 55): Fill Permit Application = $500.00 flat per application (citing By-law 035-2012; unchanged 2024–2025 and reported unchanged in 2026 Fees By-law 064-2025 via Town eScribe index, though direct eScribe PDF returned HTTP 403). No volumetric $/m³ charge and no dedicated agricultural tier published; full text of Fill By-law 035-2012 is not posted online."
+    }
+  },
+  {
+    "municipality": "Cramahe",
+    "fields": {
+      "fee_verification_status": "Verified (Scanned PDF)",
+      "fee_year": 2025,
+      "fees_bylaw_name": "Fees and Charges By-law No. 2023-53 (Schedule E — Operations; corroborated by active Site Alteration Application Form)",
+      "fees_bylaw_link": "https://www.cramahe.ca/media/5mphzd4e/2023-53-fees-and-charges-by-law-schedule-a-e.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Tiered Volume + Per m³",
+      "base_fee_small": 500.0,
+      "base_fee_large": 500.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"unit_note\": \"Large Fill Operation (>500 m3) is billed at $500.00 + $1.00/tonne (weight-based with no statutory m3 conversion in schedule)\", \"brackets\": [{\"up_to_m3\": 100, \"exclusive_upper\": true, \"exempt\": true}, {\"up_to_m3\": 500, \"flat_fee\": 500.0}]}",
+      "security_deposit_terms": "Site Alteration & Fill Permit Application requires a Securities Cost Estimate covering collective cost of fill installation, sediment & erosion control, seeding/sodding, and required site restoration.",
+      "peer_review_recovery": "Application requires Qualified Person / geotechnical engineer certification that fill contains no contaminated fill; By-law 2023-53 Schedule C notes full cost recovery for external professionals retained by Township.",
+      "fee_formula_notes": "Verified visually from scanned By-law 2023-53 Schedule E (Operations Department, p. 10) and corroborated verbatim by Cramahe's active Site Alteration & Fill Permit Application PDF (https://media-003-ca.cdn.govstack.com/cramahe-018-ca/media/gqyj5c1d/site-alteration-application.pdf): Minor Fill Operation (<100 m³) = No Fee; Small Fill Operation (>100–500 m³) = $500.00 flat; Large Fill Operation (>500 m³) = $500.00 + $1.00/tonne of fill (non-refundable). Because >500 m³ is billed per tonne with no published m³-to-tonne conversion factor, 5,000 m³ and 15,000 m³ benchmarks evaluate to null rather than assuming an unverified bulk density. Full text of By-law 2017-18 and By-law 2025-50 Operations Schedule E not posted online."
+    }
+  },
+  {
+    "municipality": "Blandford-Blenheim",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2025/2026 Fees & Charges By-law (Schedule J, p. 15) & Fill By-law 1915-2015",
+      "fees_bylaw_link": "https://www.blandfordblenheim.ca/media/z3vb23vw/combined.pdf",
+      "ag_import_fee_status": "Exempt up to Volume Cap",
+      "ag_exempt_volume_cap_m3": 500.0,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 250.0,
+      "base_fee_large": 550.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"exempt_up_to_cap\", \"exempt_cap_m3\": 500.0, \"exclusive_upper\": true, \"charge_basis\": \"full\", \"above_cap\": {\"type\": \"area_based\", \"under_2_ha\": 250.0, \"at_2_ha\": 550.0, \"per_additional_ha\": 25.0}}",
+      "security_deposit_terms": "As required under Fill By-law 1915-2015",
+      "peer_review_recovery": null,
+      "fee_formula_notes": "Fill By-law 1915-2015 s. 3.1(i) exempts placement of <500 m³/yr of fill on agriculturally zoned land >2 ha (≥10m from any property line). Above 500 m³, 2026 Fees Schedule J (p. 15, HST exempt) prices Site Alteration applications by AREA (not $/m³): <2 ha = $250.00; 2 ha = $550.00; + $25.00 per additional hectare beyond 2 ha. Volumetric benchmarks left blank due to area-based pricing."
+    }
+  },
+  {
+    "municipality": "South-West Oxford",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees and Charges By-law 75-2025 (amending By-law 40-2025, Schedule A, eff. Jan 1, 2026)",
+      "fees_bylaw_link": "https://www.swox.org/media/ilaecrql/75-2025_by-laws_to-amend-by-law-40-2025-to-provide-for-the-adoption-of-user-fee-rates-fees-and-charges-by-law-_12_16_2025.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 360.0,
+      "base_fee_large": 360.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 360.0}",
+      "security_deposit_terms": null,
+      "peer_review_recovery": null,
+      "fee_formula_notes": "By-law 75-2025 (passed Dec 16, 2025, eff. Jan 1, 2026, Schedule A) establishes: Top Soil Permit Application Fee = $360.00 flat; Top Soil Permit Renewal Fee = $255.00. Note: Governs Topsoil Removal under By-law 25-2005 (full text of By-law 25-2005 is not published online on swox.org to verify non-statutory agricultural exemptions or whether fill placement is regulated)."
+    }
+  },
+  {
+    "municipality": "Ryerson",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Fees & Charges By-law 31-23 (2023–2027 Tariff, Schedule G, p. 11 — 2026 Column)",
+      "fees_bylaw_link": "https://www.ryersontownship.ca/content/town-hall/bylaws/fees-by-law-2.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 100.0,
+      "base_fee_large": 950.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 100.0}",
+      "security_deposit_terms": "By-law 31-23 Sched G p. 11 & Fill By-law 11-12 s. 3: Simple Fill Permit has no fixed deposit; non-simple Fill Permit is rolled into a Site Plan Agreement requiring $1,000.00 deposit (Minor SPA) or $6,000.00 deposit (Major SPA).",
+      "peer_review_recovery": "Fill By-law 11-12 s. 3 & s. 4(b): Applicant pays actual costs of Township professional consultants (planners, lawyers, surveyors, engineers) in addition to fixed fees; staff time $50/hr.",
+      "fee_formula_notes": "By-law 31-23 Schedule G (p. 11, 2026 column): Simple Fill/Site Alteration Permit (e.g., top-dressing <4 in. topsoil, raising existing driveway to flood level, septic, fill within 20 ft of permitted building, or Council-waived SPA) = $100.00 flat (subsequent unchanged = $50.00). Non-simple Fill/Site Alteration Permit is 'Included in Site Plan Agreement': Minor SPA (2026) = $950.00 admin + $1,000 deposit; Major SPA (2026) = 5% of site work cost ($1,900–$6,200) + $6,000 deposit. Note: Fill By-law 11-12 applies ONLY inside the Magnetawan River Floodplain & PSW (lands outside are unregulated; s. 2(a)(ii) excludes plowing/cultivation/harvesting; s. 4(b) restricts permits to floodproofing/access/septic)."
+    }
+  },
+  {
+    "municipality": "Seguin",
+    "fields": {
+      "fee_verification_status": "Verified (Scanned PDF)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Planning Services Fees By-law 2025-079 (Schedule A, p. 5, eff. Jan 1, 2026)",
+      "fees_bylaw_link": "https://seguin-media-378010997338.s3.ca-central-1.amazonaws.com/s3fs-public/2025-12/2025-079%20-%20Fees%20Planning.pdf?VersionId=e4WJw99LbyiGTdAhaAqTxDCertf1Yyaj",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 900.0,
+      "base_fee_large": 900.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 900.0}",
+      "security_deposit_terms": "Site Alteration By-law 2024-007 s. 5.4: Discretionary Financial Assurance (cash, certified cheque, bank draft, or LOC) equal to estimated cost of re-vegetation, restoration, and studies/inspections determined by a Professional.",
+      "peer_review_recovery": "By-law 2025-079 Sched A p. 5 Notes: Applicant must enter agreement to pay all Township Solicitor and/or Consultant costs plus actual agreement registration costs.",
+      "fee_formula_notes": "2026 Planning Services Fees By-law 2025-079 (passed Oct 6, 2025, eff. Jan 1, 2026, visually verified scanned PDF Schedule A p. 5): Tree Cutting/Fill/Blasting Exemption Request (Shoreline Site Alteration) = $900.00 flat (+ applicable taxes); Renewal = 50% ($450.00 per By-law 2024-007 s. 7.1); Contravention surcharge = +75% (CAO/Director may waive under Special Circumstances). Note: Site Alteration By-law 2024-007 s. 2.1 applies ONLY within 60 m of a Shoreline and EP/EP1 zones (inland agricultural lands outside shoreline/EP are unregulated; s. 3.1(i) statutory NFP topsoil removal)."
+    }
+  },
+  {
+    "municipality": "The Archipelago",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2025,
+      "fees_bylaw_name": "Site Alteration & Tree Preservation Exemption Fee By-law (passed Mar 21, 2025, Schedule A, p. 3)",
+      "fees_bylaw_link": "https://thearchipelago.on.ca/uploads/dm/61585/Fee_Bylaw",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 750.0,
+      "base_fee_large": 750.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 750.0}",
+      "security_deposit_terms": "Fee By-law (Mar 21, 2025) s. 2.1 & Sched A: $1,000.00 refundable professional services deposit required with application (unused portion refunded).",
+      "peer_review_recovery": "Fee By-law (Mar 21, 2025) s. 2.1 & Sched A: $1,000.00 deposit covers Township consultant, lawyer and surveyor costs; applicant invoiced full actual cost exceeding deposit.",
+      "fee_formula_notes": "Site Alteration & Tree Preservation Exemption Fee By-law (passed Mar 21, 2025, Schedule A p. 3; confirmed on application form, active in 2026): Site Alteration By-law Site-Specific Exemption = $750.00 flat (+ $1,000 refundable professional services deposit); Combined Site Alt + Tree Preservation Exemption = $1,000.00; Appeal to Council = $300.00. Note: Site Alteration By-law 2025-04 (eff. Apr 1, 2025) s. 3(a) applies only to NS, NSC, ES, ES1, ES2, CR, IR and GR zones; s. 5(b)(vii) statutory Drainage Act exemptions only."
+    }
+  },
+  {
+    "municipality": "Mississauga",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "User Fees and Charges By-law 0165-2025 (Schedule B-1 Transportation & Works p. 46 & Schedule A pp. 30-31, eff. Jan 1, 2026)",
+      "fees_bylaw_link": "https://www.mississauga.ca/wp-content/uploads/2026/01/05112744/Schedule-B-1-Transportation-and-Works-Fees-and-Charges.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 228.0,
+      "base_fee_large": 956.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"area_based\", \"under_1_ha_flat\": 228.0, \"base_1_ha_plus\": 956.0, \"per_hectare\": 67.0}",
+      "security_deposit_terms": "By-law 0172-2020 Sched A (amended by 0159-2025; bank draft/certified cheque): ESC Permit = 100% of estimated site control measures; Lot Grading Deposit = $5,000 (pool), $10,000 (single dwelling), $20,000 (multi-unit/ICI new construction) or TBD by Commissioner; MSPD = $150/m frontage ($700/m with CMP)",
+      "peer_review_recovery": "By-law 0165-2025 Sched B-1 (p. 45): Peer Review Consultant = Actual Cost + 15% admin (+13% HST); non-Planning Act technical report/plan review = $100/hr (min $100); Sched B-2 remediation works = Direct Costs + 25% admin",
+      "fee_formula_notes": "Fully urban; no agricultural/NFP exemption in Lot Grading & MSPD By-law 0172-2020 (amended through 0159-2025). By-law 0165-2025 Schedule B-1 (eff. Jan 1, 2026, p. 46, HST exempt): Erosion and Sediment Control Permit (6-mo) = $228.00 (<1.0 ha) or $956.00 + $67.00/ha (>=1.0 ha); 6-mo renewals = $131 (<1 ha), $404 (1-<5 ha), $691 (5-<20 ha), $1,243 (>=20 ha). Schedule A (pp. 30-31, +13% HST) sets Lot Grading/Site Review Fees: $840 (Site Plan/10+ units/ICI), $1,050 (infill <=10 units no SPA), $525 (additions/alterations); 2nd+ compliance investigation $630 (multi-unit/dev) or $235 (single/semi). No out-of-municipality fill ban."
+    }
+  },
+  {
+    "municipality": "North Perth",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees & Charges By-law 120-2025 (Schedule B, p. 13) & By-law 7-2023",
+      "fees_bylaw_link": "https://media-001-ca.cdn.govstack.com/northperth-003-ca/media/3wxna3o2/schedule-b-development-and-protective-services.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 380.82,
+      "base_fee_large": 380.82,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 380.82}",
+      "security_deposit_terms": "$5,000.00 refundable Site Alteration Deposit for third-party review costs (By-law 120-2025 Sched B p. 13; refunded upon CBO approval of Schedule C)",
+      "peer_review_recovery": "Applicant responsible for ALL third-party municipal review costs (planners, engineers, solicitors, consultants, agencies, conservation authorities), invoiced or drawn from $5,000 deposit (By-law 7-2023 s. 5)",
+      "fee_formula_notes": "2026 Fees & Charges By-law 120-2025 Schedule B (eff. Jan 1, 2026, p. 13): Site Alteration Permit = $380.82 flat (no $/m³ fee) + $5,000.00 deposit for third-party review cost recovery."
+    }
+  },
+  {
+    "municipality": "Perth East",
+    "fields": {
+      "fee_verification_status": "Not Published Online",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees and Charges By-law 58-2025 (checked — no Topsoil / Site Alteration / Fill permit fee)",
+      "fees_bylaw_link": "https://www.pertheast.ca/wp-content/uploads/2023/11/Draft-By-law-58-2025-2026-Fees-and-Charges.pdf",
+      "ag_import_fee_status": "Pending",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Not Published",
+      "base_fee_small": null,
+      "base_fee_large": null,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"not_published\"}",
+      "security_deposit_terms": null,
+      "peer_review_recovery": null,
+      "fee_formula_notes": "Full text of Topsoil Removal By-law 76-2002 is not published online. Full review of the 32-page 2026 Fees and Charges By-law 58-2025 (linked from Perth East's 58-2025 by-law page) confirms zero Topsoil Removal, Site Alteration, or Fill permit fees are published (only Building grading plan deposit and landfill impacted soil tipping fee $197.30/tonne)."
+    }
+  },
+  {
+    "municipality": "Stratford",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees and Charges By-law 125-2025 (consolidated to July 27, 2026, Schedule D, p. 27)",
+      "fees_bylaw_link": "https://media-003-ca.cdn.govstack.com/stratford-ca/media/hyuffhau/by-law-125-2025-fees-and-charges-2026_consolidated-to-july-27-2026-aoda.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 522.75,
+      "base_fee_large": 522.75,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 522.75}",
+      "security_deposit_terms": "By-law 125-2025 Sched D p. 27: $2,000.00 initial legal deposit required for Site Alteration Agreement (excess invoiced; unused portion refunded); permit performance security terms not published online (By-law 102-2022 text unavailable).",
+      "peer_review_recovery": "By-law 125-2025 Sched D p. 27: Preparation of Site Alteration Agreement (incl. registration) = $943.00 + all legal fees incl. registration ($2,000.00 initial deposit).",
+      "fee_formula_notes": "2026 Fees & Charges By-law 125-2025 (passed Sept 22, 2025, cons. to July 27, 2026, Schedule D p. 27): Site Alteration Permit Fee = $522.75 flat; Renewal Fee = $522.75; Transfer of Permit Fee = $261.40; Preparation of Site Alteration Agreement = $943.00 + all legal fees ($2,000 initial deposit). No farm fee tier in By-law 125-2025; full text of Site Alteration By-law 102-2022 is not published online on stratford.ca to verify agricultural exemptions beyond statutory."
+    }
+  },
+  {
+    "municipality": "Cavan Monaghan",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2025,
+      "fees_bylaw_name": "2025 User Fees & Charges By-law 2024-68 (Schedule A, p. 11) & Fill Control By-law 2020-19",
+      "fees_bylaw_link": "https://media-003-ca.cdn.govstack.com/cavanmonaghan-018-ca/media/2yykertb/schedule-a-2025-user-fees-and-charges-by-law-no-2024-68-final.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": 50.0,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Tiered Volume + Per m³",
+      "base_fee_small": 500.0,
+      "base_fee_large": 750.0,
+      "per_m3_rate": 1.9,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 50, \"exclusive_upper\": true, \"exempt\": true}, {\"up_to_m3\": 500, \"base\": 500.0, \"per_m3\": 0.24}, {\"up_to_m3\": null, \"base\": 750.0, \"per_m3\": 1.9}]}",
+      "security_deposit_terms": "$3,000.00 or 100% of off-site remediation & land restoration cost (whichever is greater) + highway maintenance security TBD by CBO/Director",
+      "peer_review_recovery": "Fill quality testing actual cost + 15% admin fee; external legal & consulting costs charged back on case-by-case basis; additional inspections $250 each (By-law 2020-19 Sched A)",
+      "fee_formula_notes": "2025 User Fees By-law 2024-68 Schedule A (p. 11, cash-discounted excl. tax): <50 m³/yr exempt (s. 3.02(e)); <500 m³ = $500.00 + $0.24/m³ (updated down from $1.00/m³ in By-law 2020-19; extension $250); >500 m³ = $750.00 + $1.90/m³ (extension $375). Note: s. 3.02(f) exempts ≤20 cm/yr topsoil replacement specifically incidental to sod farming, greenhouses & nurseries (storage ≤500 m³); general farm fill/topsoil import pays Schedule A rates. Overfill/unpermitted penalty: double fee + $100.00/m³."
+    }
+  },
+  {
+    "municipality": "Peterborough, C",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Site Alteration Application Guide (Fees and Charges By-law; SABL By-law No. 25-108)",
+      "fees_bylaw_link": "https://media-002-ca.cdn.govstack.com/memorialcentre-011-ca/media/leblktkt/site-alteration-2026-application-guide.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 300.0,
+      "base_fee_large": 1500.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"area_based\", \"minor_flat\": 300.0, \"intermediate_base\": 1000.0, \"major_base\": 1500.0, \"per_hectare\": 1000.0, \"major_max\": 20000.0}",
+      "security_deposit_terms": "2026 Application Guide s. 5.2: Site-specific security deposit may be required for Intermediate and Major permits, set after staff review to reflect cost of grading and erosion control needed to stabilize the site if abandoned; refunded upon completion and stabilization.",
+      "peer_review_recovery": "2026 Application Guide Table 3: Intermediate permits require grading plan, ESC plan, soil characterization report, and design brief; Major permits also require geotechnical and hydrogeological studies prepared by qualified professionals at applicant expense.",
+      "fee_formula_notes": "Site Alteration By-law 25-108 (passed Sept 22, 2025) s. 9(b) & 10(f) exempt only incidental topsoil removal for NFP and Drainage Act/Tile Drainage Act works (importing fill/topsoil is not exempt; small-scale exemption <10 m³, <150 mm, <500 m²). 2026 Application Guide Table 4 (area-based, not $/m³): Minor (≤30 m³, <500 m²) = $300.00 flat; Intermediate (>30–500 m³, 500–5,000 m²) = $1,000.00 + $1,000.00/ha disturbed area (no cap); Major (>500 m³, >5,000 m²) = $1,500.00 + $1,000.00/ha disturbed area (max $20,000.00). Valid 1 year; permit fees deducted from subsequent development approval grading/ESC fees."
+    }
+  },
+  {
+    "municipality": "Adjala-Tosorontio",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Tier)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees and Charges By-law No. 2025-056 (Schedule D — Public Works, pp. 8–9)",
+      "fees_bylaw_link": "https://adjtos.ca/wp-content/uploads/2026/01/By-law-2025-056-A-By-law-to-Establish-Fees-and-Charges-to-be-Collected-by-the-Corporation-of-the-Township-of-Adjala-Tosorontio-and-to-repeal-By-law-2024-012-1.pdf",
+      "ag_import_fee_status": "Reduced Farm Tier",
+      "ag_exempt_volume_cap_m3": 100.0,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Base + Per m³",
+      "base_fee_small": 1500.0,
+      "base_fee_large": 1500.0,
+      "per_m3_rate": 1.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt_up_to_cap\", \"exempt_cap_m3\": 100.0, \"charge_basis\": \"full\", \"above_cap\": {\"type\": \"base_plus_m3\", \"base\": 1500.0, \"per_m3\": 1.0}}",
+      "security_deposit_terms": "2026 Schedule D: Agricultural Security Deposit for Review $1,500.00 (Major commercial $5,000.00); Site Alteration & Fill Agreement Deposit $5,000.00 (if required); Fill Permit Site Plan min deposit $1,000.00; Fill Entrance deposit $2,000.00 (+ $500 entrance permit); Road Security Deposit TBD by Township Engineer.",
+      "peer_review_recovery": "2026 Schedule D & By-law 20-47 s. 12.9(f): Plans & Reports Review fee $500.00 (Agricultural/Minor) or $1,000.00 (Major); Consultant/Legal Fees & Consultant Inspections at actual cost + 15% administration fee; Extra Inspections $150.00; Agrologist Report & O. Reg. 406/19 QP Fill Management Plan required.",
+      "fee_formula_notes": "Verified visually from enacted 2026 Fees By-law 2025-056 Schedule D (pp. 8–9, HST applicable) & consolidated Site Alteration By-law 20-47 (s. 5.1, 10.1, 11.1, 12.2): Agricultural topsoil replacement >100 m³ (s. 10.1) uses dedicated Agricultural tier = $1,500.00 application fee + $1.00/m³ ('Agriculture Use Table 1 Certified Fill' tipping fee — half the $2.00/m³ commercial rate; plus $500.00 Plans & Reports Review fee; renewal $750 + tipping fees). Agricultural Berms to protect crops >100 m³ are $0 application fee (s. 12.2) and $0 tipping fee (Sched. D). Commercial non-ag rates: Minor (≤300 m³) $1,000 + $2.00/m³; Major (>300 m³) $2,000 + $2.00/m³ (+ $2,000 Agreement fee)."
+    }
+  },
+  {
+    "municipality": "Barrie",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Fees By-law 2026-006 (Schedule D — Planning, Section 6: Site Alteration, p. 5)",
+      "fees_bylaw_link": "https://www.barrie.ca/Fees-Bylaw_Schedule-D.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 2013.2,
+      "base_fee_large": 4026.3,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"area_based\", \"exempt_under_ha\": 0.5, \"minor_up_to_5ha_flat\": 2013.2, \"major_over_5ha_flat\": 4026.3, \"deposit_per_ha\": 6478.0}",
+      "security_deposit_terms": "2026 Schedule D s. 6.2: Site Alteration Area Deposit $6,478.00/hectare + Security Deposit for road damage (mud tracking/dust control) $5,000.00.",
+      "peer_review_recovery": "2026 Schedule D s. 6.2: External legal, engineering, environmental, and landscape consultants billed at Full Cost Recovery + 25% Administration Fee; inspections $121.22/hr regular ($181.83/hr after-hours weekday, $242.46/hr weekend); QP fertility certificate required on Agricultural lands (By-law 2014-100 s. 5.7).",
+      "fee_formula_notes": "Site Alteration By-law 2014-100 (verified from scanned PDF) s. 6.0 exempts sites <0.5 ha (outside EP, no drainage impact); s. 6.2.6–6.2.7 exempt only Drainage Act/Tile Drainage Act and incidental NAP topsoil removal (s. 6.2.11 exempts ≤5 m³ topsoil); s. 5.7 requires a QP fertility certificate for any Site Alteration on Agricultural lands. 2026 Fees By-law 2026-006 Schedule D s. 6 (area-based, not $/m³): Minor Permit (≤5.0 ha) = $2,013.20; Major Permit (>5.0 ha) = $4,026.30. Renewal (before expiry): Minor $1,586.08, Major $3,304.44; Amendment $330.57."
+    }
+  },
+  {
+    "municipality": "Bradford West Gwillimbury",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Tier)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Fees and Charges By-law No. 2026-001 (Schedule A — Development Engineering, p. 32) & By-law 2017-33 s. 4.2",
+      "fees_bylaw_link": "https://media-003-ca.cdn.govstack.com/townofbwg-ca/media/nk1phs1e/by-law-2026-001-2026-fees-and-charges-by-law-schedule-a-consolidation.pdf",
+      "ag_import_fee_status": "Reduced Farm Tier",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Reduced Farm Flat Fee",
+      "base_fee_small": 1500.0,
+      "base_fee_large": 3000.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 10000, \"exclusive_upper\": true, \"flat_fee\": 1500.0}, {\"up_to_m3\": null, \"flat_fee\": 3000.0}]}",
+      "security_deposit_terms": "By-law 2017-33 s. 5.1(j): Financial security in a form and amount determined by the Director to secure work performance and highway maintenance/mud/dust/road damage.",
+      "peer_review_recovery": "2026 Schedule A (p. 32) & By-law 2017-33 s. 7(g): External consultants and legal costs billed at actual costs incurred + 10% administration fee; Development Engineering staff hourly billing rates apply (Manager $221/hr); extra site inspections $250.00.",
+      "fee_formula_notes": "Fill and Site Alteration By-law 2017-33 (amended by By-law 2025-15, Feb 4, 2025) s. 1.2 & Part 4.2 create a dedicated 'Agricultural topsoil management works' tier for bona fide farmers (OFA/CFFO/FBRN proof) importing topsoil onto agricultural land, with flat fees in 2026 Schedule A (p. 32) and $0/m³ volumetric rate: Topsoil Management - Minor (<10,000 m³) = $1,500.00 flat; Topsoil Management - Major (>10,000 m³) = $3,000.00 flat (Director may also grant written permit waiver under s. 4.3). By contrast, non-ag commercial fill rates (p. 32) are <1,000 m³: $250+$0.80/m³ (max $1,050); 1,000–5,000 m³: $500+$0.70/m³ (max $4,000); 5,000–10,000 m³: $1,500+$0.60/m³ (max $7,500); >10,000 m³: $2,500+$0.50/m³ (max $10,000). Renewal $350 ($500 expired)."
+    }
+  },
+  {
+    "municipality": "Clearview",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Exempt - $0)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Fees and Charges By-law No. 25-01 (Consolidated Sept 28, 2026, Schedule E) & Fill By-law No. 25-67 s. 5.4(c)",
+      "fees_bylaw_link": "https://www.clearview.ca/file/25-001-fees-and-charges-law-consolidated-september-28-2026pdf",
+      "ag_import_fee_status": "Exempt ($0)",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Exempt ($0)",
+      "base_fee_small": 500.0,
+      "base_fee_large": 1000.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt\"}",
+      "security_deposit_terms": "By-law 25-67 s. 1 & 5.2: Monetary deposits and securities per Township Guidelines at Director discretion (when a permit is required); Normal Farm Practices exempt from permit under s. 5.4(c).",
+      "peer_review_recovery": "By-law 25-01 Schedule E (Roads & Public Works): Any legal and/or peer review consultants retained by Township billed at actual cost + 25% administrative charge (+ HST) (when permit applies).",
+      "fee_formula_notes": "Fill By-law 25-67 (passed Nov 24, 2025) s. 5.4(c) explicitly exempts Normal Farm Practice (defined in s. 1 via full FFPPA definition) from requiring a Site Alteration Permit ($0; substantive O. Reg. 406/19, Beneficial Purpose s. 3.12, and no-adverse-effect rules still apply per s. 5.5; written Director permit waiver also available under s. 5.4(f)). For non-exempt commercial/non-NFP fill (By-law 25-01 Consolidated Sept 28, 2026, Schedule E, HST exempt): Minor Site Alteration (≤100 m³/ha up to 1.0 ha one-time) = No Permit; Small Site (<1,000 m³/12 mo) = $500.00 + $0.70/m³; Large Site (≥1,000 m³) = $1,000.00 + $0.50/m³; Retroactive fee = double."
+    }
+  },
+  {
+    "municipality": "Collingwood",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees and Service Charges (Section A — Development & Growth, p. 10)",
+      "fees_bylaw_link": "https://www.collingwood.ca/media/file/2026-fees-and-chargespdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 380.0,
+      "base_fee_large": 4320.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"not_published\", \"tier_basis\": \"director_security_threshold\", \"security_lte_5000_flat\": 380.0, \"security_gt_5000_flat\": 4320.0}",
+      "security_deposit_terms": "Fill Permit Application (By-law 03-103): Certified cheque or Letter of Credit in an amount determined by the Director of Public Works & Engineering as performance security; security threshold ($5,000) sets the permit fee tier.",
+      "peer_review_recovery": "Application requires 3 sets of plans satisfactory to Director of Engineering & Public Works; Town may enter and complete works at applicant expense. Full Fill By-law 03-103 cost-recovery terms not published online.",
+      "fee_formula_notes": "2026 Fees and Service Charges (p. 10): Fill Permit requiring ≤$5,000 security = $380.00 flat; Fill Permit requiring >$5,000 security = $4,320.00 flat; Renewal = $131.00; Transfer = $131.00 (no $/m³ volumetric fee). Because the $380 vs $4,320 bracket depends on Director-determined security (with no published $/m³ security formula or m³ volume threshold) and full text of Fill By-law 03-103 is not published online (ag exemption & origin rules unverified), volumetric benchmarks evaluate to null rather than assuming an unverified volume-to-security cutoff."
+    }
+  },
+  {
+    "municipality": "New Tecumseth",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Tier)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Fees and Charges By-law No. 2024-077 (Amendment 6 — 2026 Rates, Schedule H — Development Engineering, pp. 28–29)",
+      "fees_bylaw_link": "https://www.newtecumseth.ca/wp-content/uploads/2026/05/2024-077-Fees-and-Charges-By-law-Amendment-6.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Base + Per m³",
+      "base_fee_small": 5979.6,
+      "base_fee_large": 5979.6,
+      "per_m3_rate": 2.15,
+      "fee_calc_spec_json": "{\"type\": \"base_plus_m3\", \"base\": 5979.6, \"per_m3\": 2.15}",
+      "security_deposit_terms": "2026 Schedule H (pp. 28–29, incl. HST): Replacement of Topsoil (Agricultural Purposes) & Large Scale require Deposit per Application $11,958.10 + Security Deposit of $1.35/m³ or Maximum Flat Fee $119,587.30, whichever is greater (Small Scale security deposit $5,979.60).",
+      "peer_review_recovery": "2026 Schedule H (pp. 28–29) & By-law 2024-116 s. 11.6: Mandatory Plan & Reports Examination Fee $1,457.00 (Ag Topsoil Replacement; vs $896.65 Small / $2,093.15 Large) + full third-party peer review & legal cost recovery (Sched. H Note 3; Planning Sched. Peer Review Cost + 5%); requires Agrologist Report, O. Reg. 406/19 QP Fill Management Plan & public consultation.",
+      "fee_formula_notes": "Visually verified from 2026 Schedule H (pp. 28–29, all rates incl. HST) & Site Alteration By-law 2024-116 (s. 5.1(b)(ii) & s. 11.0): Agricultural topsoil replacement (max 0.3 m depth) uses dedicated 'Replacement of Topsoil (Agricultural Purposes)' tier = $5,979.60 application fee + $2.15/m³ Municipal Fee (plus mandatory $1,457.00 Plan & Reports Exam Fee, $11,958.10 Deposit, and $1.35/m³ or $119,587.30 min/greater Security Deposit; renewal $1,794.30; FMP amendment $1,195.50). Notably, Ag Topsoil Replacement matches Large Scale commercial (≥1,000 m³: $5,979.60 + $2.15/m³, exam $2,093.15) and exceeds Small Scale commercial (<1,000 m³: $2,989.80 + $1.90/m³, exam $896.65)."
+    }
+  },
+  {
+    "municipality": "Orillia",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2024,
+      "fees_bylaw_name": "Municipal Code Chapter 452 — User Fees (By-law 2024-015, am. 2024-075, Schedule A, p. 452.5)",
+      "fees_bylaw_link": "https://orillia.civicweb.net/document/310414/",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 750.0,
+      "base_fee_large": 1500.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 1000, \"flat_fee\": 750.0}, {\"up_to_m3\": null, \"flat_fee\": 1500.0}]}",
+      "security_deposit_terms": "Chapter 373 Sched. A s. 1(r),(t): Securities equal to cost to implement and maintain erosion & sediment control plan + performance securities; $5,000,000 CGL & Pollution Liability Insurance naming City as insured (s. 373.5.5(n)).",
+      "peer_review_recovery": "Chapter 373 s. 373.5.5(o) & 373.4.10: City may engage legal, engineering, hydrology, environmental, or landscape consultants at 100% Owner/Operator cost recovery; applicant pays all City internal/external review & legal fees for >1,000 m³ Site Alteration Agreements.",
+      "fee_formula_notes": "Municipal Code Chapter 373 (By-law 2019-78, Sept 2023 consolidation) s. 373.3.2(f)-(g) exempt only Drainage Act/Tile Drainage Act and incidental NAP topsoil removal (s. 373.3.2(j) exempts ≤50 m³ residential/landscaping); s. 373.4.12 requires a Permit for agricultural topsoil replacement (capped at 0.2 m depth & 1,000 m³/yr unless GM + Council approve more). Enacted Chapter 452 Sched. A (June 2024 consolidation, current active on CivicWeb, p. 452.5): Site Alteration Permit = $300.00 (residential ≤3 units); $750.00 (ICI / multi-res >3 units / multiple lots — non-residential ≤1,000 m³); $1,500.00 (projects >1,000 m³); legacy Fill Permit line item $75.00 (p. 452.3). Unpermitted work = double fee + $250/inspection (s. 373.5.12)."
+    }
+  },
+  {
+    "municipality": "Penetanguishene",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Exempt - $0)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "In Site Alteration By-law No. 2012-69 (s. 5.1(c) Full NFP Exemption; No Standalone Fill Fee in By-law 2024-50)",
+      "fees_bylaw_link": "https://penetanguishene.civicweb.net/document/172728",
+      "ag_import_fee_status": "Exempt ($0)",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Exempt ($0)",
+      "base_fee_small": 0.0,
+      "base_fee_large": 0.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt\"}",
+      "security_deposit_terms": "By-law 2012-69 s. 4.2(f): Refundable grading review deposit required for non-exempt building/development lot grading (refunded less actual review expenses); Normal Farm Practices exempt under s. 5.1(c).",
+      "peer_review_recovery": "By-law 2012-69 s. 4.2(f): Actual Town engineering drainage/grading review expenses deducted from refundable deposit (applies to non-exempt building/development works only; NFP exempt).",
+      "fee_formula_notes": "Site Alteration By-law 2012-69 (Office Consolidation revised Sept 29, 2013) s. 5.1(c) exempts site alterations undertaken 'As part of a Normal Farm Practice, including, but not limited to, sod-farming, greenhouse operations, nurseries, and Agricultural Operations, but not including the removal of topsoil for sale, exchange, stockpiling of material or other disposition' ($0 for clean agricultural topsoil/fill import). For non-exempt properties, neither 2025 Fees & Charges By-law 2024-50 (active through 2026) nor the 2026 Building Fee Table publishes a standalone volumetric Site Alteration/Fill permit fee (lot grading approvals/deposits are administered via Building/Planning)."
+    }
+  },
+  {
+    "municipality": "Ramara",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Exempt - $0)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Fees and Charges By-law No. 2025.74 (Schedule F, eff. Jan 1, 2026) & Site Alteration By-law (Bill 2026.50, Sept 14, 2026, s. 5.1(i))",
+      "fees_bylaw_link": "https://ramara.civicweb.net/filepro/document/120545/FeesAndCharges.pdf",
+      "ag_import_fee_status": "Exempt ($0)",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Exempt ($0)",
+      "base_fee_small": 450.0,
+      "base_fee_large": 600.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"exempt\"}",
+      "security_deposit_terms": "Bill 2026.50 s. 2.2, 7.1(b), 8.3(h): Financial securities and Site Alteration Agreement may be required by General Manager (mandatory >1,000 m³ or >1 yr term for non-exempt permits; NFP exempt under s. 5.1(i)).",
+      "peer_review_recovery": "By-law 2025.74 Schedule F & Bill 2026.50 s. 6.2(d): External consultant and legal costs to review/evaluate studies or prepare legal documents billed at actual costs incurred (paid in advance) for non-exempt permits; extra site inspections $150.00.",
+      "fee_formula_notes": "Site Alteration By-law (Bill 2026.50, passed Sept 14, 2026, repealing and replacing By-law 2018.64) Part 5 s. 5.1(i) exempts Site Alteration undertaken as part of a Normal Farm Practice (FFPPA), including off-site fill demonstrated to be necessary for bona fide agricultural use and compliant with O. Reg. 406/19 (not for commercial fill disposal or revenue generation) ($0). For non-exempt site alterations, enacted 2026 Fees & Charges By-law 2025.74 Schedule F (p. 10, eff. Jan 1, 2026) charges area-based flat fees: <1 hectare = $450.00; ≥1 hectare = $600.00 (no $/m³ rate); extra inspections $150.00; external consultant/legal costs = actual costs incurred."
+    }
+  },
+  {
+    "municipality": "Springwater",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees and Charges By-law (Schedule I — Public Works Services)",
+      "fees_bylaw_link": "https://www.springwater.ca/media/rpadvzac/sch-i-public-works.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Tiered Volume + Per m³",
+      "base_fee_small": 150.0,
+      "base_fee_large": 1750.0,
+      "per_m3_rate": 0.5,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 1000, \"exclusive_upper\": true, \"base\": 150.0, \"per_m3\": 0.8}, {\"up_to_m3\": 5000, \"base\": 250.0, \"per_m3\": 0.7}, {\"up_to_m3\": 10000, \"base\": 750.0, \"per_m3\": 0.6}, {\"up_to_m3\": null, \"base\": 1750.0, \"per_m3\": 0.5}]}",
+      "security_deposit_terms": "By-law 2022-105 s. 6.4(m): Financial security (certified cheque, cash, or irrevocable LOC) in a form and amount determined by the Director to secure work performance and highway maintenance/mud/dust remediation.",
+      "peer_review_recovery": "2026 Schedule I: Legal, engineering, hydrology, hydrogeology, environmental, and landscape consultants retained by Township billed at actual cost + 25% administrative charge (By-law 2022-105 s. 6.4(t) references actual cost + 15% admin for peer review/QA/compliance); Engineering Site Inspection $515.00; O. Reg. 406/19 QP reporting required.",
+      "fee_formula_notes": "Fill and Site Alteration By-law 2022-105 (passed Dec 21, 2022) s. 4.1(a),(h),(m) exempt only statutory Drainage Act/Tile Drainage Act and incidental NAP topsoil removal (s. 4.1(b) ≤300 m³/yr applies to residential lawn dressing/landscaping/gardens ≤200 mm only; no NFP fill import exemption). 2026 Fees & Charges Schedule I (Cut & Fill Permit, piecewise-continuous across thresholds): <1,000 m³ = $150.00 + $0.80/m³; 1,000–5,000 m³ = $250.00 + $0.70/m³; 5,000–10,000 m³ = $750.00 + $0.60/m³; >10,000 m³ = $1,750.00 + $0.50/m³. Expired permit renewal $283.00; Engineering Site Inspection $515.00; unpermitted works = double fee + inspection fees (s. 5.2)."
+    }
+  },
+  {
+    "municipality": "Tay",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2025,
+      "fees_bylaw_name": "2025 User Fees & Service Charges By-law 2025-11 (Schedule A, p. 20) & Fill By-law 98-43",
+      "fees_bylaw_link": "https://www.tay.ca/media/klzoymgl/by-law-no-2025-11-amend-user-fees-and-service-charges.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 50.0,
+      "base_fee_large": 50.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"area_based\", \"first_ha\": 50.0, \"per_additional_ha\": 25.0}",
+      "security_deposit_terms": "Municipal Services Maintenance Deposit $1,500.00 / Lot Grading Deposit $3,000.00 where applicable (Sched A p. 20)",
+      "peer_review_recovery": "Inspector may require OLS or P.Eng. certification of existing & proposed elevations (By-law 98-43 s. 3.1(d))",
+      "fee_formula_notes": "2025 User Fees By-law 2025-11 Schedule A (p. 20, plus HST): Fill Permit = $50.00 up to 1 hectare of filled lands + $25.00 per additional hectare or part thereof (renewal 50%; Inspector may reduce or waive fee after consulting Planning & Development Committee per s. 5.10). Area-based so volumetric benchmarks are left blank."
+    }
+  },
+  {
+    "municipality": "Greater Sudbury",
+    "fields": {
+      "fee_verification_status": "Verified (Scanned PDF)",
+      "fee_year": 2009,
+      "fees_bylaw_name": "In Site Alteration By-law 2009-170 (s. 12–13, p. 10; enforcement fees in 2026 User Fee By-law 2026-04)",
+      "fees_bylaw_link": "https://www.greatersudbury.ca/sites/sudburyen/assets/content/div_clerks/documents/Regulate_Removal_of_Topsoil_Bylaw_2009-170.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 500.0,
+      "base_fee_large": 500.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"area_based\", \"min_fee\": 500.0, \"per_hectare\": 50.0, \"renewal_fee\": 250.0}",
+      "security_deposit_terms": "By-law 2009-170 s. 25–26: $500.00 per hectare of Site Alteration area (or higher if retained Professional opines greater rehabilitation security is needed) via irrevocable LOC, certified cheque, or cash.",
+      "peer_review_recovery": "By-law 2009-170 s. 8(4)/(6) & Sched A: P.Eng. or Landscape Architect-stamped Control Plan & monitoring commitment at owner's expense; 2026 User Fee By-law 2026-04 Sched P&G-5 planning peer review deposit $4,800 (full cost recovery).",
+      "fee_formula_notes": "Site Alteration By-law 2009-170 (visually verified 34p scanned PDF, amended 2016-171 & 2021-118) s. 12–13 (p. 10) — area-based (not $/m³) and NOT superseded by 75p 2026 Miscellaneous User Fee By-law 2026-04: Permit Fee = Greater of $500.00 or $50.00 per hectare (same for area extension); Renewal/Transfer = $250.00 (permits valid up to 5 yrs, s. 14). Director may reduce fee/security (s. 23). Enforcement fees in By-law 2026-04 Sched P&G-9: compliance/remedial action $245.00 ($216.81 + HST), appeal $140.00. s. 3(7)–(8) exempts statutory Drainage Act & incidental NFP topsoil removal (excl. sale); s. 6 prohibits topsoil removal permits in Agricultural Reserve except Existing Operations."
+    }
+  },
+  {
+    "municipality": "Thunder Bay",
+    "fields": {
+      "fee_verification_status": "Not Published Online",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 User Fee Schedules A–U (By-law 24-2025 / 42-2026 checked — no Site Alteration / Fill permit fee)",
+      "fees_bylaw_link": "https://www.thunderbay.ca/city-hall/budget-and-finance/user-fees-and-charges/",
+      "ag_import_fee_status": "Pending",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Not Published",
+      "base_fee_small": null,
+      "base_fee_large": null,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"not_published\"}",
+      "security_deposit_terms": null,
+      "peer_review_recovery": null,
+      "fee_formula_notes": "Existing DB record listed By-law 135-1997 with an unrelated broken water-fill-station link. No standalone Site Alteration, Fill, or Topsoil Removal by-law is published on thunderbay.ca (waterway fill is regulated by Lakehead Region Conservation Authority). Full inspection of all 21 2026 User Fee Schedules (Schedules A–U) confirms zero Site Alteration/Fill permit fees (Schedule O only lists landfill impacted soil tipping fees $0.04517/kg & $100 soil assessment)."
+    }
+  },
+  {
+    "municipality": "Kitchener",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Budget Appendix E — User Fees (Engineering, Items 121–124, eff. Jan 1, 2026)",
+      "fees_bylaw_link": "https://www.kitchener.ca/media/rnppeqzf/cok_fin_budget_2026_appendix-e_user-fees.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 346.0,
+      "base_fee_large": 346.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"flat\", \"flat_fee\": 346.0}",
+      "security_deposit_terms": "Municipal Code Ch. 633 s. 633.9.2: Director may require financial security in form & amount determined by Director to secure performance and ESC maintenance; 2026 User Fees items 128–129 list Damage Deposit $153.93/m frontage + inspection $55/m frontage (max $528).",
+      "peer_review_recovery": "Ch. 633 s. 633.8: Owner provides Control Plan & engineering/ESC documentation at own expense; no explicit third-party peer review fee schedule published.",
+      "fee_formula_notes": "2026 Budget Appendix E User Fees (Items 121–124, eff. Jan 1, 2026, HST exempt; confirmed on kitchener.ca/site-alteration): Site Alteration Permit = $346.00 flat (up from $333.00 in 2025); Permit with Revisions = $214.00; Permit Renewal (≥30 days pre-expiry) = $140.00. Municipal Code Ch. 633 (By-law 2010-043, amended 2023 lowering lot-size exemption from 0.405 ha to 0.1 ha) s. 633.3.6–633.3.8 exempts only statutory Drainage Act and incidental NFP topsoil removal (excl. sale)."
+    }
+  },
+  {
+    "municipality": "North Dumfries",
+    "fields": {
+      "fee_verification_status": "Verified (Scanned PDF)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 User Fees & Charges By-law 3609-25 (Schedule F — Planning & Dev. Engineering, pp. 31–34)",
+      "fees_bylaw_link": "https://media-002-ca.cdn.govstack.com/northdumfries-015-ca/media/04snasfw/planning-development-fees-charges-2026.pdf",
+      "ag_import_fee_status": "Exempt up to Volume Cap",
+      "ag_exempt_volume_cap_m3": 500.0,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Tiered Volume + Per m³",
+      "base_fee_small": 1800.0,
+      "base_fee_large": 5000.0,
+      "per_m3_rate": 0.32,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 500.0, \"exclusive_upper\": true, \"exempt\": true}, {\"up_to_m3\": 1000.0, \"base\": 1800.0, \"per_m3\": 0.32}, {\"up_to_m3\": null, \"base\": 5000.0, \"per_m3\": 0.32}]}",
+      "security_deposit_terms": "By-law 3609-25 Sched F p. 34 & Fill By-law 2612-14 s. 3.3(c)/3.4: Refundable Application Deposit $7,000 (Standard) or $25,000 (Complex); Permit Approval LOC min $5,000 (required >1,000 m³); Mud-Tracking Cash Deposit $2,500; Peer Review-Monitoring Deposit TBD.",
+      "peer_review_recovery": "By-law 3609-25 Sched F p. 34: All peer review & external technical/legal/engineering/hydrogeology/environmental expenses + 11% Administration Processing Fee deducted from refundable deposit.",
+      "fee_formula_notes": "Fill By-law 2612-14 (cons. Oct 15, 2021) s. 2.2(j) exempts placing <500 m³/yr of Fill on agriculturally zoned land >2 ha if placed ≥10 m from property lines ($0; strictly '<500 m³', so 500 m³ hits Tier A = $1,960). s. 3.6–3.7 also waives lot-grading plan for <1,000 m³ agricultural land improvement. Above exemption, 2026 User Fees By-law 3609-25 Sched F (pp. 31–32, eff. Jan 1, 2026, HST N/A; confirmed on 2026 Permit App v1.0-2026): Tier A (≤1,000 m³) = $1,800.00 + $0.32/m³; Tier B (1,001–20,000 m³) = $5,000.00 + $0.32/m³; Tier C (≥20,001 m³) = $5,000.00 + $0.32/m³."
+    }
+  },
+  {
+    "municipality": "Waterloo, C",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Fees and Charges By-law 2026-047 (eff. Sept 1, 2026)",
+      "fees_bylaw_link": "https://www.waterloo.ca/media/zeqjquvr/fees-and-charges-bylaw.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 715.0,
+      "base_fee_large": 2160.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"area_based\", \"application_fee\": 160.0, \"first_hectare_fee\": 555.0, \"per_additional_hectare\": 92.0, \"max_permit_fee\": 2000.0}",
+      "security_deposit_terms": "By-law 2010-066 s. 5(d) & s. 7(e): Cash deposit or Canadian chartered bank LOC in amount determined by General Manager; Schedule D s. 6 tree protection financial security held 24 months post-final inspection (ISA appraisal).",
+      "peer_review_recovery": "By-law 2010-066 s. 7(g)–(h) & Sched B/D: Applicant must supply certified lab fill quality tests (O. Reg. 153/04), Phase 1/2 ESA/RSC if required, P.Eng./P.Geo./CET-stamped Site Alteration Plan, and arborist report (if within TPZ) at owner's expense.",
+      "fee_formula_notes": "By-law 2026-047 (eff. Sept 1, 2026; confirmed on waterloo.ca/apply-to-alter-a-site) — area-based, not $/m³: Site Alteration Application Fee = $160.00 (2025: $154) + Permit Fee = $555.00 for first hectare or less (2025: $538) + $92.00 per additional hectare (2025: $89) to a maximum permit fee of $2,000.00 (total combined $715.00 min to $2,160.00 max). By-law 2010-066 s. 4(a) & Sched A exempts statutory s. 142 Municipal Act uses (Drainage Act, incidental NFP topsoil removal excl. sale) and <20 m³/yr (if not adjacent to waterbody)."
+    }
+  },
+  {
+    "municipality": "Woolwich",
+    "fields": {
+      "fee_verification_status": "Verified (Ag Tier)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees and Charges By-law 58-2025 (Schedule C — Development Services, pp. 22–24)",
+      "fees_bylaw_link": "https://media-001-ca.cdn.govstack.com/woolwich-007-ca/media/hc0bwvuo/fees-and-charges-2026.pdf",
+      "ag_import_fee_status": "Reduced Farm Tier",
+      "ag_exempt_volume_cap_m3": 500.0,
+      "out_of_muni_fill_ban": "Restricted",
+      "fee_pricing_model": "Tiered Volume + Per m³",
+      "base_fee_small": 1000.0,
+      "base_fee_large": 1000.0,
+      "per_m3_rate": 1.0,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 500.0, \"exempt\": true}, {\"up_to_m3\": 2499.0, \"base\": 1000.0, \"per_m3\": 2.0}, {\"up_to_m3\": 4999.0, \"base\": 1000.0, \"per_m3\": 1.5}, {\"up_to_m3\": 7499.0, \"base\": 1000.0, \"per_m3\": 1.25}, {\"up_to_m3\": 10000.0, \"base\": 1000.0, \"per_m3\": 1.0}]}",
+      "security_deposit_terms": "By-law 58-2025 Sched C p. 23: Refundable security for default/breach = $5,000 or greater as determined by Director; Haul route highway restoration/maintenance security TBD by Director.",
+      "peer_review_recovery": "By-law 58-2025 Sched C p. 23: Peer Review = Actual costs + 15% admin fee; Fill Quality Testing = Actual costs + 15% admin fee; Additional Meetings $300/hr; Additional Field Inspections $160/unit.",
+      "fee_formula_notes": "By-law 51-2024 Part III s. 7(l) exempts ≤500 m³/12 mo on properties >2 ha ($0) ONLY if all imported fill is 'Locally Sourced Fill' (generated within Woolwich) and meets O. Reg. 406/19 (out-of-township fill is restricted from this exemption; s. 7(j) also exempts Nutrient Management Act fill). By-law 58-2025 Sched C (pp. 22–24, 2026) sets a dedicated Agricultural tier (vs $2,700 General >500 m³ & $3,500 Development): Agricultural base = $1,000.00 (<1,000 m³ on-site flat; >1,000 m³ + /m³; non-local ≤500 m³ = $1,000) + Environmental Impact Fee (Agricultural import >500 m³, reducing graduated whole-volume schedule: 20–2,499 m³ = $2.00/m³, 2,500–4,999 m³ = $1.50/m³, 5,000–7,499 m³ = $1.25/m³, 7,500–10,000 m³ = $1.00/m³). Renewal $320; Appeal $520; Without permit = double fee. Note: >10,000 m³/12 mo is a Commercial Fill Operation requiring Council approval (s. 18 & s. 24) with no published standard rate above 10,000 m³, so the 15,000 m³ benchmark is intentionally left blank rather than extrapolated."
+    }
+  },
+  {
+    "municipality": "Centre Wellington",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees and Charges By-law 2025-87 (Schedule E, p. 24)",
+      "fees_bylaw_link": "https://www.centrewellington.ca/media/zbedtyrm/2025-87-fees-charges.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Flat Fee",
+      "base_fee_small": 1272.0,
+      "base_fee_large": 1700.0,
+      "per_m3_rate": 0.0,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 1000.0, \"flat_fee\": 1272.0}, {\"up_to_m3\": null, \"flat_fee\": 1700.0}]}",
+      "security_deposit_terms": "By-law 2019-25 s. 5.1(c) & s. 14.1: Irrevocable Letter of Credit or certified cheque in amount satisfactory to Director (Schedule C of Site Alteration Agreement).",
+      "peer_review_recovery": "By-law 2019-25 s. 13.2 & Agreement s. 10.1: Owner pays all Township costs for legal, engineering, hydrology, hydrogeology, environmental, surveying, landscape, peer review and inspection consultants upon invoice.",
+      "fee_formula_notes": "By-law 2025-87 Schedule E (p. 24, passed Dec 2, 2025, eff. Jan 2, 2026; HST exempt) sets duration-based flat fees (no $/m³): 90-Day Permit = $1,272.00 all other properties ($500.00 single residential lots >2 ac); 180-Day Permit = $1,700.00 all other properties ($698.00 single residential >2 ac). Under By-law 2019-25 s. 1.1 & s. 8.1–8.2, standard Site Alteration (≤1,000 m³) is a 90-day permit while Large Scale (>1,000 m³) exceeds 90 days (up to 1 yr); benchmarks map ≤1,000 m³ to $1,272 and >1,000 m³ to $1,700. Only statutory Drainage Act/Tile Drainage Act and incidental NFP topsoil removal (excl. sale) are exempt (s. 2.2), plus ≤200 m³ within 10 m of a building permit and ≤10 m³/3 mo landscaping."
+    }
+  },
+  {
+    "municipality": "Erin",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Site Alteration By-law 16-30 (Schedule C, p. 25) & 2026 Fees By-law 26-01 (p. 5)",
+      "fees_bylaw_link": "https://www.erin.ca/media/1229/16-30-site-alteration.pdf",
+      "ag_import_fee_status": "Exempt up to Volume Cap",
+      "ag_exempt_volume_cap_m3": 200.0,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Tiered Volume + Per m³",
+      "base_fee_small": 5000.0,
+      "base_fee_large": 10000.0,
+      "per_m3_rate": 2.0,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 200, \"exempt\": true}, {\"up_to_m3\": 1000, \"base\": 5000.0, \"per_m3\": 2.0}, {\"up_to_m3\": null, \"base\": 10000.0, \"per_m3\": 2.0}]}",
+      "security_deposit_terms": "Financial assurance acceptable to CBO + Schedule E Road Security Deposit ($2,000.00 minimum, scaled by Town Road Superintendent)",
+      "peer_review_recovery": "Large-scale (>1,000 m³) applicants reimburse ALL Town legal, engineering, surveying, planning, inspection & extra Council/staff costs; agricultural lands require agronomist justification report (s. 17(l)) & every-15th-load Table 1 lab sampling (Sched B)",
+      "fee_formula_notes": "By-law 16-30 s. 15(m) exempts ≤200 m³ onto properties ≥1 acre (≤50 m³ if <1 acre). Above cap (By-law 16-30 Schedule C p. 25): Standard Permit (≤1,000 m³) = $5,000.00 + $2.00/m³ tipping fee; Large Scale (>1,000 m³, s. 21) = $10,000.00 + $2.00/m³ tipping fee (renewal 50%). PLUS 2026 Fees By-law 26-01 (p. 5) charges a 'Fill – Heavy Truck Load – Erin Road Use' fee of $2.06/load/lane-km (up from $2.00 in 2025). Overfill/unpermitted special fine: $10/m³ ($100+/m³ if contaminated)."
+    }
+  },
+  {
+    "municipality": "Guelph",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 User Fees & Charges By-law (2025)-21164 (Schedule 1, p. 13) & By-law (2016)-20097",
+      "fees_bylaw_link": "https://guelph.ca/wp-content/uploads/User-Fees-Bylaw-By-law-Number-2025-21164-1.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "Unknown",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 371.42,
+      "base_fee_large": 371.42,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"area_based\", \"base\": 371.42, \"per_hectare\": 50.0}",
+      "security_deposit_terms": "Irrevocable Standby Letter of Credit or agreement acceptable to Director of Finance if required by City Engineer (By-law (2016)-20097 Sched B s. 2.0)",
+      "peer_review_recovery": "Control plan & 120m resident notification required (Sched C)",
+      "fee_formula_notes": "2026 User Fees & Charges By-law (2025)-21164 (p. 13, eff. Jan 1, 2026): Site Alteration Permit Fee = $371.42 base + $50.00/hectare (up 2% from $364.14 in 2025; scheduled $378.85 + $50/ha in 2027). Area-based so volumetric benchmarks are left blank."
+    }
+  },
+  {
+    "municipality": "Guelph-Eramosa",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees and Charges By-law 48/2025 (Schedule B, pp. 6–8)",
+      "fees_bylaw_link": "https://www.get.on.ca/uploads/userfiles/files/48-2025%20-%202026%20Fees%20Charges%20By-law.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Tiered Volume + Per m³",
+      "base_fee_small": 510.0,
+      "base_fee_large": 1667.0,
+      "per_m3_rate": 0.12,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 200.0, \"base\": 510.0, \"per_m3\": 0.12}, {\"up_to_m3\": 1000.0, \"exclusive_upper\": true, \"base\": 682.38, \"per_m3\": 0.12}, {\"up_to_m3\": null, \"base\": 1667.0, \"per_m3\": 0.12}]}",
+      "security_deposit_terms": "By-law 48/2025 pp. 6–8 & Requirements Manual s. 2.2: Irrevocable LOC, cash or cheque for 100% of estimated cost of site control/stabilization works — Minimum $1,500 (Minor), $2,000 (Small), $6,000 (Large), plus refundable cash deposit for Township oversight/peer review.",
+      "peer_review_recovery": "By-law 57/2024 s. 10.8–10.10 & By-law 48/2025 pp. 6–8: All outside Township expenses at Actual Cost + 15% admin fee (+ HST on Small/Large); Consultant Inspections at consultant fees + 15% admin + HST; Revision = engineer fees + $153 admin + HST.",
+      "fee_formula_notes": "By-law 48/2025 Schedule B (pp. 6–8, 2026 column, HST exempt) & By-law 57/2024 s. 2.1: Minor (≤200 m³ at 200 m³/ha up to 1 ha) = $510.00 + $0.12/m³ (renewal $510, ext $182); Small (>200 to <1,000 m³/12 mo) = $682.38 + $0.12/m³ (renewal $682, ext $182); Large (≥1,000 m³) = $1,667.00 + $0.12/m³ (renewal $1,641, ext $510, appeal $391; printed literally as '¢0.12/m fill/topsoil, placed'). Work without permit = double fee. Statutory Drainage Act & incidental NFP topsoil removal (excl. sale) exempt (s. 4.1); s. 4.2(f) permits discretionary Director waiver; source-site chemical testing required >30 m³ (s. 3.13)."
+    }
+  },
+  {
+    "municipality": "Minto",
+    "fields": {
+      "fee_verification_status": "Not Published Online",
+      "fee_year": 2026,
+      "fees_bylaw_name": "2026 Fees and Charges By-law 2025-075 (Schedules A–J checked — Site Alteration permit fees omitted)",
+      "fees_bylaw_link": "https://minto.nyc3.cdn.digitaloceanspaces.com/Studies-Plans-and-Reports/2025-075-Fees-and-Charges-By-law-for-2026.pdf",
+      "ag_import_fee_status": "Pending",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Not Published",
+      "base_fee_small": null,
+      "base_fee_large": null,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"not_published\"}",
+      "security_deposit_terms": "By-law 2020-16 s. 14.1: Irrevocable LOC or certified cheque in amount satisfactory to Director; Schedule J of By-law 2025-075 lists $2,000.00 Lot Grading Security Deposit.",
+      "peer_review_recovery": "By-law 2020-16 s. 13.2: Owner reimburses all Town costs for legal, engineering, hydrology, hydrogeology, environmental, surveying, landscape, peer review and inspection consultants upon invoice.",
+      "fee_formula_notes": "Site Alteration By-law 2020-16 s. 13.1 directs that permit, extension, revision, appeal and agreement fees shall follow the Town's Fees and Charges By-law (s. 2.2 exempts only statutory Drainage Act & incidental NFP topsoil removal excl. sale; ≤1,000 m³ standard vs >1,000 m³ large-scale). Visual inspection of all 25 pages of 2026 Fees & Charges By-law 2025-075 (passed Dec 16, 2025, eff. Jan 1, 2026) and 2025 Consolidated By-law 2024-059 confirms no Site Alteration permit fee schedule is published online (only $2,000 Lot Grading Security Deposit in Sched J and $150/hr By-Law Enforcement Admin Fee in Sched A)."
+    }
+  },
+  {
+    "municipality": "Aurora",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Fees and Charges By-law No. 6737-25 (Schedule B — Planning & Development Services / Engineering, eff. Jan 1, 2026, p. 6)",
+      "fees_bylaw_link": "https://records.aurora.ca/WebLink/edoc/30032/doc.pdf?dbid=0&repo=Public",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 812.0,
+      "base_fee_large": 812.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"area_based\", \"base\": 812.0, \"per_hectare\": 47.0}",
+      "security_deposit_terms": "By-law 6226-19 Schedule A: Irrevocable LOC or security deposit at Director's discretion up to 100% of estimated ESC/site control costs and/or 100% of estimated site restoration costs, plus additional deposit for potential road damage",
+      "peer_review_recovery": "Qualified Person (P.Eng. or Director-approved consultant) certification of Site Alteration Plan and completion required (By-law 6226-19 s. 7.4(e), 7.8); Town disbursement cost recovery under By-law 6737-25 Schedule A",
+      "fee_formula_notes": "Fees & Charges By-law 6737-25 Schedule B (eff. Jan 1, 2026, p. 6; repealed 6656-24): Site Alteration Permit = $812.00 flat fee + $47.00/ha of site area (2025 was $796 + $46/ha). Renewal (180-day permit, half original) = $406.00 + $23.75/ha. By-law 6226-19 s. 6.1(a) grants a general minor exemption for <2.0 ha, <=300 mm depth, and <=50 m³ total fill; s. 6.1(c) exempts incidental agricultural topsoil removal only (no agricultural fill-import exemption). No out-of-municipality fill ban in By-law 6226-19."
+    }
+  },
+  {
+    "municipality": "Georgina",
+    "fields": {
+      "fee_verification_status": "Verified (Scanned PDF)",
+      "fee_year": 2026,
+      "fees_bylaw_name": "Development Application Fees By-law No. 2026-0057 (AD-5) (Schedule A — Site Alteration & Entrance Permit, eff. July 1, 2026, pp. 19-20)",
+      "fees_bylaw_link": "https://www.georgina.ca/sites/default/files/2026-07/bylaw-2026-0057-ad-5-to-establish-fees-for-applications-and-services-provided-by-the-development-s.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Tiered Volume + Per m³",
+      "base_fee_small": 600.0,
+      "base_fee_large": 12000.0,
+      "per_m3_rate": 0.75,
+      "fee_calc_spec_json": "{\"type\": \"tiered_volume\", \"brackets\": [{\"up_to_m3\": 250, \"flat_fee\": 600.0}, {\"up_to_m3\": 2000, \"exclusive_upper\": true, \"flat_fee\": 2330.0}, {\"up_to_m3\": 2000, \"base\": 2330.0, \"per_m3\": 0.75}, {\"up_to_m3\": null, \"base\": 12000.0, \"per_m3\": 0.75}]}",
+      "security_deposit_terms": "By-law 2026-0060 (REG-1) Schedule A (cash, certified cheque, or LOC): <=250 m³ = $2,500; >250-2,000 m³ = $10,000; >2,000 m³ = $25,000 + amount equal to Municipal Services Fee ($0.75/m³)",
+      "peer_review_recovery": "Actual cost of Town-retained legal, engineering, hydrology, environmental, arborist, landscape or other consultants/peer reviews + 15% admin charge (+ HST) (By-law 2026-0057 Sched A p. 20 & By-law 2026-0060 Sched A)",
+      "fee_formula_notes": "Visually verified from scanned By-law 2026-0057 (AD-5) Schedule A (pp. 19-20, eff. July 1, 2026, HST exempt) alongside new Site Alteration By-law 2026-0060 (REG-1): <=250 m³ = $600.00 (ext. $300); >250-2,000 m³ = $2,330.00 (ext. $1,170; jumped from $750 under 2024-0036); >2,000 m³ = $12,000.00 (ext. $1,550) + Municipal Services Fee of $0.75/m³ where quantities >=2,000 m³ (note 2026-0057 p. 19 prints 'Per m² of Fill' as a typo while specifying '2,000 cubic metres or greater'; predecessor By-law 2024-0036 Sched A confirms '$0.75 per cubic metre of fill'). Additional 2026 fees: Major Agreement $6,150; Minor Agreement $1,400; Amendment $2,050; Entrance Permit $500; SAEP Request Review $350; contravention doubles fees (s. 11.4). By-law 2026-0060 s. 3.1 generally prohibits >2,000 m³ fill except aerodromes (s. 3.2) or Council-approved agreements; s. 4.1(j)/4.2(f) exempts only NFP topsoil removal and sod/greenhouse/nursery restoration <=20 cm/yr (1,000 m³ storage cap); general minor exemption <20 m³/yr. No out-of-municipality fill ban."
+    }
+  },
+  {
+    "municipality": "Markham",
+    "fields": {
+      "fee_verification_status": "Verified",
+      "fee_year": 2026,
+      "fees_bylaw_name": "By-law 211-83 (Tariff of Fees for Planning Applications, consolidated to Jan 1, 2026, Table 9 s. 9.6, p. 10) & By-law 2012-137 (Sched B, p. 10)",
+      "fees_bylaw_link": "https://www.markham.ca/sites/default/files/2026-09/By-law-211-83_AOD.pdf",
+      "ag_import_fee_status": "Standard Commercial Rate",
+      "ag_exempt_volume_cap_m3": null,
+      "out_of_muni_fill_ban": "No",
+      "fee_pricing_model": "Base + Per Hectare",
+      "base_fee_small": 7847.0,
+      "base_fee_large": 15694.0,
+      "per_m3_rate": null,
+      "fee_calc_spec_json": "{\"type\": \"area_based\", \"engineering_base\": 7847.0, \"engineering_per_hectare\": 1621.0, \"planning_base\": 7847.0, \"planning_per_hectare\": 1621.0, \"combined_base\": 15694.0, \"combined_per_hectare\": 3242.0}",
+      "security_deposit_terms": "Certified cheque or irrevocable Letter of Credit per Permit (By-law 2011-232 s. 5.2.3; Markham Engineering guidelines typically require LOC for 110% of estimated site alteration/control costs)",
+      "peer_review_recovery": "By-law 211-83 Table 8.5: Actual cost of City-retained consultant/vendor for review, implementation or monitoring + 31.7% admin fee (+ HST); Agricultural Lands require Engineer/soil scientist soil fertility report & O. Reg. 406/19 QP certification (By-law 2011-232 s. 3.13, 5.2.10-5.2.12)",
+      "fee_formula_notes": "By-law 2011-232 (consolidated w/ 2021-13) s. 5.2.2 references By-law 211-83 (consolidated Jan 1, 2026, Table 9 s. 9.6, p. 10): Site Alteration Permit = Planning & Urban Design ($7,847.00 base + $1,621.00/ha) and Engineering ($7,847.00 base + $1,621.00/ha; combined $15,694.00 + $3,242.00/ha). Extensions (s. 6.3): hourly rate $320/hr (Table 9.9.2). By-law 2012-137 Sched B (2026) adds inspection admin fees: 1st $84, 2nd $160, subsequent $331, remedy 7% of invoice. By-law 2011-232 s. 3.13 caps Agricultural Lands site alteration at 300 mm average depth (unless Director approves depression fill) with fertility certificate; s. 4.10-4.11 statutory Drainage/topsoil removal only; general exemptions <0.405 ha outside 30m of NHN (s. 4.1) and <=5 m³ topsoil (s. 4.13). No out-of-municipality fill ban."
+    }
+  }
+]

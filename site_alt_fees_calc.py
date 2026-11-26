@@ -60,7 +60,8 @@ def _eval_spec(spec: dict, volume_m3: float) -> float | None:
 
     if stype == "exempt_up_to_cap":
         cap = _to_float(spec.get("exempt_cap_m3")) or 0.0
-        if vol <= cap:
+        excl = bool(spec.get("exclusive_upper", False))
+        if (vol < cap) if excl else (vol <= cap):
             return 0.0
         above = spec.get("above_cap")
         if not isinstance(above, dict):
@@ -163,14 +164,15 @@ def evaluate_site_alt_fee(row: dict | Any, volume_m3: float) -> float | None:
     if ag_status in ("no bylaw", "pending"):
         return None
 
-    pm = str(getter("fee_pricing_model", "") or "").strip().lower()
-    if any(k in pm for k in ("hectare", "not published", "cost recovery only")):
-        return None
-
-    # 1. Explicit JSON formula takes priority (handles brackets, caps, and farm tiers exactly)
+    # 1. Explicit JSON formula takes priority (handles brackets, caps — including exempt-below-cap
+    #    with area-based above-cap — and dedicated farm tiers deterministically)
     spec = parse_fee_calc_spec(getter("fee_calc_spec_json", None))
     if spec:
         return _eval_spec(spec, float(volume_m3))
+
+    pm = str(getter("fee_pricing_model", "") or "").strip().lower()
+    if any(k in pm for k in ("hectare", "not published", "cost recovery only")):
+        return None
 
     # 2. Full farm exemption or $0 application waiver
     if ag_status in ("exempt ($0)", "waiver available ($0 app fee)"):
@@ -248,4 +250,6 @@ def site_alt_fee_tier_rgba(
         return [51, 75, 88, 175], "Cost Recovery Only"
     if "not published" in vs or "not published" in pm:
         return [180, 140, 100, 150], "Not Published Online"
+    if "verified" in vs:
+        return [51, 75, 88, 175], "Capped / Non-Volumetric"
     return [222, 214, 205, 115], "Pending Fee Audit"

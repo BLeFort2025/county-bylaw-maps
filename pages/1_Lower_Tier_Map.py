@@ -657,6 +657,8 @@ if is_site_alt:
             _sa_est_disp.append("Area-Based ($/ha)")
         elif "no bylaw" in _sa_fvs.lower() or "no bylaw" in _sa_ags.lower():
             _sa_est_disp.append("No Bylaw ($0)")
+        elif _sa_fvs.lower().startswith("verified"):
+            _sa_est_disp.append("Capped / Non-Volumetric")
         elif _sa_fvs:
             _sa_est_disp.append(_sa_fvs)
         else:
