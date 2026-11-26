@@ -48,6 +48,127 @@ def parse_calc_spec(raw: Any) -> dict | None:
         return None
 
 
+def _eval_spec(
+    spec: dict,
+    row: dict | Any,
+    getter,
+    sqft: float,
+    is_livestock: bool,
+    assumed_cost_per_sqft: float | None,
+) -> float | None:
+    stype = str(spec.get("type", "")).strip().lower()
+    if stype in ("urban_no_farm", "missing", "upper_local_jurisdiction"):
+        return None
+
+    if stype == "split_spec":
+        # Allows completely different calculation models for livestock vs. non-livestock
+        # e.g., Chatham-Kent (livestock = valuation, pole barn = $0.28/ft²)
+        sub = spec.get("livestock" if is_livestock else "other_farm")
+        if isinstance(sub, dict):
+            return _eval_spec(sub, row, getter, sqft, is_livestock, assumed_cost_per_sqft)
+        return None
+
+    if stype == "standard":
+        branch = spec.get("livestock" if is_livestock else "other_farm") or spec
+        base = _to_float(branch.get("base")) or 0.0
+        rate = _to_float(branch.get("rate"))
+        mn = _to_float(branch.get("min_fee")) or 0.0
+        if rate is None:
+            return None
+        return round(max(mn, base + float(sqft) * rate), 2)
+
+    if stype == "flat":
+        fee = _to_float(spec.get("flat_fee"))
+        return round(fee, 2) if fee is not None else None
+
+    if stype == "flat_split":
+        # Different flat fees for livestock vs. non-livestock (e.g., Brooke-Alvinston, Warwick)
+        fee = _to_float(spec.get("livestock_flat" if is_livestock else "other_farm_flat"))
+        return round(fee, 2) if fee is not None else None
+
+    if stype == "capped_area":
+        # Base + rate * sqft with min_fee floor and optional max_fee cap (e.g., St. Clair $100 + $0.10/ft², $1,000 max)
+        branch = spec.get("livestock" if is_livestock else "other_farm") or spec
+        base = _to_float(branch.get("base")) or 0.0
+        rate = _to_float(branch.get("rate")) or 0.0
+        mn = _to_float(branch.get("min_fee")) or 0.0
+        mx = _to_float(branch.get("max_fee"))
+        val = max(mn, base + float(sqft) * rate)
+        if mx is not None:
+            val = min(mx, val)
+        return round(val, 2)
+
+    if stype == "excess_over":
+        # e.g. Norwich / Plympton-Wyoming: base + rate * max(0, sqft - threshold)
+        branch = spec.get("livestock" if is_livestock else "other_farm") or spec
+        base = _to_float(branch.get("base")) or 0.0
+        thresh = _to_float(branch.get("threshold_sqft")) or 0.0
+        rate = _to_float(branch.get("rate")) or 0.0
+        mn = _to_float(branch.get("min_fee")) or 0.0
+        val = base + max(0.0, float(sqft) - thresh) * rate
+        return round(max(mn, val), 2)
+
+    if stype == "tiered_marginal":
+        # e.g. West Perth / West Grey / Adelaide-Metcalfe: base + marginal brackets [(up_to_sqft, rate), ...]
+        branch = spec.get("livestock" if is_livestock else "other_farm") or spec
+        brackets = branch.get("brackets") or []
+        base = _to_float(branch.get("base")) or 0.0
+        mn = _to_float(branch.get("min_fee")) or 0.0
+        remaining = float(sqft)
+        prev_cap = 0.0
+        total = base
+        for b in brackets:
+            cap = _to_float(b.get("up_to_sqft"))
+            rate = _to_float(b.get("rate")) or 0.0
+            if cap is None:
+                total += max(0.0, remaining) * rate
+                remaining = 0.0
+                break
+            span = max(0.0, cap - prev_cap)
+            take = min(remaining, span)
+            total += take * rate
+            remaining -= take
+            prev_cap = cap
+            if remaining <= 0:
+                break
+        return round(max(mn, total), 2)
+
+    if stype == "tiered_total":
+        # Whole-building bracket lookup (e.g. Arran-Elderslie, Kingsville, Halton Hills,
+        # Middlesex Centre, Lucan Biddulph, Strathroy-Caradoc, West Lincoln, Enniskillen).
+        # Each bracket supports optional `threshold_sqft` (for base + rate * max(0, sqft - threshold)),
+        # optional `over_cap_sqft` + `over_rate` (second marginal rate inside that bracket, e.g. Middlesex Centre >30,000 ft²),
+        # and `min_fee`.
+        branch = spec.get("livestock" if is_livestock else "other_farm") or spec
+        brackets = branch.get("brackets") or []
+        for b in brackets:
+            cap = _to_float(b.get("up_to_sqft"))
+            if cap is None or float(sqft) <= cap:
+                base = _to_float(b.get("base")) or 0.0
+                thresh = _to_float(b.get("threshold_sqft")) or 0.0
+                rate = _to_float(b.get("rate")) or 0.0
+                over_cap = _to_float(b.get("over_cap_sqft"))
+                over_rate = _to_float(b.get("over_rate"))
+                mn = _to_float(b.get("min_fee")) or 0.0
+                if over_cap is not None and over_rate is not None and float(sqft) > over_cap:
+                    val = base + max(0.0, over_cap - thresh) * rate + (float(sqft) - over_cap) * over_rate
+                else:
+                    val = base + max(0.0, float(sqft) - thresh) * rate
+                return round(max(mn, val), 2)
+        return None
+
+    if stype == "valuation":
+        val_rate = _to_float(spec.get("value_rate_per_1000")) or _to_float(getter("value_rate_per_1000"))
+        if val_rate is None or assumed_cost_per_sqft is None or assumed_cost_per_sqft <= 0:
+            return None
+        base = _to_float(spec.get("base")) or _to_float(getter("base_fee")) or 0.0
+        mn = _to_float(spec.get("min_fee")) or _to_float(getter("min_fee")) or 0.0
+        est_val = float(sqft) * float(assumed_cost_per_sqft)
+        return round(max(mn, base + (est_val / 1000.0) * val_rate), 2)
+
+    return None
+
+
 def evaluate_bldg_fee(
     row: dict | Any,
     sqft: float,
@@ -80,70 +201,7 @@ def evaluate_bldg_fee(
 
     spec = parse_calc_spec(getter("calc_spec_json", None))
     if spec:
-        stype = str(spec.get("type", "")).strip().lower()
-        if stype in ("urban_no_farm", "missing", "upper_local_jurisdiction"):
-            return None
-
-        if stype == "flat":
-            fee = _to_float(spec.get("flat_fee"))
-            return round(fee, 2) if fee is not None else None
-
-        if stype == "excess_over":
-            # e.g. Norwich: base + rate * max(0, sqft - threshold)
-            branch = spec.get("livestock" if is_livestock else "other_farm") or spec
-            base = _to_float(branch.get("base")) or 0.0
-            thresh = _to_float(branch.get("threshold_sqft")) or 0.0
-            rate = _to_float(branch.get("rate")) or 0.0
-            mn = _to_float(branch.get("min_fee")) or 0.0
-            val = base + max(0.0, float(sqft) - thresh) * rate
-            return round(max(mn, val), 2)
-
-        if stype == "tiered_marginal":
-            # e.g. West Perth / West Grey: marginal brackets [(up_to_sqft, rate), ...]
-            branch = spec.get("livestock" if is_livestock else "other_farm") or spec
-            brackets = branch.get("brackets") or []
-            base = _to_float(branch.get("base")) or 0.0
-            mn = _to_float(branch.get("min_fee")) or 0.0
-            remaining = float(sqft)
-            prev_cap = 0.0
-            total = base
-            for b in brackets:
-                cap = _to_float(b.get("up_to_sqft"))
-                rate = _to_float(b.get("rate")) or 0.0
-                if cap is None:
-                    total += max(0.0, remaining) * rate
-                    remaining = 0.0
-                    break
-                span = max(0.0, cap - prev_cap)
-                take = min(remaining, span)
-                total += take * rate
-                remaining -= take
-                prev_cap = cap
-                if remaining <= 0:
-                    break
-            return round(max(mn, total), 2)
-
-        if stype == "tiered_total":
-            # e.g. Arran-Elderslie & Southgate (OBC 600 m² cliff): whole area uses bracket rate
-            branch = spec.get("livestock" if is_livestock else "other_farm") or spec
-            brackets = branch.get("brackets") or []
-            for b in brackets:
-                cap = _to_float(b.get("up_to_sqft"))
-                if cap is None or float(sqft) <= cap:
-                    base = _to_float(b.get("base")) or 0.0
-                    rate = _to_float(b.get("rate")) or 0.0
-                    mn = _to_float(b.get("min_fee")) or 0.0
-                    return round(max(mn, base + float(sqft) * rate), 2)
-            return None
-
-        if stype == "valuation":
-            val_rate = _to_float(spec.get("value_rate_per_1000")) or _to_float(getter("value_rate_per_1000"))
-            if val_rate is None or assumed_cost_per_sqft is None or assumed_cost_per_sqft <= 0:
-                return None
-            base = _to_float(spec.get("base")) or _to_float(getter("base_fee")) or 0.0
-            mn = _to_float(spec.get("min_fee")) or _to_float(getter("min_fee")) or 0.0
-            est_val = float(sqft) * float(assumed_cost_per_sqft)
-            return round(max(mn, base + (est_val / 1000.0) * val_rate), 2)
+        return _eval_spec(spec, row, getter, sqft, is_livestock, assumed_cost_per_sqft)
 
     # Default fallback using standard structured columns
     flat_fee = _to_float(getter("flat_fee"))
@@ -217,10 +275,17 @@ def fee_cost_tier_rgba(
             return [236, 168, 66, 190], "High ($0.37–$0.48/ft²)"
         return [215, 24, 42, 195], "Very High (≥ $0.48/ft²)"
 
-    if "$1,000" in pm or "value" in pm:
-        return [51, 75, 88, 175], "Valuation-Based ($/$1k)"
-    if hft.startswith("no") or "urban" in vs:
-        return [148, 163, 184, 155], "Urban / No Farm Tier (ICI)"
     if "not published" in vs:
         return [180, 140, 100, 150], "Not Published Online"
+    if (
+        hft == "no"
+        or hft.startswith("no ")
+        or hft.startswith("no(")
+        or hft.startswith("no—")
+        or "urban" in vs
+        or "no farm tier" in vs
+    ):
+        return [148, 163, 184, 155], "Urban / No Farm Tier (ICI)"
+    if "$1,000" in pm or "valu" in pm:
+        return [51, 75, 88, 175], "Valuation-Based ($/$1k)"
     return [222, 214, 205, 115], "Pending Audit"
