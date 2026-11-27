@@ -1629,26 +1629,38 @@ def generate_fee_comparison_brief(
     is_livestock: bool = True,
     assumed_cost_per_sqft: float | None = None,
     sa_volume_m3: int = 15000,
+    dc_btype: str = "typical_farm",
+    dc_service_area: str = "rural",
+    dc_stacked: bool = True,
+    dc_sqft: float | None = None,
+    dc_beds: int = 10,
 ) -> io.BytesIO:
     """Generate a concise 1–2 page OFA-branded Council Delegation Fee Comparison Brief (.docx).
 
     Args:
         focus_muni: Primary municipality being spotlighted (highlighted in OFA Crimson tint).
         peer_munis: Ordered list of comparator municipalities (including or excluding focus_muni).
-        topic: 'bldg_fees', 'site_alt', or 'combined'.
+        topic: 'bldg_fees', 'dc', 'site_alt', 'combined' (bldg+sa), or 'all' (bldg+dc+sa).
         bldg_sqft: Reference farm building footprint in sq. ft.
         is_livestock: True for Livestock Barn, False for Equipment / Drive Shed.
         assumed_cost_per_sqft: Optional $/ft² assumption applied ONLY to valuation-based BLDG_FEES rows.
         sa_volume_m3: Reference imported clean topsoil/fill volume in m³.
+        dc_btype: 'typical_farm', 'greenhouse', 'cannabis', or 'bunkhouse'.
+        dc_service_area: 'rural' or 'urban'.
+        dc_stacked: Include parent Upper-Tier DC stacking when True.
+        dc_sqft: Custom sq.ft. for DC evaluation (defaults to standard benchmark).
+        dc_beds: Custom worker bed count for bunkhouse DC evaluation (default 10).
     """
     from db_utils import get_category_summary
     from bldg_fees_calc import evaluate_bldg_fee
     from site_alt_fees_calc import evaluate_site_alt_fee
+    from dc_fees_calc import compute_stacked_dc, STANDARD_DC_BENCHMARKS
 
     target_munis = [focus_muni] + [m for m in peer_munis if m != focus_muni]
     conn = get_connection()
-    bf_all = get_category_summary(conn, "BLDG_FEES") if topic in ("bldg_fees", "combined") else pd.DataFrame()
-    sa_all = get_category_summary(conn, "SITE_ALT") if topic in ("site_alt", "combined") else pd.DataFrame()
+    bf_all = get_category_summary(conn, "BLDG_FEES") if topic in ("bldg_fees", "combined", "all") else pd.DataFrame()
+    dc_all = get_category_summary(conn, "DC") if topic in ("dc", "all") else pd.DataFrame()
+    sa_all = get_category_summary(conn, "SITE_ALT") if topic in ("site_alt", "combined", "all") else pd.DataFrame()
     conn.close()
 
     doc = Document()
@@ -1673,8 +1685,10 @@ def generate_fee_comparison_brief(
 
     topic_titles = {
         "bldg_fees": "Municipal Farm Building Permit Fee Comparison Brief",
+        "dc": "Municipal Agricultural Development Charges Comparison Brief",
         "site_alt": "Municipal Site Alteration & Excess Soil Fee Comparison Brief",
         "combined": "Municipal Farm Permit & Excess Soil Fee Comparison Brief",
+        "all": "Municipal Farm Permit, Development Charge & Soil Fee Brief",
     }
     p_t = c_title.paragraphs[0]
     p_t.paragraph_format.space_after = Pt(2)
@@ -1723,7 +1737,7 @@ def generate_fee_comparison_brief(
         return f"${round(float(val)):,}"
 
     # ── SECTION A: FARM BUILDING PERMIT FEES ──
-    if topic in ("bldg_fees", "combined") and not bf_all.empty:
+    if topic in ("bldg_fees", "combined", "all") and not bf_all.empty:
         struct_lbl = "Livestock Barn" if is_livestock else "Equipment / Drive Shed"
         h_bf = doc.add_paragraph()
         h_bf.paragraph_format.space_before = Pt(4)
@@ -1836,10 +1850,201 @@ def generate_fee_comparison_brief(
                     align=(WD_ALIGN_PARAGRAPH.RIGHT if ci in (1, 2, 3) else None),
                 )
 
-    # ── SECTION B: SITE ALTERATION & EXCESS SOIL FEES ──
-    if topic in ("site_alt", "combined") and not sa_all.empty:
+    # ── SECTION B: AGRICULTURAL DEVELOPMENT CHARGES ──
+    if topic in ("dc", "all") and not dc_all.empty:
+        bm_meta = STANDARD_DC_BENCHMARKS.get(dc_btype, STANDARD_DC_BENCHMARKS["typical_farm"])
+        eff_sqft = float(bm_meta["sqft"] if dc_sqft is None else dc_sqft)
+        eff_beds = int(dc_beds if dc_btype == "bunkhouse" else bm_meta["beds"])
+        sa_lbl = "Rural Unserviced" if dc_service_area == "rural" else "Urban Serviced"
+        if dc_btype == "greenhouse":
+            scen_lbl = f"Commercial Greenhouse ({eff_sqft / 43560.0:g} Acre / {round(eff_sqft):,} ft² · {sa_lbl})"
+        elif dc_btype == "bunkhouse":
+            scen_lbl = f"Bunkhouse / Worker Housing ({eff_beds} Beds / {round(eff_sqft):,} ft² · {sa_lbl})"
+        elif dc_btype == "cannabis":
+            scen_lbl = f"Cannabis Production Facility ({round(eff_sqft):,} ft² · {sa_lbl})"
+        else:
+            scen_lbl = f"Typical Farm Building ({round(eff_sqft):,} ft² · {sa_lbl})"
+
+        h_dc = doc.add_paragraph()
+        h_dc.paragraph_format.space_before = Pt(8 if topic == "all" else 4)
+        h_dc.paragraph_format.space_after = Pt(3)
+        rh_dc = h_dc.add_run(f"Agricultural Development Charges — {scen_lbl}")
+        rh_dc.font.name = FONT_NAME
+        rh_dc.font.size = Pt(11.5)
+        rh_dc.bold = True
+        rh_dc.font.color.rgb = OFA_CRIMSON
+
+        upper_by_area = {
+            str(ur["geographic_area"]): ur
+            for _, ur in dc_all[dc_all["municipal_status"].fillna("") == "Upper Tier"].iterrows()
+            if pd.notna(ur.get("geographic_area"))
+        }
+
+        # Compute apples-to-apples Ontario Charged Median across local/single-tier municipalities
+        _dc_prov_charged = []
+        for _, _dr in dc_all[dc_all["municipal_status"].fillna("") != "Upper Tier"].iterrows():
+            _is_lt = str(_dr.get("municipal_status", "")).strip() == "Lower Tier"
+            _ut_r = upper_by_area.get(str(_dr.get("geographic_area", ""))) if (dc_stacked and _is_lt) else None
+            _ev = compute_stacked_dc(_dr, _ut_r, dc_btype, dc_service_area, sqft=eff_sqft, beds=eff_beds)
+            _tv = _ev["stacked_total"]
+            if _tv is not None and _tv > 0:
+                _dc_prov_charged.append(_tv)
+        dc_prov_med = float(pd.Series(_dc_prov_charged).median()) if _dc_prov_charged else None
+
+        status_col_map = {
+            "typical_farm": "farm_bldg_dc_status",
+            "greenhouse": "greenhouse_dc_status",
+            "cannabis": "cannabis_dc_status",
+            "bunkhouse": "bunkhouse_dc_status",
+        }
+        st_col = status_col_map.get(dc_btype, "farm_bldg_dc_status")
+
+        sub_dc = dc_all[dc_all["name"].isin(target_munis)].copy()
+        dc_rows = []
+        dc_focus = None
+        for nm in target_munis:
+            m_df = sub_dc[sub_dc["name"] == nm]
+            if m_df.empty:
+                continue
+            r = m_df.iloc[0]
+            _is_lt = str(r.get("municipal_status", "")).strip() == "Lower Tier"
+            _area = _clean(r.get("geographic_area"))
+            _ut_r = upper_by_area.get(_area) if (dc_stacked and _is_lt) else None
+            _res = compute_stacked_dc(r, _ut_r, dc_btype, dc_service_area, sqft=eff_sqft, beds=eff_beds)
+            _lt_v = _res["lower_or_single"]
+            _ut_v = _res["upper_tier"]
+            _tot_v = _res["stacked_total"]
+            _is_partial = False
+            if _tot_v is None and _res["known_floor_total"] is not None and _res["known_floor_total"] > 0:
+                _tot_v = _res["known_floor_total"]
+                _is_partial = True
+
+            _has_dc = str(r.get("has_dc", "") or "").strip().lower()
+            _raw_st = _clean(r.get(st_col), max_len=36, single_line=True)
+
+            def _dc_cell_txt(v, no_dc_flag=False, silent_lbl="Silent / Confirm", plus_suffix=False):
+                if no_dc_flag:
+                    return "$0 (No DC)"
+                if v is None:
+                    return silent_lbl
+                if v <= 0 and not plus_suffix:
+                    return "$0 (Exempt)"
+                return f"{_fmt_d(v)}+" if plus_suffix else _fmt_d(v)
+
+            _no_dc = _has_dc in ("no", "2")
+            _ut_no_dc = (_ut_r is None) or (str(_ut_r.get("has_dc", "") or "").strip().lower() in ("no", "2"))
+            _ut_raw_nm = _clean(_ut_r.get("name"), single_line=True) if _ut_r is not None else "—"
+            _ut_disp_nm = _ut_raw_nm.replace(", Co", " County").replace(", R", " Region")
+            _pamphlet_name = _clean(r.get("dc_rate_pamphlet_name") or r.get("bylaw_name"), max_len=46, single_line=True)
+            _pamphlet_url = _valid_url(r.get("dc_rate_pamphlet_link")) or _valid_url(r.get("bylaw_link"))
+
+            item = {
+                "name": nm,
+                "area": _area,
+                "ut_name": _ut_disp_nm,
+                "lt_v": _lt_v,
+                "ut_v": _ut_v,
+                "tot_v": _tot_v,
+                "lt_disp": _dc_cell_txt(_lt_v, no_dc_flag=_no_dc),
+                "ut_disp": ("—" if not _is_lt else _dc_cell_txt(_ut_v, no_dc_flag=_ut_no_dc)),
+                "tot_disp": _dc_cell_txt(_tot_v, no_dc_flag=(_no_dc and _ut_no_dc), plus_suffix=_is_partial),
+                "status": ("No DC By-law" if _no_dc else _raw_st),
+                "year": str(int(float(r["dc_rate_year"]))) if pd.notna(r.get("dc_rate_year")) and str(r.get("dc_rate_year")).strip() else "—",
+                "edc": _clean(r.get("dc_edc_applicable"), max_len=34, single_line=True),
+                "source_txt": _pamphlet_name,
+                "source_url": _pamphlet_url,
+                "formula": _clean(r.get("dc_rate_formula_notes"), max_len=240, single_line=True),
+            }
+            dc_rows.append(item)
+            if nm == focus_muni:
+                dc_focus = item
+
+        dc_rows.sort(key=lambda x: (x["tot_v"] is None, -(x["tot_v"] or -1.0), x["name"]))
+
+        if dc_focus:
+            _stack_note = (
+                f"Lower/Single-Tier: {dc_focus['lt_disp']} + Upper-Tier ({dc_focus['ut_name']}): {dc_focus['ut_disp']} = Combined: {dc_focus['tot_disp']}"
+                if (dc_stacked and dc_focus["ut_name"] != "—")
+                else f"Municipal DC: {dc_focus['tot_disp']}"
+            )
+            _med_note = ""
+            if dc_focus["tot_v"] is not None and dc_focus["tot_v"] > 0 and dc_prov_med:
+                _pct = round((dc_focus["tot_v"] - dc_prov_med) / dc_prov_med * 100)
+                _med_note = (
+                    f" ({abs(_pct)}% {'above' if _pct > 0 else 'below'} Ontario charged median of {_fmt_d(dc_prov_med)})"
+                    if _pct != 0 else f" (matches Ontario charged median of {_fmt_d(dc_prov_med)})"
+                )
+            _add_callout(
+                f"{focus_muni} Development Charge Snapshot",
+                f"{_stack_note}{_med_note}. Sub-type treatment: {dc_focus['status']}. "
+                f"Education DCs (separate): {dc_focus['edc']}.",
+                border_hex=VALENCIA_HEX,
+            )
+
+        if dc_stacked:
+            widths = [1.30, 0.90, 0.85, 0.95, 0.45, 2.55]
+            hdrs = ["Municipality", "Lower / Single", "Upper Tier", "Combined DC", "Year", "Source Pamphlet / By-law"]
+        else:
+            widths = [1.35, 0.95, 1.45, 0.45, 0.80, 2.00]
+            hdrs = ["Municipality", "Municipal DC", "Sub-Type Status", "Year", "EDC Applies", "Source Pamphlet / By-law"]
+
+        tbl = doc.add_table(rows=1 + len(dc_rows), cols=6)
+        tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+        _set_table_fixed_width(tbl, widths)
+        _set_table_borders(tbl)
+        _set_row_header(tbl.rows[0])
+        _set_row_cant_split(tbl.rows[0])
+        for ci, htxt in enumerate(hdrs):
+            cell = tbl.rows[0].cells[ci]
+            _set_cell_shading(cell, HEADER_BG)
+            _set_cell_margins(cell, top=55, bottom=55, left=55, right=55)
+            _set_cell(cell, htxt, bold=True, size=Pt(8.2), color=WHITE)
+
+        for ri, it in enumerate(dc_rows, start=1):
+            row = tbl.rows[ri]
+            _set_row_cant_split(row)
+            is_f = (it["name"] == focus_muni)
+            bg = "FDECEC" if is_f else (WARM_TINT_BG if ri % 2 == 0 else None)
+            src_val = {"text": it["source_txt"], "url": it["source_url"]} if it["source_url"] else it["source_txt"]
+            if dc_stacked:
+                vals = [it["name"], it["lt_disp"], it["ut_disp"], it["tot_disp"], it["year"], src_val]
+                hi_cols = (0, 3)
+                r_cols = (1, 2, 3, 4)
+            else:
+                vals = [it["name"], it["lt_disp"], it["status"], it["year"], it["edc"], src_val]
+                hi_cols = (0, 1)
+                r_cols = (1, 3)
+            for ci, v in enumerate(vals):
+                cell = row.cells[ci]
+                if bg:
+                    _set_cell_shading(cell, bg)
+                _set_cell_margins(cell, top=45, bottom=45, left=55, right=55)
+                _set_cell(
+                    cell,
+                    v,
+                    bold=(is_f and ci in hi_cols),
+                    size=Pt(8.0),
+                    color=(OFA_CRIMSON if (is_f and ci in hi_cols) else DARK_TEXT),
+                    align=(WD_ALIGN_PARAGRAPH.RIGHT if ci in r_cols else None),
+                )
+
+        p_dc_note = doc.add_paragraph()
+        p_dc_note.paragraph_format.space_before = Pt(3)
+        p_dc_note.paragraph_format.space_after = Pt(4)
+        rdn = p_dc_note.add_run(
+            "Note: 'Silent / Confirm' denotes by-laws that do not publish an explicit rate or exemption for that sub-type (never coerced to $0). "
+            "Amounts marked '+' reflect a verified minimum from one municipal tier where the other tier is silent. "
+            "School-board Education Development Charges (EDCs) and area-specific water/wastewater charges are tracked separately from base rural municipal DCs."
+        )
+        rdn.font.name = FONT_NAME
+        rdn.font.size = Pt(7.8)
+        rdn.italic = True
+        rdn.font.color.rgb = MUTED_TEXT
+
+    # ── SECTION C: SITE ALTERATION & EXCESS SOIL FEES ──
+    if topic in ("site_alt", "combined", "all") and not sa_all.empty:
         h_sa = doc.add_paragraph()
-        h_sa.paragraph_format.space_before = Pt(8 if topic == "combined" else 4)
+        h_sa.paragraph_format.space_before = Pt(8 if topic in ("combined", "all") else 4)
         h_sa.paragraph_format.space_after = Pt(3)
         rh = h_sa.add_run(f"Site Alteration & Excess Soil Fees — {sa_volume_m3:,} m³ (~{sa_volume_m3 // 10:,} Tri-Axle Loads)")
         rh.font.name = FONT_NAME
@@ -1939,8 +2144,8 @@ def generate_fee_comparison_brief(
     p_src = doc.add_paragraph()
     p_src.paragraph_format.space_before = Pt(6)
     r_s = p_src.add_run(
-        "Source: Ontario Federation of Agriculture Municipal Bylaw Database (primary-source audited municipal by-laws & user fee schedules). "
-        "Non-refundable permit fees are reported separately from refundable securities, deposits, and peer-review retainers. Always verify current schedules with the municipal clerk."
+        "Source: Ontario Federation of Agriculture Municipal Bylaw Database (primary-source audited municipal by-laws, development charge pamphlets & user fee schedules). "
+        "Non-refundable permit fees and municipal development charges are reported separately from refundable securities, peer-review retainers, and Education DCs. Always verify current schedules with the municipal clerk."
     )
     r_s.font.name = FONT_NAME
     r_s.font.size = Pt(7.8)

@@ -123,6 +123,7 @@ def load_executive_summary():
     # Count recent scanner signals & live fee intelligence snapshots
     signal_count = 0
     bf_snap = {"audited": 0, "farm_tiers": 0, "med_10k_barn": None, "med_2500_shed": None}
+    dc_snap = {"audited": 0, "active_dc": 0, "charged_barn": 0, "charged_gh": 0, "charged_can": 0, "med_barn": None}
     sa_snap = {"active_bylaws": 0, "verified": 0, "exempt_zero": 0, "per_m3_cnt": 0, "med_15k": None, "bans": 0}
     try:
         conn = get_connection()
@@ -145,6 +146,28 @@ def load_executive_summary():
             _s25 = pd.to_numeric(bf_df["est_2500_shed"], errors="coerce").dropna()
             bf_snap["med_10k_barn"] = float(_b10.median()) if len(_b10) else None
             bf_snap["med_2500_shed"] = float(_s25.median()) if len(_s25) else None
+
+        dc_df = pd.read_sql_query(
+            """
+            SELECT d.dc_rate_verification_status, d.est_dc_10k_barn_rural,
+                   d.est_dc_1ac_greenhouse_rural, d.est_dc_10k_cannabis_rural
+            FROM details_dc d
+            """,
+            conn.conn,
+        )
+        if not dc_df.empty:
+            _dc_vs = dc_df["dc_rate_verification_status"].fillna("Pending").astype(str)
+            dc_snap["audited"] = int((_dc_vs != "Pending").sum())
+            _dc_act = dc_df[~_dc_vs.isin(["Pending", "No DC By-law"])]
+            dc_snap["active_dc"] = len(_dc_act)
+            _db = pd.to_numeric(_dc_act["est_dc_10k_barn_rural"], errors="coerce").dropna()
+            _dg = pd.to_numeric(_dc_act["est_dc_1ac_greenhouse_rural"], errors="coerce").dropna()
+            _dc = pd.to_numeric(_dc_act["est_dc_10k_cannabis_rural"], errors="coerce").dropna()
+            dc_snap["charged_barn"] = int((_db > 0).sum())
+            dc_snap["charged_gh"] = int((_dg > 0).sum())
+            dc_snap["charged_can"] = int((_dc > 0).sum())
+            _db_pos = _db[_db > 0]
+            dc_snap["med_barn"] = float(_db_pos.median()) if len(_db_pos) else None
 
         sa_df = pd.read_sql_query(
             """
@@ -185,6 +208,7 @@ def load_executive_summary():
         "signal_count": signal_count,
         "scorecard_df": pd.DataFrame(scorecard_rows),
         "bf_snap": bf_snap,
+        "dc_snap": dc_snap,
         "sa_snap": sa_snap,
     }
 
@@ -278,11 +302,11 @@ with nav_c3:
 with st.container(border=True):
     _fc1, _fc2 = st.columns([3, 1])
     with _fc1:
-        st.markdown("#### 🧮 Farm Permit & Soil Fee Explorer")
+        st.markdown("#### 🧮 Farm Permit, Development Charge & Soil Fee Explorer")
         st.caption(
-            "Interactive **Farm Building Permit Fee** calculator & **Site Alteration / Excess Soil Import Fee** explorer — "
-            "compare your municipality against county neighbours, separate refundable securities from permit costs, "
-            "and export 1-page OFA council delegation briefs (.docx)."
+            "Interactive **Farm Building Permit Fee**, **Agricultural Development Charges** (with Upper-Tier stacking "
+            "across barns, greenhouses, cannabis, and worker housing), and **Site Alteration / Excess Soil Fee** explorer — "
+            "compare county neighbours and export 1-page OFA council delegation briefs (.docx)."
         )
     with _fc2:
         st.markdown("")
@@ -327,39 +351,79 @@ if summary is not None:
         "can benchmark real project fees without mixing incompatible metrics."
     )
     _bf_s = summary["bf_snap"]
+    _dc_s = summary["dc_snap"]
     _sa_s = summary["sa_snap"]
-    fs_col1, fs_col2 = st.columns(2)
+
+    def _snap_kpi_html(items: list[tuple[str, str, str]]) -> str:
+        cols_html = []
+        for lbl, val, sub in items:
+            cols_html.append(
+                "<div style='flex:1; min-width:0;'>"
+                f"<div style='font-size:0.78rem; color:#475569; margin-bottom:2px;'>{lbl}</div>"
+                f"<div style='font-size:1.38rem; font-weight:700; color:#334B58; line-height:1.2; white-space:nowrap;'>{val}</div>"
+                f"<div style='font-size:0.75rem; color:#64748B; margin-top:3px; line-height:1.25; min-height:2.5em;'>{sub}</div>"
+                "</div>"
+            )
+        return (
+            "<div style='display:flex; gap:10px; align-items:flex-start; margin:8px 0 14px 0; font-family:Arial, sans-serif;'>"
+            + "".join(cols_html)
+            + "</div>"
+        )
+
+    fs_col1, fs_col2, fs_col3 = st.columns(3)
     with fs_col1:
         with st.container(border=True):
-            st.markdown("#### Farm Building Permit Fees")
-            m1, m2, m3 = st.columns(3)
-            with m1:
-                st.metric("Audited", f"{_bf_s['audited']}/{summary['total_munis']}")
-                st.caption(f"{round(_bf_s['audited']/summary['total_munis']*100, 1)}% of ON")
-            with m2:
-                st.metric("Farm Tiers", f"{_bf_s['farm_tiers']}")
-                st.caption("Area / stepped")
-            with m3:
-                st.metric("Median 10k Barn", f"${round(_bf_s['med_10k_barn']):,}" if _bf_s["med_10k_barn"] is not None else "—")
-                if _bf_s["med_2500_shed"] is not None:
-                    st.caption(f"2.5k Shed: \\${round(_bf_s['med_2500_shed']):,}")
+            st.markdown("#### Building Permit Fees")
+            st.markdown(
+                _snap_kpi_html([
+                    ("Audited", f"{_bf_s['audited']}/{summary['total_munis']}", f"{round(_bf_s['audited']/summary['total_munis']*100, 1)}% of ON"),
+                    ("Farm Tiers", f"{_bf_s['farm_tiers']}", "Area / stepped"),
+                    (
+                        "Med. Barn",
+                        f"${round(_bf_s['med_10k_barn']):,}" if _bf_s["med_10k_barn"] is not None else "—",
+                        f"2.5k Shed: ${round(_bf_s['med_2500_shed']):,}" if _bf_s["med_2500_shed"] is not None else "10k ft² barn",
+                    ),
+                ]),
+                unsafe_allow_html=True,
+            )
             if st.button("Explore Building Permit Fees →", key="home_jump_bf", use_container_width=True):
                 st.session_state["fe_jump_view"] = "Farm Building Permit Fees"
                 st.switch_page("pages/7_🧮_Fee_Explorer.py")
 
     with fs_col2:
         with st.container(border=True):
-            st.markdown("#### Site Alteration & Excess Soil Fees")
-            s1, s2, s3 = st.columns(3)
-            with s1:
-                st.metric("Active Bylaws", f"{_sa_s['active_bylaws']}")
-                st.caption(f"{_sa_s['verified']} verified")
-            with s2:
-                st.metric("Exempt ($0)", f"{_sa_s['exempt_zero']}")
-                st.caption(f"{_sa_s['bans']} fill bans")
-            with s3:
-                st.metric("Median (15k m³)", f"${round(_sa_s['med_15k']):,}" if _sa_s["med_15k"] is not None else "—")
-                st.caption(f"{_sa_s['per_m3_cnt']} per-m³ rates")
+            st.markdown("#### Agricultural Dev. Charges")
+            st.markdown(
+                _snap_kpi_html([
+                    ("Active DCs", f"{_dc_s['active_dc']}", f"{_dc_s['audited']}/{summary['total_munis']} audited"),
+                    ("Charged Barns", f"{_dc_s['charged_barn']}", f"{_dc_s['charged_gh']} GH · {_dc_s['charged_can']} Can"),
+                    (
+                        "Med. Barn DC",
+                        f"${round(_dc_s['med_barn']):,}" if _dc_s["med_barn"] is not None else "—",
+                        "Charged rural (10k)",
+                    ),
+                ]),
+                unsafe_allow_html=True,
+            )
+            if st.button("Explore Dev. Charges →", key="home_jump_dc", use_container_width=True):
+                st.session_state["fe_jump_view"] = "Agricultural Development Charges"
+                st.switch_page("pages/7_🧮_Fee_Explorer.py")
+
+    with fs_col3:
+        with st.container(border=True):
+            st.markdown("#### Site Alteration & Soil Fees")
+            st.markdown(
+                _snap_kpi_html([
+                    ("Active Bylaws", f"{_sa_s['active_bylaws']}", f"{_sa_s['verified']} verified"),
+                    ("Exempt ($0)", f"{_sa_s['exempt_zero']}", f"{_sa_s['bans']} fill bans"),
+                    (
+                        "Med. 15k m³",
+                        f"${round(_sa_s['med_15k']):,}" if _sa_s["med_15k"] is not None else "—",
+                        f"{_sa_s['per_m3_cnt']} per-m³ rates",
+                    ),
+                ]),
+                unsafe_allow_html=True,
+            )
             if st.button("Explore Excess Soil Fees →", key="home_jump_sa", use_container_width=True):
                 st.session_state["fe_jump_view"] = "Site Alteration & Excess Soil Fees"
                 st.switch_page("pages/7_🧮_Fee_Explorer.py")

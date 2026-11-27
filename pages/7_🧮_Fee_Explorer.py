@@ -1,13 +1,16 @@
 """
-7_🧮_Fee_Explorer.py — Standalone OFA Farm Permit & Excess Soil Fee Explorer.
+7_🧮_Fee_Explorer.py — Standalone OFA Farm Permit, Development Charge & Excess Soil Fee Explorer.
 
 Provides a clean, farmer- & council-ready workspace for quantitative municipal fees
-WITHOUT modifying the 6 binary bylaw exemption map layers or existing exemption workflows:
+WITHOUT modifying the binary bylaw exemption map layers or existing exemption workflows:
   - View 1: Farm Building Permit Fees (BLDG_FEES) — scenarios, Bottom Line banner, cost receipt,
             county peer bars, size curve
-  - View 2: Site Alteration & Excess Soil Fees (SITE_ALT) — truckload presets, Bottom Line banner,
+  - View 2: Agricultural Development Charges (DC) — 4 farm building sub-types (Typical Farm,
+            Commercial Greenhouse, Cannabis Production, Bunkhouse / SAWP), Rural vs. Urban servicing,
+            Upper-Tier County/Region stacking, 4-tile snapshot, stacked peer chart & scaling curve
+  - View 3: Site Alteration & Excess Soil Fees (SITE_ALT) — truckload presets, Bottom Line banner,
             rule vs cost split, separate refundable security box, volumetric median, volume-cliff curve
-  - View 3: Side-by-Side Peer Comparator & 1-Page OFA Council Delegation Brief (.docx)
+  - View 4: Side-by-Side Peer Comparator & 1-Page OFA Council Delegation Brief (.docx)
 """
 
 from __future__ import annotations
@@ -26,11 +29,14 @@ import streamlit as st
 
 from db_utils import get_connection, get_category_summary
 from bldg_fees_calc import evaluate_bldg_fee, fee_cost_tier_rgba
+from dc_fees_calc import compute_stacked_dc, evaluate_dc_fee, STANDARD_DC_BENCHMARKS
 from site_alt_fees_calc import evaluate_site_alt_fee, site_alt_fee_tier_rgba
 from fee_charts import (
     build_peer_bar_chart,
     build_bldg_scaling_chart,
     build_site_alt_scaling_chart,
+    build_dc_stacked_peer_chart,
+    build_dc_scaling_chart,
 )
 
 st.set_page_config(
@@ -70,6 +76,9 @@ st.markdown(
         padding-bottom: 6px;
         margin-bottom: 10px;
     }
+    [data-testid="stMetricValue"] {
+        font-size: 1.6rem !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -77,13 +86,14 @@ st.markdown(
 
 
 @st.cache_data(ttl=300)
-def load_fee_datasets() -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Load BLDG_FEES and SITE_ALT summaries from the active database (SQLite or Neon PG)."""
+def load_fee_datasets() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Load BLDG_FEES, DC, and SITE_ALT summaries from the active database (SQLite or Neon PG)."""
     conn = get_connection()
     bf_df = get_category_summary(conn, "BLDG_FEES")
+    dc_df = get_category_summary(conn, "DC")
     sa_df = get_category_summary(conn, "SITE_ALT")
     conn.close()
-    return bf_df, sa_df
+    return bf_df, dc_df, sa_df
 
 
 def _clean_str(val, fallback: str = "—") -> str:
@@ -133,20 +143,39 @@ def _render_bottom_line(body_html: str) -> None:
 # ── Header ──
 st.markdown(
     "<h1 style='color:#334B58; font-family:Arial, sans-serif; margin-bottom:0.15rem;'>"
-    "Farm Permit &amp; Excess Soil Fee Explorer</h1>",
+    "Farm Permit, Development Charge &amp; Excess Soil Fee Explorer</h1>",
     unsafe_allow_html=True,
 )
 st.caption(
-    "Estimate municipal project fees, compare county neighbours against provincial medians, "
-    "and export 1-page OFA council delegation briefs — built from primary-source audited municipal by-laws."
+    "Estimate municipal farm building permits, stacked agricultural development charges, and excess soil fees — "
+    "compare county neighbours against provincial medians and export 1-page OFA council delegation briefs."
 )
 
-bf_all, sa_all = load_fee_datasets()
+bf_all, dc_all, sa_all = load_fee_datasets()
 bf_local = bf_all[bf_all["municipal_status"].fillna("") != "Upper Tier"].copy()
+dc_local = dc_all[dc_all["municipal_status"].fillna("") != "Upper Tier"].copy()
 sa_local = sa_all[sa_all["municipal_status"].fillna("") != "Upper Tier"].copy()
+
+# Lookup map for parent Upper-Tier County / Region DC schedules (matched ONLY for Lower-Tier rows)
+dc_upper_by_area: dict[str, pd.Series] = {
+    str(r["geographic_area"]): r
+    for _, r in dc_all[dc_all["municipal_status"].fillna("") == "Upper Tier"].iterrows()
+    if pd.notna(r.get("geographic_area"))
+}
+
+
+def _parent_upper_dc_row(muni_row: pd.Series, stack_enabled: bool) -> pd.Series | None:
+    """Return parent Upper-Tier DC row ONLY when stacking is enabled and municipality is Lower Tier."""
+    if not stack_enabled:
+        return None
+    if str(muni_row.get("municipal_status", "")).strip() != "Lower Tier":
+        return None
+    return dc_upper_by_area.get(str(muni_row.get("geographic_area", "")))
+
 
 VIEW_OPTIONS = [
     "Farm Building Permit Fees",
+    "Agricultural Development Charges",
     "Site Alteration & Excess Soil Fees",
     "Peer Comparator & Council Brief",
 ]
@@ -157,20 +186,30 @@ _jump_muni = st.session_state.pop("fe_jump_muni", None) or st.query_params.get("
 
 if _jump_view:
     _jv = str(_jump_view).strip().lower()
-    if "site" in _jv or "soil" in _jv or _jv == "sa":
+    if "dev" in _jv or _jv == "dc" or "charge" in _jv:
         st.session_state["fe_active_view"] = VIEW_OPTIONS[1]
-    elif "peer" in _jv or "compar" in _jv or "brief" in _jv:
+    elif "site" in _jv or "soil" in _jv or _jv == "sa":
         st.session_state["fe_active_view"] = VIEW_OPTIONS[2]
+    elif "peer" in _jv or "compar" in _jv or "brief" in _jv:
+        st.session_state["fe_active_view"] = VIEW_OPTIONS[3]
     else:
         st.session_state["fe_active_view"] = VIEW_OPTIONS[0]
 
 if _jump_muni:
     _jm = str(_jump_muni).strip()
     st.session_state["fe_bf_area"] = "All Counties / Districts"
+    st.session_state["fe_dc_area"] = "All Counties / Districts"
     st.session_state["fe_sa_area"] = "All Counties / Districts"
     if _jm in bf_local["name"].astype(str).values:
         st.session_state["fe_bf_muni"] = _jm
         st.session_state["fe_cmp_home"] = _jm
+    if _jm in dc_all["name"].astype(str).values:
+        _dc_active_names = set(
+            dc_all.loc[dc_all["has_dc"].fillna("").astype(str).str.strip().str.lower().isin(["yes", "1"]), "name"].astype(str)
+        )
+        if _jm not in _dc_active_names:
+            st.session_state["fe_dc_active_only"] = False
+        st.session_state["fe_dc_muni"] = _jm
     if _jm in sa_local["name"].astype(str).values:
         _sa_active_names = set(
             sa_local.loc[
@@ -231,6 +270,68 @@ def _compute_sa_medians(vol: int) -> tuple[float | None, float | None]:
         float(pd.Series(paid_all).median()) if paid_all else None,
         float(pd.Series(paid_vol).median()) if paid_vol else None,
     )
+
+
+def _compute_dc_charged_median(
+    building_type: str,
+    service_area: str,
+    stacked: bool,
+    sqft: float | None = None,
+    beds: int | None = None,
+) -> float | None:
+    """Return Ontario Charged Median ($ > 0) across local/single-tier municipalities."""
+    charged = []
+    for _, _r in dc_local.iterrows():
+        _ut = _parent_upper_dc_row(_r, stacked)
+        _res = compute_stacked_dc(_r, _ut, building_type, service_area, sqft=sqft, beds=beds)
+        _tv = _res["stacked_total"]
+        if _tv is not None and _tv > 0:
+            charged.append(_tv)
+    return float(pd.Series(charged).median()) if charged else None
+
+
+def _dc_short_status(val: float | None, raw_status: str, no_dc: bool = False) -> str:
+    if no_dc:
+        return "No DC By-law"
+    if val is not None:
+        if val <= 0:
+            return "Exempt ($0)"
+        s = _clean_str(raw_status, "Charged")
+        return s[:38] + ("…" if len(s) > 38 else "")
+    s = _clean_str(raw_status, "Silent / Confirm")
+    if "defer" in s.lower():
+        return "Deferred"
+    if "silent" in s.lower():
+        return "Silent / Confirm"
+    return s[:38] + ("…" if len(s) > 38 else "")
+
+
+def _pretty_upper_name(val) -> str:
+    s = _clean_str(val, "")
+    if not s:
+        return ""
+    if s.endswith(", Co"):
+        return s[:-4] + " County"
+    if s.endswith(", R"):
+        return s[:-3] + " Region"
+    return s
+
+
+def _dc_effective_total(ev: dict) -> tuple[float | None, bool]:
+    """Return (display_total, is_partial_silent).
+
+    Preserves empirical rigor: if both tiers are verified, returns exact sum (is_partial=False).
+    If one tier is verified > $0 and the other tier is Silent, returns the verified minimum floor
+    with is_partial=True (displayed with '+' and explicit silent-tier warning).
+    If the only known tier is $0 while the other tier is Silent, returns (None, False) so a
+    silent tier is NEVER disguised as $0 Exempt.
+    """
+    if ev["stacked_total"] is not None:
+        return float(ev["stacked_total"]), False
+    kf = ev.get("known_floor_total")
+    if kf is not None and float(kf) > 0.0:
+        return float(kf), True
+    return None, False
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -514,9 +615,519 @@ if active_view == VIEW_OPTIONS[0]:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# VIEW 2: SITE ALTERATION & EXCESS SOIL FEES (SITE_ALT)
+# VIEW 2: AGRICULTURAL DEVELOPMENT CHARGES (DC)
 # ═══════════════════════════════════════════════════════════════════════════
 elif active_view == VIEW_OPTIONS[1]:
+    if "fe_dc_active_only" not in st.session_state:
+        st.session_state["fe_dc_active_only"] = True
+
+    _active_dc_total = int(dc_all["has_dc"].fillna("").astype(str).str.strip().str.lower().isin(["yes", "1"]).sum())
+    dc_s1, dc_s2, dc_s3 = st.columns([1.15, 1.35, 1.5])
+    with dc_s1:
+        fe_dc_active_only = st.checkbox(
+            f"Active DC By-laws only ({_active_dc_total})",
+            key="fe_dc_active_only",
+            help="Focuses the municipality picker on the 227 Ontario municipalities (209 Local/Single + 18 Upper Tiers) with active Development Charge by-laws. Uncheck to browse all 444 municipalities.",
+        )
+    dc_pool = dc_all.copy()
+    if fe_dc_active_only:
+        dc_pool = dc_pool[dc_pool["has_dc"].fillna("").astype(str).str.strip().str.lower().isin(["yes", "1"])]
+
+    dc_areas = ["All Counties / Districts"] + sorted(dc_pool["geographic_area"].dropna().astype(str).unique().tolist())
+    if "fe_dc_area" not in st.session_state or st.session_state["fe_dc_area"] not in dc_areas:
+        st.session_state["fe_dc_area"] = dc_areas[0]
+    with dc_s2:
+        fe_dc_area = st.selectbox("Filter by County / District", dc_areas, key="fe_dc_area")
+    if fe_dc_area != "All Counties / Districts":
+        dc_pool = dc_pool[dc_pool["geographic_area"] == fe_dc_area]
+
+    dc_muni_names = sorted(dc_pool["name"].dropna().astype(str).unique().tolist())
+    if "fe_dc_muni" not in st.session_state or st.session_state["fe_dc_muni"] not in dc_muni_names:
+        st.session_state["fe_dc_muni"] = "Leamington" if "Leamington" in dc_muni_names else (dc_muni_names[0] if dc_muni_names else "")
+    with dc_s3:
+        fe_dc_muni = st.selectbox("Select Municipality (Local, Single, or Upper Tier)", dc_muni_names, key="fe_dc_muni")
+
+    # Controls Row 2: Building sub-type, Rural/Urban servicing, Upper-Tier stacking
+    dc_c1, dc_c2, dc_c3 = st.columns([2.1, 1.15, 1.05])
+    _DC_BTYPE_OPTS = {
+        "🐄 Typical Farm": "typical_farm",
+        "🌿 Greenhouse": "greenhouse",
+        "🍃 Cannabis": "cannabis",
+        "🛏️ Bunkhouse / SAWP": "bunkhouse",
+    }
+    with dc_c1:
+        fe_dc_btype_lbl = st.radio(
+            "Agricultural Building Sub-Type",
+            list(_DC_BTYPE_OPTS.keys()),
+            index=0,
+            horizontal=True,
+            key="fe_dc_btype_lbl",
+        )
+        fe_dc_btype = _DC_BTYPE_OPTS[fe_dc_btype_lbl]
+    with dc_c2:
+        fe_dc_sa_lbl = st.radio(
+            "Servicing Area",
+            ["Rural (Unserviced)", "Urban (Serviced)"],
+            index=0,
+            horizontal=True,
+            key="fe_dc_sa_lbl",
+        )
+        fe_dc_sarea = "rural" if fe_dc_sa_lbl.startswith("Rural") else "urban"
+    with dc_c3:
+        st.markdown("<div style='height:22px;'></div>", unsafe_allow_html=True)
+        fe_dc_stack = st.checkbox(
+            "Stack Upper-Tier County / Region DC",
+            value=True,
+            key="fe_dc_stack",
+            help="Adds the parent Upper-Tier County/Region DC on top of Lower-Tier municipal DCs (automatically skipped for Single-Tier cities and Upper-Tier standalone rows so nothing is double-counted).",
+        )
+
+    # Controls Row 3: Size presets + Chart Scope
+    dc_p1, dc_p2 = st.columns([2.2, 1.2])
+    with dc_p1:
+        if fe_dc_btype == "greenhouse":
+            _gh_pre = st.radio(
+                "Greenhouse Size Scenario",
+                ["0.5 Acre", "1 Acre (43,560 ft²)", "2 Acres", "5 Acres", "Custom"],
+                index=1,
+                horizontal=True,
+                key="fe_dc_gh_pre",
+            )
+            _gh_map = {"0.5 Acre": 0.5, "1 Acre (43,560 ft²)": 1.0, "2 Acres": 2.0, "5 Acres": 5.0}
+            if _gh_pre in _gh_map:
+                _dc_acres = _gh_map[_gh_pre]
+            else:
+                _dc_acres = st.slider("Custom Greenhouse Area (acres)", 0.25, 10.0, 1.0, 0.25, key="fe_dc_gh_slider")
+            fe_dc_sqft = _dc_acres * 43560.0
+            fe_dc_beds = 0
+            fe_dc_scen_txt = f"{_dc_acres:g} Acre ({round(fe_dc_sqft):,} ft²) Commercial Greenhouse"
+            fe_dc_hi_val = _dc_acres
+        elif fe_dc_btype == "bunkhouse":
+            _bk_pre = st.radio(
+                "Seasonal Worker Housing Scenario (scaled at 200 ft²/bed)",
+                ["6 Beds", "10 Beds (Standard)", "20 Beds", "30 Beds", "Custom"],
+                index=1,
+                horizontal=True,
+                key="fe_dc_bk_pre",
+            )
+            _bk_map = {"6 Beds": 6, "10 Beds (Standard)": 10, "20 Beds": 20, "30 Beds": 30}
+            if _bk_pre in _bk_map:
+                fe_dc_beds = _bk_map[_bk_pre]
+            else:
+                fe_dc_beds = st.slider("Custom Worker Capacity (beds)", 4, 40, 10, 2, key="fe_dc_bk_slider")
+            fe_dc_sqft = float(fe_dc_beds * 200)
+            fe_dc_scen_txt = f"{fe_dc_beds}-Bed ({round(fe_dc_sqft):,} ft²) Bunkhouse / SAWP Housing"
+            fe_dc_hi_val = float(fe_dc_beds)
+        elif fe_dc_btype == "cannabis":
+            _cn_pre = st.radio(
+                "Cannabis Facility Size Scenario",
+                ["5,000 ft²", "10,000 ft² (Standard)", "25,000 ft²", "Custom"],
+                index=1,
+                horizontal=True,
+                key="fe_dc_cn_pre",
+            )
+            _cn_map = {"5,000 ft²": 5000.0, "10,000 ft² (Standard)": 10000.0, "25,000 ft²": 25000.0}
+            if _cn_pre in _cn_map:
+                fe_dc_sqft = _cn_map[_cn_pre]
+            else:
+                fe_dc_sqft = float(st.slider("Custom Facility Area (sq. ft.)", 2000, 30000, 10000, 1000, key="fe_dc_cn_slider"))
+            fe_dc_beds = 0
+            fe_dc_scen_txt = f"{round(fe_dc_sqft):,} ft² Cannabis Production Facility"
+            fe_dc_hi_val = fe_dc_sqft
+        else:
+            _tf_pre = st.radio(
+                "Typical Farm Building Size Scenario",
+                ["5,000 ft²", "10,000 ft² (Standard)", "20,000 ft²", "Custom"],
+                index=1,
+                horizontal=True,
+                key="fe_dc_tf_pre",
+            )
+            _tf_map = {"5,000 ft²": 5000.0, "10,000 ft² (Standard)": 10000.0, "20,000 ft²": 20000.0}
+            if _tf_pre in _tf_map:
+                fe_dc_sqft = _tf_map[_tf_pre]
+            else:
+                fe_dc_sqft = float(st.slider("Custom Building Area (sq. ft.)", 2000, 30000, 10000, 1000, key="fe_dc_tf_slider"))
+            fe_dc_beds = 0
+            fe_dc_scen_txt = f"{round(fe_dc_sqft):,} ft² Typical Farm Building"
+            fe_dc_hi_val = fe_dc_sqft
+
+    dc_focus_raw = dc_all[dc_all["name"] == fe_dc_muni].iloc[0]
+    dc_focus_status_tier = _clean_str(dc_focus_raw.get("municipal_status"), "Lower Tier")
+    dc_focus_county = _clean_str(dc_focus_raw.get("geographic_area"))
+    dc_is_upper_selected = dc_focus_status_tier == "Upper Tier"
+    dc_ut_row = _parent_upper_dc_row(dc_focus_raw, fe_dc_stack)
+    dc_ut_name = _pretty_upper_name(dc_ut_row.get("name")) if dc_ut_row is not None else ""
+
+    with dc_p2:
+        _scope_opts = (
+            ["All 18 Active Upper-Tier Counties / Regions", "Provincial Top 15 Charged (Local/Single)"]
+            if dc_is_upper_selected
+            else [
+                "Same County / District",
+                "Provincial Top 15 Charged",
+                "Ontario Greenhouse Belt",
+                "Ontario Priced Bunkhouse / SAWP",
+            ]
+        )
+        fe_dc_scope = st.selectbox("Peer Chart Scope", _scope_opts, index=0, key=f"fe_dc_scope_{dc_is_upper_selected}")
+
+    # Evaluate selected municipality & Ontario Charged Median
+    _dc_focus_eval = compute_stacked_dc(
+        dc_focus_raw,
+        dc_ut_row,
+        fe_dc_btype,
+        fe_dc_sarea,
+        sqft=fe_dc_sqft,
+        beds=fe_dc_beds,
+    )
+    _lt_val = _dc_focus_eval["lower_or_single"]
+    _ut_val = _dc_focus_eval["upper_tier"]
+    _tot_val, _tot_partial = _dc_effective_total(_dc_focus_eval)
+    _silent_which = _dc_focus_eval.get("silent_tier_which")
+    _focus_no_dc = str(dc_focus_raw.get("has_dc", "") or "").strip().lower() in ("no", "2")
+    _ont_med_dc = _compute_dc_charged_median(fe_dc_btype, fe_dc_sarea, fe_dc_stack, sqft=fe_dc_sqft, beds=fe_dc_beds)
+
+    _st_col_map = {
+        "typical_farm": ("farm_bldg_dc_status", "exemption_wording"),
+        "greenhouse": ("greenhouse_dc_status", "greenhouse_dc_notes"),
+        "cannabis": ("cannabis_dc_status", "cannabis_dc_notes"),
+        "bunkhouse": ("bunkhouse_dc_status", "bunkhouse_dc_notes"),
+    }
+    _cur_st_col, _cur_notes_col = _st_col_map[fe_dc_btype]
+    _focus_sub_status = "No DC By-law" if _focus_no_dc else _clean_str(dc_focus_raw.get(_cur_st_col), "Silent / Confirm")
+    _edc_str = _clean_str(dc_focus_raw.get("dc_edc_applicable"), "None noted")
+
+    # ── Bottom Line Strip ──
+    _sa_short = "rural unserviced" if fe_dc_sarea == "rural" else "urban serviced"
+    if _tot_val is not None:
+        if _tot_val <= 0 and not _tot_partial:
+            _ut_zero_note = (
+                f" (both {html.escape(fe_dc_muni)} and {html.escape(dc_ut_name)} are $0)"
+                if (dc_ut_row is not None and dc_ut_name)
+                else (" (no municipal DC by-law)" if _focus_no_dc else " (exempt under current DC by-law)")
+            )
+            _render_bottom_line(
+                f"<b>{html.escape(fe_dc_muni)}</b> ({html.escape(dc_focus_county)}) charges <b>$0</b> in municipal Development Charges "
+                f"for a {_sa_short} {html.escape(fe_dc_scen_txt)}{_ut_zero_note}."
+            )
+        elif _tot_partial:
+            _known_clause = (
+                f"<b>{_fmt_dollars(_lt_val)}</b> {html.escape(fe_dc_muni)} + <b>{html.escape(dc_ut_name)} Silent</b> (confirm Upper Tier)"
+                if _silent_which == "upper"
+                else f"<b>{html.escape(fe_dc_muni)} Silent</b> + <b>{_fmt_dollars(_ut_val)}</b> {html.escape(dc_ut_name)}"
+            )
+            _edc_clause = (
+                f" Separate school-board EDCs also apply ({html.escape(_edc_str[:90])})."
+                if _edc_str.lower().startswith("yes")
+                else ""
+            )
+            _render_bottom_line(
+                f"<b>{html.escape(fe_dc_muni)}</b> ({html.escape(dc_focus_county)}) imposes at least <b>{_fmt_dollars(_tot_val)}+</b> "
+                f"({_known_clause}) for a {_sa_short} {html.escape(fe_dc_scen_txt)}.{_edc_clause}"
+            )
+        else:
+            _stack_clause = ""
+            if dc_ut_row is not None and dc_ut_name and (_ut_val or 0) > 0:
+                _stack_clause = f" (<b>{_fmt_dollars(_lt_val)}</b> {html.escape(fe_dc_muni)} + <b>{_fmt_dollars(_ut_val)}</b> {html.escape(dc_ut_name)})"
+            elif dc_is_upper_selected:
+                _stack_clause = " (Upper-Tier standalone — member Lower-Tier DCs may stack separately)"
+            _med_clause = ""
+            if _ont_med_dc and _ont_med_dc > 0 and not dc_is_upper_selected:
+                _pct = round((_tot_val - _ont_med_dc) / _ont_med_dc * 100)
+                _med_clause = (
+                    f" — <b>{abs(_pct)}% {'above' if _pct > 0 else 'below'}</b> the Ontario charged median ({_fmt_dollars(_ont_med_dc)})"
+                    if _pct != 0 else f" — <b>equal to</b> the Ontario charged median ({_fmt_dollars(_ont_med_dc)})"
+                )
+            _edc_clause = (
+                f" Separate school-board EDCs also apply ({html.escape(_edc_str[:90])})."
+                if _edc_str.lower().startswith("yes")
+                else ""
+            )
+            _render_bottom_line(
+                f"<b>{html.escape(fe_dc_muni)}</b> ({html.escape(dc_focus_county)}) imposes <b>{_fmt_dollars(_tot_val)}</b>"
+                f"{_stack_clause} for a {_sa_short} {html.escape(fe_dc_scen_txt)}{_med_clause}.{_edc_clause}"
+            )
+    else:
+        _render_bottom_line(
+            f"<b>{html.escape(fe_dc_muni)}</b> ({html.escape(dc_focus_county)}) is marked <b>{html.escape(_focus_sub_status)}</b> "
+            f"for {html.escape(fe_dc_scen_txt)} ({_sa_short}) — silent or ambiguous by-law wording is never assumed to be $0; confirm directly with the municipal clerk."
+        )
+
+    # ── 4-Tile Cross-Sub-Type Snapshot (keeps incompatible dollar scales off a single axis) ──
+    _tile_specs = [
+        ("typical_farm", "🐄 Typical Farm (10k ft²)", 10000.0, 0, "farm_bldg_dc_status"),
+        ("greenhouse", "🌿 Greenhouse (1 Acre)", 43560.0, 0, "greenhouse_dc_status"),
+        ("cannabis", "🍃 Cannabis (10k ft²)", 10000.0, 0, "cannabis_dc_status"),
+        ("bunkhouse", "🛏️ Bunkhouse (10 Beds)", 2000.0, 10, "bunkhouse_dc_status"),
+    ]
+    _tcols = st.columns(4)
+    for _tc, (_tk, _tlbl, _tsq, _tbd, _tstcol) in zip(_tcols, _tile_specs):
+        _tres = compute_stacked_dc(dc_focus_raw, dc_ut_row, _tk, fe_dc_sarea, sqft=_tsq, beds=_tbd)
+        _tv, _tpart = _dc_effective_total(_tres)
+        if _tv is None:
+            _tdisp = "Silent"
+        elif _tv <= 0 and not _tpart:
+            _tdisp = "$0"
+        else:
+            _tdisp = f"{_fmt_dollars(_tv)}+" if _tpart else _fmt_dollars(_tv)
+        _traw = _clean_str(dc_focus_raw.get(_tstcol), "Silent / Confirm")
+        with _tc:
+            with st.container(border=True):
+                st.metric(_tlbl + (" ★" if _tk == fe_dc_btype else ""), _tdisp)
+                if _tpart:
+                    _sub_cap = (
+                        f"LT \\${round(_tres['lower_or_single'] or 0):,} · UT silent"
+                        if _tres.get("silent_tier_which") == "upper"
+                        else f"UT \\${round(_tres['upper_tier'] or 0):,} · LT silent"
+                    )
+                elif dc_ut_row is not None and (_tres["upper_tier"] or 0) > 0 and _tv is not None:
+                    _sub_cap = f"LT \\${round(_tres['lower_or_single'] or 0):,} + UT \\${round(_tres['upper_tier'] or 0):,}"
+                else:
+                    _sub_cap = _md_safe(_dc_short_status(_tv, _traw, no_dc=_focus_no_dc))
+                st.caption(_sub_cap)
+
+    # ── Two-Card Legal & Rate Receipt ──
+    dc_l, dc_r = st.columns([1.22, 1.0])
+    with dc_l:
+        with st.container(border=True):
+            st.markdown(
+                f'<div class="ofa-card-hdr">{html.escape(fe_dc_muni)} ({html.escape(dc_focus_county)}) — Development Charge Receipt</div>',
+                unsafe_allow_html=True,
+            )
+            if _tot_val is not None:
+                if dc_ut_row is not None and dc_ut_name:
+                    _m1, _m2, _m3 = st.columns(3)
+                    with _m1:
+                        st.metric(
+                            fe_dc_muni,
+                            "Silent" if _lt_val is None else ("$0" if _lt_val <= 0 else _fmt_dollars(_lt_val)),
+                        )
+                        st.caption("Lower-Tier Standalone")
+                    with _m2:
+                        st.metric(
+                            dc_ut_name,
+                            "Silent" if _ut_val is None else ("$0" if _ut_val <= 0 else _fmt_dollars(_ut_val)),
+                        )
+                        st.caption("Confirm w/ Upper Tier" if _ut_val is None else "Parent Upper-Tier")
+                    with _m3:
+                        _comb_val = "$0" if (_tot_val <= 0 and not _tot_partial) else f"{_fmt_dollars(_tot_val)}{'+' if _tot_partial else ''}"
+                        st.metric("Combined Total", _comb_val)
+                        if _tot_partial:
+                            st.caption("Known min. (other tier silent)")
+                        elif _tot_val > 0:
+                            _unit_rate = (
+                                f"${_tot_val / fe_dc_beds:,.0f}/bed" if fe_dc_btype == "bunkhouse" and fe_dc_beds > 0
+                                else f"${_tot_val / fe_dc_sqft:.2f}/ft²"
+                            )
+                            st.caption(f"Eff. rate: {_md_safe(_unit_rate)}")
+                        else:
+                            st.caption("Both tiers exempt / no DC")
+                else:
+                    _m1, _m2 = st.columns(2)
+                    with _m1:
+                        st.metric(fe_dc_scen_txt, "$0" if _tot_val <= 0 else _fmt_dollars(_tot_val))
+                        st.caption(f"{dc_focus_status_tier} · {fe_dc_sa_lbl}")
+                    with _m2:
+                        if _tot_val > 0:
+                            _unit_rate = (
+                                f"${_tot_val / fe_dc_beds:,.0f}/bed" if fe_dc_btype == "bunkhouse" and fe_dc_beds > 0
+                                else f"${_tot_val / fe_dc_sqft:.2f}/ft²"
+                            )
+                            st.metric("Effective Rate", _unit_rate)
+                        else:
+                            st.metric("Effective Rate", "$0.00")
+                        st.caption(_md_safe(_dc_short_status(_tot_val, _focus_sub_status, no_dc=_focus_no_dc)))
+            else:
+                st.warning(
+                    f"**{_md_safe(_focus_sub_status)}** — No numeric rate published for {fe_dc_muni} "
+                    f"(or its parent Upper Tier) on this sub-type. Silent / ambiguous schedules are never assumed to be \\$0."
+                )
+
+            _dc_yr = _fmt_year(dc_focus_raw.get("dc_rate_year"))
+            _dc_eff = _clean_str(dc_focus_raw.get("dc_rate_effective_date"))
+            _dc_ver = _clean_str(dc_focus_raw.get("dc_rate_verification_status"))
+            _dc_basis = _clean_str(dc_focus_raw.get("dc_rate_service_area_basis"))
+            _dc_bylaw = _clean_str(dc_focus_raw.get("bylaw_name"))
+            _dc_bylaw_url = _valid_url(dc_focus_raw.get("bylaw_link"))
+            _dc_pamph = _clean_str(dc_focus_raw.get("dc_rate_pamphlet_name"))
+            _dc_pamph_url = _valid_url(dc_focus_raw.get("dc_rate_pamphlet_link"))
+
+            _meta_lines = [
+                f"**Audit Status:** {_md_safe(_dc_ver)} · **Rate Year:** {_dc_yr} (Eff. {_md_safe(_dc_eff)})",
+                f"**Municipal Tier:** {dc_focus_status_tier} · **Service Area Basis:** {_md_safe(_dc_basis)}",
+                "**Source DC By-law:** " + (f"[{_md_safe(_dc_bylaw)}]({_dc_bylaw_url})" if _dc_bylaw_url else _md_safe(_dc_bylaw)),
+            ]
+            if _dc_pamph != "—":
+                _meta_lines.append(
+                    "**Indexed Rate Pamphlet:** " + (f"[{_md_safe(_dc_pamph)}]({_dc_pamph_url})" if _dc_pamph_url else _md_safe(_dc_pamph))
+                )
+            if dc_ut_row is not None and dc_ut_name:
+                _ut_p_nm = _clean_str(dc_ut_row.get("dc_rate_pamphlet_name") or dc_ut_row.get("bylaw_name"))
+                _ut_p_url = _valid_url(dc_ut_row.get("dc_rate_pamphlet_link")) or _valid_url(dc_ut_row.get("bylaw_link"))
+                _meta_lines.append(
+                    f"**Parent Upper-Tier Source ({_md_safe(dc_ut_name)}):** "
+                    + (f"[{_md_safe(_ut_p_nm)}]({_ut_p_url})" if _ut_p_url else _md_safe(_ut_p_nm))
+                )
+            st.markdown("  \n".join(_meta_lines))
+
+            _dc_fn = _clean_str(dc_focus_raw.get("dc_rate_formula_notes"), "")
+            if _dc_fn:
+                st.info(f"**Verified Rate & Indexing Notes:** {_md_safe(_dc_fn)}")
+
+    with dc_r:
+        with st.container(border=True):
+            st.markdown(
+                f'<div class="ofa-card-hdr">Sub-Type Legal Rules, Carve-Outs &amp; Education DCs</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(f"**Selected Sub-Type Treatment ({fe_dc_btype_lbl}):** {_md_safe(_focus_sub_status)}")
+            _sub_note_txt = _clean_str(dc_focus_raw.get(_cur_notes_col), "")
+            if _sub_note_txt:
+                st.info(f"**Primary-Source Wording / Basis:** {_md_safe(_sub_note_txt)}")
+            elif _focus_no_dc:
+                st.success(f"{fe_dc_muni} does not levy a municipal Development Charge by-law.")
+
+            if dc_ut_row is not None and dc_ut_name:
+                _ut_has = str(dc_ut_row.get("has_dc", "") or "").strip().lower() in ("yes", "1")
+                _ut_st_txt = _clean_str(dc_ut_row.get(_cur_st_col), "Exempt / Silent") if _ut_has else "No Upper-Tier DC By-law"
+                st.markdown(f"**Parent Upper Tier ({_md_safe(dc_ut_name)}) Treatment:** {_md_safe(_ut_st_txt)}")
+
+            if _edc_str.lower().startswith("yes"):
+                st.warning(f"**Education Development Charges (Separate School Board Levy):** {_md_safe(_edc_str)}")
+            else:
+                st.caption(f"**Education Development Charges (EDCs):** {_md_safe(_edc_str)}")
+
+            st.markdown(
+                "**All 4 Sub-Type Treatments:**  \n"
+                f"- **Typical Farm:** {_md_safe(dc_focus_raw.get('farm_bldg_dc_status'), 'No DC' if _focus_no_dc else '—')}  \n"
+                f"- **Greenhouse:** {_md_safe(dc_focus_raw.get('greenhouse_dc_status'), 'No DC' if _focus_no_dc else '—')}  \n"
+                f"- **Cannabis:** {_md_safe(dc_focus_raw.get('cannabis_dc_status'), 'No DC' if _focus_no_dc else '—')}  \n"
+                f"- **Bunkhouse / SAWP:** {_md_safe(dc_focus_raw.get('bunkhouse_dc_status'), 'No DC' if _focus_no_dc else '—')}"
+            )
+
+    # ── Stacked Peer Benchmark Bar Chart ──
+    st.markdown("")
+    _peer_base = (
+        dc_all[(dc_all["municipal_status"].fillna("") == "Upper Tier") & (dc_all["has_dc"].fillna("").astype(str).str.strip().str.lower().isin(["yes", "1"]))].copy()
+        if (dc_is_upper_selected and fe_dc_scope.startswith("All 18"))
+        else dc_local.copy()
+    )
+
+    _dc_eval_rows = []
+    for _, _r in _peer_base.iterrows():
+        _ut_p = _parent_upper_dc_row(_r, fe_dc_stack)
+        _ev = compute_stacked_dc(_r, _ut_p, fe_dc_btype, fe_dc_sarea, sqft=fe_dc_sqft, beds=fe_dc_beds)
+        _eff_tot, _is_part = _dc_effective_total(_ev)
+        _r_no_dc = str(_r.get("has_dc", "") or "").strip().lower() in ("no", "2")
+        _dc_eval_rows.append(
+            {
+                "Municipality": str(_r["name"]),
+                "County": _clean_str(_r.get("geographic_area")),
+                "LowerFee": _ev["lower_or_single"],
+                "UpperFee": _ev["upper_tier"] if _ut_p is not None else 0.0,
+                "TotalFee": _eff_tot,
+                "PartialSilent": _is_part,
+                "SilentWhich": _ev.get("silent_tier_which") or "",
+                "UpperName": _pretty_upper_name(_ut_p.get("name")) if _ut_p is not None else "—",
+                "Status": "No DC By-law" if _r_no_dc else _clean_str(_r.get(_cur_st_col), "Silent / Confirm"),
+                "Year": _fmt_year(_r.get("dc_rate_year")),
+                "Detail": ("No DC By-law" if _r_no_dc else _clean_str(_r.get(_cur_st_col), "Silent / Confirm")),
+                "Bylaw": _clean_str(_r.get("dc_rate_pamphlet_name") or _r.get("bylaw_name")),
+            }
+        )
+    dc_eval_df = pd.DataFrame(_dc_eval_rows)
+
+    if dc_is_upper_selected and fe_dc_scope.startswith("All 18"):
+        dc_peer_slice = dc_eval_df.copy()
+        dc_scope_lbl = "all 18 active Upper-Tier Counties & Regions"
+    elif fe_dc_scope == "Same County / District":
+        dc_peer_slice = dc_eval_df[dc_eval_df["County"] == dc_focus_county].copy()
+        dc_scope_lbl = f"{dc_focus_county} peers"
+    elif fe_dc_scope == "Ontario Greenhouse Belt":
+        _gh_belt = {"Essex", "Niagara", "Chatham-Kent", "Haldimand", "Norfolk", "Elgin", "Brant"}
+        dc_peer_slice = dc_eval_df[
+            dc_eval_df["County"].isin(_gh_belt) & (dc_eval_df["TotalFee"].notna()) & (dc_eval_df["Status"] != "No DC By-law")
+        ].sort_values(["TotalFee", "Municipality"], ascending=[False, True]).head(18)
+        dc_peer_slice = pd.concat([dc_peer_slice, dc_eval_df[dc_eval_df["Municipality"] == fe_dc_muni]]).drop_duplicates("Municipality")
+        dc_scope_lbl = "Ontario greenhouse-belt DC municipalities"
+    elif fe_dc_scope == "Ontario Priced Bunkhouse / SAWP":
+        _bk_priced = dc_eval_df[dc_eval_df["TotalFee"].notna() & (dc_eval_df["TotalFee"] > 0)].sort_values(
+            ["TotalFee", "Municipality"], ascending=[False, True]
+        ).head(18)
+        dc_peer_slice = pd.concat([_bk_priced, dc_eval_df[dc_eval_df["Municipality"] == fe_dc_muni]]).drop_duplicates("Municipality")
+        dc_scope_lbl = "Ontario municipalities charging bunkhouse / SAWP DCs"
+    else:
+        _top_dc = dc_eval_df[dc_eval_df["TotalFee"].notna() & (dc_eval_df["TotalFee"] > 0)].sort_values(
+            ["TotalFee", "Municipality"], ascending=[False, True]
+        ).head(15)
+        dc_peer_slice = pd.concat([_top_dc, dc_eval_df[dc_eval_df["Municipality"] == fe_dc_muni]]).drop_duplicates("Municipality")
+        dc_scope_lbl = "Ontario's 15 highest charged municipal DC schedules"
+
+    dc_chart_df = dc_peer_slice[dc_peer_slice["TotalFee"].notna()].copy()
+    dc_silent_peers = dc_peer_slice[dc_peer_slice["TotalFee"].isna()].copy()
+
+    if _tot_val is not None and not dc_chart_df.empty:
+        _ranked_dc = dc_chart_df.sort_values("TotalFee", ascending=False).reset_index(drop=True)
+        _rk_dc = int(_ranked_dc.index[_ranked_dc["Municipality"] == fe_dc_muni][0]) + 1 if fe_dc_muni in _ranked_dc["Municipality"].values else None
+        _val_str = "$0 (Exempt)" if (_tot_val <= 0 and not _tot_partial) else f"{_fmt_dollars(_tot_val)}{'+' if _tot_partial else ''}"
+        _dc_title = (
+            f"{fe_dc_muni} imposes {_val_str} for a {fe_dc_scen_txt}"
+            + (f" (#{_rk_dc} of {len(_ranked_dc)} in view)" if _rk_dc and _tot_val > 0 else "")
+        )
+    else:
+        _dc_title = f"Agricultural Development Charges ({fe_dc_scen_txt}) — {dc_scope_lbl}"
+
+    _has_ut_bars = bool(fe_dc_stack and not dc_chart_df.empty and (dc_chart_df["UpperFee"].fillna(0) > 0).any())
+    _any_plus = bool(not dc_chart_df.empty and dc_chart_df["PartialSilent"].any())
+    _dc_sub = (
+        f"Comparing {len(dc_chart_df)} verified peers ({dc_scope_lbl}; {fe_dc_sa_lbl})"
+        + (" · Stacked: Lower/Single (Crimson/Gray) + Upper-Tier (Gold/Slate)" if _has_ut_bars else " · OFA Crimson = Selected · Green = $0 Exempt")
+        + (" · '+' = one tier silent" if _any_plus else "")
+    )
+
+    st.altair_chart(
+        build_dc_stacked_peer_chart(
+            dc_chart_df,
+            focus_muni=fe_dc_muni,
+            title=_dc_title,
+            subtitle=_dc_sub,
+            median_val=None if dc_is_upper_selected else _ont_med_dc,
+            median_label="Ontario Charged Median",
+            stacked=fe_dc_stack,
+        ),
+        use_container_width=True,
+    )
+
+    if not dc_silent_peers.empty:
+        with st.expander(
+            f"ℹ️ {len(dc_silent_peers)} silent / ambiguous / unpublished peer(s) excluded from dollar chart (never coerced to \\$0)",
+            expanded=False,
+        ):
+            st.dataframe(
+                dc_silent_peers[["Municipality", "County", "Status", "Year", "Bylaw"]],
+                use_container_width=True,
+                hide_index=True,
+            )
+
+    _dc_curve = build_dc_scaling_chart(
+        dc_focus_raw,
+        dc_ut_row,
+        muni_name=fe_dc_muni,
+        upper_name=dc_ut_name,
+        building_type=fe_dc_btype,
+        service_area=fe_dc_sarea,
+        stacked=fe_dc_stack,
+        highlight_val=fe_dc_hi_val,
+    )
+    if _dc_curve is not None:
+        st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+        st.altair_chart(_dc_curve, use_container_width=True)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# VIEW 3: SITE ALTERATION & EXCESS SOIL FEES (SITE_ALT)
+# ═══════════════════════════════════════════════════════════════════════════
+elif active_view == VIEW_OPTIONS[2]:
     if "fe_sa_active_only" not in st.session_state:
         st.session_state["fe_sa_active_only"] = True
 
@@ -776,7 +1387,7 @@ elif active_view == VIEW_OPTIONS[1]:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# VIEW 3: SIDE-BY-SIDE PEER COMPARATOR & 1-PAGE COUNCIL DELEGATION BRIEF
+# VIEW 4: SIDE-BY-SIDE PEER COMPARATOR & 1-PAGE COUNCIL DELEGATION BRIEF
 # ═══════════════════════════════════════════════════════════════════════════
 else:
     st.markdown(
@@ -785,7 +1396,7 @@ else:
     )
     st.caption(
         "Pin your home municipality plus up to 8 neighbouring peers to compare Building Permit Fees, "
-        "Excess Soil Fees, or both side-by-side — then export an OFA-branded Word handout (.docx)."
+        "Agricultural Development Charges (with Upper-Tier stacking), Excess Soil Fees, or all three — then export an OFA-branded Word handout (.docx)."
     )
 
     all_local_names = sorted(bf_local["name"].dropna().astype(str).unique().tolist())
@@ -807,57 +1418,87 @@ else:
             key=f"fe_cmp_peers_{cmp_home}",
         )
 
-    cmp_t1, cmp_t2, cmp_t3 = st.columns([1.4, 1.3, 1.3])
+    cmp_topic_lbl = st.radio(
+        "Comparison Topic",
+        ["Building Permit Fees", "Agricultural Development Charges", "Site Alteration Soil Fees", "All Three (Full Package)"],
+        index=0,
+        horizontal=True,
+        key="fe_cmp_topic",
+    )
+    cmp_topic = {
+        "Building Permit Fees": "bldg_fees",
+        "Agricultural Development Charges": "dc",
+        "Site Alteration Soil Fees": "site_alt",
+        "All Three (Full Package)": "all",
+    }[cmp_topic_lbl]
+
+    cmp_t1, cmp_t2, cmp_t3 = st.columns([1.3, 1.4, 1.3])
     with cmp_t1:
-        cmp_topic_lbl = st.radio(
-            "Comparison Topic",
-            ["Building Permit Fees", "Site Alteration Soil Fees", "Combined (Both)"],
-            index=0,
-            horizontal=True,
-            key="fe_cmp_topic",
-        )
-        cmp_topic = {
-            "Building Permit Fees": "bldg_fees",
-            "Site Alteration Soil Fees": "site_alt",
-            "Combined (Both)": "combined",
-        }[cmp_topic_lbl]
-    with cmp_t2:
         cmp_sqft = st.select_slider(
-            "Building Benchmark Size (ft²)",
+            "Building Permit Size (ft²)",
             options=[2500, 5000, 10000, 15000, 20000],
             value=10000,
             key="fe_cmp_sqft",
-            disabled=(cmp_topic == "site_alt"),
+            disabled=(cmp_topic not in ("bldg_fees", "all")),
         )
         cmp_is_live = st.radio(
-            "Building Type",
+            "Permit Building Type",
             ["🐄 Livestock Barn", "🚜 Drive Shed"],
             index=0,
             horizontal=True,
             key="fe_cmp_btype",
-            disabled=(cmp_topic == "site_alt"),
+            disabled=(cmp_topic not in ("bldg_fees", "all")),
         ) == "🐄 Livestock Barn"
+        cmp_val_on = st.checkbox(
+            r"Include Valuation (per \$1k CV) at \$100/ft²",
+            value=False,
+            key="fe_cmp_val_on",
+            disabled=(cmp_topic not in ("bldg_fees", "all")),
+        )
+        cmp_assumed = 100.0 if cmp_val_on else None
+    with cmp_t2:
+        _CMP_DC_MAP = {
+            "Typical Farm (10,000 ft²)": "typical_farm",
+            "Commercial Greenhouse (1 Acre)": "greenhouse",
+            "Cannabis Production (10,000 ft²)": "cannabis",
+            "Bunkhouse / SAWP (10 Beds)": "bunkhouse",
+        }
+        cmp_dc_btype_lbl = st.selectbox(
+            "Development Charge Sub-Type",
+            list(_CMP_DC_MAP.keys()),
+            index=0,
+            key="fe_cmp_dc_btype",
+            disabled=(cmp_topic not in ("dc", "all")),
+        )
+        cmp_dc_btype = _CMP_DC_MAP[cmp_dc_btype_lbl]
+        cmp_dc_sa = "rural" if st.radio(
+            "DC Servicing Area",
+            ["Rural (Unserviced)", "Urban (Serviced)"],
+            index=0,
+            horizontal=True,
+            key="fe_cmp_dc_sa",
+            disabled=(cmp_topic not in ("dc", "all")),
+        ).startswith("Rural") else "urban"
+        cmp_dc_stack = st.checkbox(
+            "Stack Upper-Tier County / Region DC",
+            value=True,
+            key="fe_cmp_dc_stack",
+            disabled=(cmp_topic not in ("dc", "all")),
+        )
     with cmp_t3:
         cmp_vol = st.select_slider(
             "Topsoil Import Benchmark (m³)",
             options=[500, 2500, 5000, 10000, 15000, 20000],
             value=15000,
             key="fe_cmp_vol",
-            disabled=(cmp_topic == "bldg_fees"),
+            disabled=(cmp_topic not in ("site_alt", "all")),
         )
-        cmp_val_on = st.checkbox(
-            r"Include Valuation (per \$1k CV) at \$100/ft²",
-            value=False,
-            key="fe_cmp_val_on",
-            disabled=(cmp_topic == "site_alt"),
-        )
-        cmp_assumed = 100.0 if cmp_val_on else None
 
     selected_set = [cmp_home] + cmp_peers
     st.divider()
 
     export_frames = []
-    if cmp_topic in ("bldg_fees", "combined"):
+    if cmp_topic in ("bldg_fees", "all"):
         ont_med_bf_cmp = _compute_ont_med_bf(int(cmp_sqft), cmp_is_live)
         _rows_b = []
         for nm in selected_set:
@@ -900,7 +1541,89 @@ else:
         )
         export_frames.append(df_cmp_b.drop(columns=["Fee", "IsEstimate", "Detail"]))
 
-    if cmp_topic in ("site_alt", "combined"):
+    if cmp_topic in ("dc", "all"):
+        _cmp_dc_med = _compute_dc_charged_median(cmp_dc_btype, cmp_dc_sa, cmp_dc_stack)
+        _cmp_st_col = {
+            "typical_farm": "farm_bldg_dc_status",
+            "greenhouse": "greenhouse_dc_status",
+            "cannabis": "cannabis_dc_status",
+            "bunkhouse": "bunkhouse_dc_status",
+        }[cmp_dc_btype]
+        _rows_dc = []
+        for nm in selected_set:
+            _sub = dc_local[dc_local["name"] == nm]
+            if _sub.empty:
+                continue
+            r = _sub.iloc[0]
+            _ut = _parent_upper_dc_row(r, cmp_dc_stack)
+            _ev = compute_stacked_dc(r, _ut, cmp_dc_btype, cmp_dc_sa)
+            _eff_tot, _is_part = _dc_effective_total(_ev)
+            _r_nodc = str(r.get("has_dc", "") or "").strip().lower() in ("no", "2")
+            _ut_nodc = (_ut is None) or (str(_ut.get("has_dc", "") or "").strip().lower() in ("no", "2"))
+
+            def _fmt_dc_c(val, nodc=False, plus=False):
+                if nodc:
+                    return "$0 (No DC)"
+                if val is None:
+                    return "Silent / Confirm"
+                if val <= 0 and not plus:
+                    return "$0 (Exempt)"
+                return f"{_fmt_dollars(val)}+" if plus else _fmt_dollars(val)
+
+            _rows_dc.append({
+                "Municipality": nm,
+                "County": _clean_str(r.get("geographic_area")),
+                "LowerFee": _ev["lower_or_single"],
+                "UpperFee": _ev["upper_tier"] if _ut is not None else 0.0,
+                "TotalFee": _eff_tot,
+                "PartialSilent": _is_part,
+                "SilentWhich": _ev.get("silent_tier_which") or "",
+                "UpperName": _pretty_upper_name(_ut.get("name")) if _ut is not None else "—",
+                "Lower / Single DC": _fmt_dc_c(_ev["lower_or_single"], _r_nodc),
+                "Upper-Tier DC": ("—" if str(r.get("municipal_status", "")).strip() != "Lower Tier" else _fmt_dc_c(_ev["upper_tier"], _ut_nodc)),
+                "Combined DC": _fmt_dc_c(_eff_tot, _r_nodc and _ut_nodc, plus=_is_part),
+                "Status": "No DC By-law" if _r_nodc else _clean_str(r.get(_cmp_st_col), "Silent / Confirm"),
+                "Year": _fmt_year(r.get("dc_rate_year")),
+                "EDC Applies": _clean_str(r.get("dc_edc_applicable")),
+                "Pamphlet Link": _valid_url(r.get("dc_rate_pamphlet_link")) or _valid_url(r.get("bylaw_link")) or "",
+                "Detail": "No DC By-law" if _r_nodc else _clean_str(r.get(_cmp_st_col), "Silent / Confirm"),
+            })
+        df_cmp_dc = pd.DataFrame(_rows_dc)
+        _dc_sa_str = "Rural Unserviced" if cmp_dc_sa == "rural" else "Urban Serviced"
+        st.altair_chart(
+            build_dc_stacked_peer_chart(
+                df_cmp_dc[df_cmp_dc["TotalFee"].notna()],
+                focus_muni=cmp_home,
+                title=f"Development Charge Comparison — {cmp_dc_btype_lbl} ({_dc_sa_str})",
+                subtitle=(
+                    f"{len(selected_set)} selected municipalities · Stacked: Lower/Single (Crimson/Gray) + Upper-Tier (Gold/Slate)"
+                    if cmp_dc_stack
+                    else f"{len(selected_set)} selected municipalities · Standalone Municipal DC · OFA Crimson = {cmp_home}"
+                ),
+                median_val=_cmp_dc_med,
+                median_label="Ontario Charged Median",
+                stacked=cmp_dc_stack,
+            ),
+            use_container_width=True,
+        )
+        _dc_cols_show = (
+            ["Municipality", "County", "Lower / Single DC", "Upper-Tier DC", "Combined DC", "Year", "Pamphlet Link", "Status"]
+            if cmp_dc_stack
+            else ["Municipality", "County", "Lower / Single DC", "Year", "Pamphlet Link", "Status", "EDC Applies"]
+        )
+        st.dataframe(
+            df_cmp_dc[_dc_cols_show],
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Year": st.column_config.TextColumn("Year", width="small"),
+                "Pamphlet Link": st.column_config.LinkColumn("Source PDF", display_text="Open PDF ↗", width="small"),
+                "Status": st.column_config.TextColumn("Status", width="medium"),
+            },
+        )
+        export_frames.append(df_cmp_dc[_dc_cols_show])
+
+    if cmp_topic in ("site_alt", "all"):
         ont_med_sa_paid_c, ont_med_sa_vol_c = _compute_sa_medians(int(cmp_vol))
         _rows_s = []
         _any_vol = False
@@ -983,6 +1706,9 @@ else:
                     is_livestock=cmp_is_live,
                     assumed_cost_per_sqft=cmp_assumed,
                     sa_volume_m3=int(cmp_vol),
+                    dc_btype=cmp_dc_btype,
+                    dc_service_area=cmp_dc_sa,
+                    dc_stacked=cmp_dc_stack,
                 )
             _safe_h = re.sub(r"[^\w-]+", "_", cmp_home)
             st.session_state["fe_brief_bytes"] = _docx_buf.getvalue()

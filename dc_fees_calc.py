@@ -267,14 +267,50 @@ def compute_stacked_dc(
             "lower_or_single": lt_val,
             "upper_tier": 0.0,
             "stacked_total": lt_val,
+            "known_floor_total": lt_val,
+            "has_silent_tier": False,
+            "silent_tier_which": None,
             "is_stacked": False,
         }
     ut_val = evaluate_dc_fee(upper_row, building_type, service_area, sqft=sqft, beds=beds, units=units)
-    stacked = round(lt_val + ut_val, 2) if (lt_val is not None and ut_val is not None) else None
+    if lt_val is not None and ut_val is not None:
+        stacked = round(lt_val + ut_val, 2)
+        return {
+            "lower_or_single": lt_val,
+            "upper_tier": ut_val,
+            "stacked_total": stacked,
+            "known_floor_total": stacked,
+            "has_silent_tier": False,
+            "silent_tier_which": None,
+            "is_stacked": True,
+        }
+    if lt_val is not None and ut_val is None:
+        return {
+            "lower_or_single": lt_val,
+            "upper_tier": None,
+            "stacked_total": None,
+            "known_floor_total": round(lt_val, 2),
+            "has_silent_tier": True,
+            "silent_tier_which": "upper",
+            "is_stacked": True,
+        }
+    if lt_val is None and ut_val is not None:
+        return {
+            "lower_or_single": None,
+            "upper_tier": ut_val,
+            "stacked_total": None,
+            "known_floor_total": round(ut_val, 2),
+            "has_silent_tier": True,
+            "silent_tier_which": "lower",
+            "is_stacked": True,
+        }
     return {
-        "lower_or_single": lt_val,
-        "upper_tier": ut_val,
-        "stacked_total": stacked,
+        "lower_or_single": None,
+        "upper_tier": None,
+        "stacked_total": None,
+        "known_floor_total": None,
+        "has_silent_tier": True,
+        "silent_tier_which": "both",
         "is_stacked": True,
     }
 
