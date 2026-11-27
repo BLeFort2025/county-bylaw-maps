@@ -3,14 +3,16 @@
 
 Provides a clean, farmer- & council-ready workspace for quantitative municipal fees
 WITHOUT modifying the 6 binary bylaw exemption map layers or existing exemption workflows:
-  - View 1: Farm Building Permit Fees (BLDG_FEES) — scenarios, cost receipt, county peer bars, size curve
-  - View 2: Site Alteration & Excess Soil Fees (SITE_ALT) — truckload presets, rule vs cost split,
-            separate refundable security box, volume-cliff curve & peer ranking
+  - View 1: Farm Building Permit Fees (BLDG_FEES) — scenarios, Bottom Line banner, cost receipt,
+            county peer bars, size curve
+  - View 2: Site Alteration & Excess Soil Fees (SITE_ALT) — truckload presets, Bottom Line banner,
+            rule vs cost split, separate refundable security box, volumetric median, volume-cliff curve
   - View 3: Side-by-Side Peer Comparator & 1-Page OFA Council Delegation Brief (.docx)
 """
 
 from __future__ import annotations
 
+import html
 import os
 import re
 import sys
@@ -37,6 +39,42 @@ st.set_page_config(
     layout="wide",
 )
 
+# Subtle OFA Brand Guide 2025-26 CSS polish (Champagne Bottom-Line banner + Crimson accent bar)
+st.markdown(
+    """
+    <style>
+    .ofa-bottom-line {
+        background-color: #EDE6DE;
+        border-left: 4px solid #D7182A;
+        border-radius: 4px;
+        padding: 12px 16px;
+        margin: 8px 0 16px 0;
+        color: #1E293B;
+        font-family: Arial, sans-serif;
+        font-size: 0.96rem;
+        line-height: 1.45;
+    }
+    .ofa-bottom-line strong.ofa-bl-tag {
+        color: #334B58;
+        text-transform: uppercase;
+        font-size: 0.78rem;
+        letter-spacing: 0.05em;
+        margin-right: 6px;
+    }
+    .ofa-card-hdr {
+        color: #334B58;
+        font-family: Arial, sans-serif;
+        font-size: 1.05rem;
+        font-weight: 700;
+        border-bottom: 2px solid #EDE6DE;
+        padding-bottom: 6px;
+        margin-bottom: 10px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 @st.cache_data(ttl=300)
 def load_fee_datasets() -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -59,8 +97,7 @@ def _clean_str(val, fallback: str = "—") -> str:
 
 def _md_safe(val, fallback: str = "—") -> str:
     """Clean a string and escape literal $ signs so Streamlit Markdown never parses them as LaTeX math."""
-    s = _clean_str(val, fallback=fallback)
-    return s.replace("$", r"\$")
+    return _clean_str(val, fallback=fallback).replace("$", r"\$")
 
 
 def _fmt_dollars(val: float | None) -> str:
@@ -86,28 +123,73 @@ def _fmt_year(val) -> str:
         return s
 
 
+def _render_bottom_line(body_html: str) -> None:
+    st.markdown(
+        f'<div class="ofa-bottom-line"><strong class="ofa-bl-tag">Bottom Line</strong>{body_html}</div>',
+        unsafe_allow_html=True,
+    )
+
+
 # ── Header ──
-st.title("🧮 Farm Permit & Excess Soil Fee Explorer")
+st.markdown(
+    "<h1 style='color:#334B58; font-family:Arial, sans-serif; margin-bottom:0.15rem;'>"
+    "Farm Permit &amp; Excess Soil Fee Explorer</h1>",
+    unsafe_allow_html=True,
+)
 st.caption(
-    "Estimate municipal project fees, compare county neighbours against the Ontario median, "
-    "and export 1-page council delegation briefs — built from OFA's primary-source audited bylaw database."
+    "Estimate municipal project fees, compare county neighbours against provincial medians, "
+    "and export 1-page OFA council delegation briefs — built from primary-source audited municipal by-laws."
 )
 
 bf_all, sa_all = load_fee_datasets()
 bf_local = bf_all[bf_all["municipal_status"].fillna("") != "Upper Tier"].copy()
 sa_local = sa_all[sa_all["municipal_status"].fillna("") != "Upper Tier"].copy()
 
-# Persistent view selector (prevents hidden-tab Altair/table squishing AND preserves active view on button clicks)
 VIEW_OPTIONS = [
-    "🏚️ Farm Building Permit Fees",
-    "🚧 Site Alteration & Excess Soil Fees",
-    "⚖️ Peer Comparator & Council Brief",
+    "Farm Building Permit Fees",
+    "Site Alteration & Excess Soil Fees",
+    "Peer Comparator & Council Brief",
 ]
+
+# ── Seamless deep-linking from Home Snapshot or Lower Tier Map ──
+_jump_view = st.session_state.pop("fe_jump_view", None) or st.query_params.get("view", None)
+_jump_muni = st.session_state.pop("fe_jump_muni", None) or st.query_params.get("muni", None)
+
+if _jump_view:
+    _jv = str(_jump_view).strip().lower()
+    if "site" in _jv or "soil" in _jv or _jv == "sa":
+        st.session_state["fe_active_view"] = VIEW_OPTIONS[1]
+    elif "peer" in _jv or "compar" in _jv or "brief" in _jv:
+        st.session_state["fe_active_view"] = VIEW_OPTIONS[2]
+    else:
+        st.session_state["fe_active_view"] = VIEW_OPTIONS[0]
+
+if _jump_muni:
+    _jm = str(_jump_muni).strip()
+    st.session_state["fe_bf_area"] = "All Counties / Districts"
+    st.session_state["fe_sa_area"] = "All Counties / Districts"
+    if _jm in bf_local["name"].astype(str).values:
+        st.session_state["fe_bf_muni"] = _jm
+        st.session_state["fe_cmp_home"] = _jm
+    if _jm in sa_local["name"].astype(str).values:
+        _sa_active_names = set(
+            sa_local.loc[
+                ~sa_local["fee_verification_status"].fillna("").astype(str).str.contains("No Bylaw", case=False, na=False)
+                & sa_local["fee_verification_status"].fillna("").astype(str).ne(""),
+                "name",
+            ].astype(str)
+        )
+        if _jm not in _sa_active_names:
+            st.session_state["fe_sa_active_only"] = False
+        st.session_state["fe_sa_muni"] = _jm
+
+if "fe_active_view" not in st.session_state or st.session_state["fe_active_view"] not in VIEW_OPTIONS:
+    st.session_state["fe_active_view"] = VIEW_OPTIONS[0]
+
 if hasattr(st, "segmented_control"):
     active_view = st.segmented_control(
         "Fee Workspace",
         VIEW_OPTIONS,
-        default=VIEW_OPTIONS[0],
         selection_mode="single",
         key="fe_active_view",
         label_visibility="collapsed",
@@ -116,7 +198,6 @@ else:
     active_view = st.radio(
         "Fee Workspace",
         VIEW_OPTIONS,
-        index=0,
         horizontal=True,
         key="fe_active_view",
         label_visibility="collapsed",
@@ -136,13 +217,20 @@ def _compute_ont_med_bf(sqft: int, is_livestock: bool) -> float | None:
     return float(pd.Series(vals).median()) if vals else None
 
 
-def _compute_ont_med_sa_paid(vol: int) -> float | None:
-    vals = []
+def _compute_sa_medians(vol: int) -> tuple[float | None, float | None]:
+    """Return (ontario_all_paid_median, ontario_volumetric_per_m3_median) at `vol`."""
+    paid_all, paid_vol = [], []
     for _, _r in sa_local.iterrows():
         _v = evaluate_site_alt_fee(_r, float(vol))
         if _v is not None and _v > 0:
-            vals.append(_v)
-    return float(pd.Series(vals).median()) if vals else None
+            paid_all.append(_v)
+            _pm3 = pd.to_numeric(_r.get("per_m3_rate"), errors="coerce")
+            if pd.notna(_pm3) and float(_pm3) > 0:
+                paid_vol.append(_v)
+    return (
+        float(pd.Series(paid_all).median()) if paid_all else None,
+        float(pd.Series(paid_vol).median()) if paid_vol else None,
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -151,15 +239,20 @@ def _compute_ont_med_sa_paid(vol: int) -> float | None:
 if active_view == VIEW_OPTIONS[0]:
     bf_areas = ["All Counties / Districts"] + sorted(bf_local["geographic_area"].dropna().astype(str).unique().tolist())
 
+    if "fe_bf_area" not in st.session_state or st.session_state["fe_bf_area"] not in bf_areas:
+        st.session_state["fe_bf_area"] = bf_areas[0]
+
     c_sel1, c_sel2, c_sel3 = st.columns([1.2, 1.5, 1.3])
     with c_sel1:
-        fe_bf_area = st.selectbox("Filter by County / District", bf_areas, index=0, key="fe_bf_area")
+        fe_bf_area = st.selectbox("Filter by County / District", bf_areas, key="fe_bf_area")
     bf_pool = bf_local if fe_bf_area == "All Counties / Districts" else bf_local[bf_local["geographic_area"] == fe_bf_area]
     bf_muni_names = sorted(bf_pool["name"].dropna().astype(str).unique().tolist())
 
+    if "fe_bf_muni" not in st.session_state or st.session_state["fe_bf_muni"] not in bf_muni_names:
+        st.session_state["fe_bf_muni"] = "Perth East" if "Perth East" in bf_muni_names else (bf_muni_names[0] if bf_muni_names else "")
+
     with c_sel2:
-        default_idx = bf_muni_names.index("Perth East") if "Perth East" in bf_muni_names else 0
-        fe_bf_muni = st.selectbox("Select Municipality", bf_muni_names, index=default_idx, key="fe_bf_muni")
+        fe_bf_muni = st.selectbox("Select Municipality", bf_muni_names, key="fe_bf_muni")
     with c_sel3:
         fe_bf_struct = st.radio(
             "Structure Type",
@@ -253,31 +346,58 @@ if active_view == VIEW_OPTIONS[0]:
     focus_eval = bf_eval_df[bf_eval_df["Municipality"] == fe_bf_muni].iloc[0]
     focus_county = focus_eval["County"]
 
-    st.divider()
+    # County ranking context for Bottom Line strip
+    _cnty_priced = bf_eval_df[(bf_eval_df["County"] == focus_county) & bf_eval_df["Fee"].notna()].sort_values("Fee", ascending=False).reset_index(drop=True)
+    _dep_raw = _clean_str(focus_raw.get("refundable_deposit"), "")
+    if pd.notna(focus_eval["Fee"]):
+        _fv = float(focus_eval["Fee"])
+        _eff = _fv / float(fe_bf_sqft)
+        _pct_str = ""
+        if ont_med_bf and ont_med_bf > 0:
+            _pct = round((_fv - ont_med_bf) / ont_med_bf * 100)
+            _pct_str = (
+                f"<b>{abs(_pct)}% {'above' if _pct > 0 else 'below'}</b> the Ontario median ({_fmt_dollars(ont_med_bf)})"
+                if _pct != 0 else f"<b>equal to</b> the Ontario median ({_fmt_dollars(ont_med_bf)})"
+            )
+        _rk_str = ""
+        if fe_bf_muni in _cnty_priced["Municipality"].values and len(_cnty_priced) > 1:
+            _pos = int(_cnty_priced.index[_cnty_priced["Municipality"] == fe_bf_muni][0]) + 1
+            _rk_str = f" and <b>#{_pos} of {len(_cnty_priced)}</b> priced peers in {html.escape(focus_county)}"
+        _dep_str = f" Separate deposit/surcharge: {html.escape(_dep_raw)}." if (_dep_raw and "not specified" not in _dep_raw.lower()) else ""
+        _render_bottom_line(
+            f"<b>{html.escape(fe_bf_muni)}</b> charges <b>{_fmt_dollars(_fv)}</b> (${_eff:.2f}/ft²) for a {fe_bf_sqft:,} ft² "
+            f"{struct_short.lower()} — {_pct_str}{_rk_str}.{_dep_str}"
+        )
+    else:
+        _render_bottom_line(
+            f"<b>{html.escape(fe_bf_muni)}</b> ({html.escape(focus_county)}) is classified as <b>{html.escape(focus_eval['Tier'])}</b> "
+            f"({html.escape(focus_eval['Model'])}). No direct per-sq.-ft. farm fee applies without additional assumptions."
+        )
 
     # ── Two-Part Cost Receipt Card ──
     card_l, card_r = st.columns([1.25, 1.0])
     with card_l:
         with st.container(border=True):
-            st.markdown(f"#### 📍 {fe_bf_muni} ({focus_county}) — Non-Refundable Permit Estimate")
+            st.markdown(
+                f'<div class="ofa-card-hdr">{html.escape(fe_bf_muni)} ({html.escape(focus_county)}) — Non-Refundable Permit Estimate</div>',
+                unsafe_allow_html=True,
+            )
             if pd.notna(focus_eval["Fee"]):
                 _fv = float(focus_eval["Fee"])
                 _eff = _fv / float(fe_bf_sqft)
-                _delta_txt = None
-                if ont_med_bf and ont_med_bf > 0:
-                    _pct = round((_fv - ont_med_bf) / ont_med_bf * 100)
-                    _delta_txt = (
-                        f"{abs(_pct)}% {'above' if _pct > 0 else 'below'} Ontario median ({_fmt_dollars(ont_med_bf)})"
-                        if _pct != 0 else f"Matches Ontario median ({_fmt_dollars(ont_med_bf)})"
-                    )
                 _m1, _m2 = st.columns(2)
-                _m1.metric(
-                    f"{fe_bf_sqft:,} ft² {struct_short}",
-                    f"{_fmt_dollars(_fv)}{' (Est.)' if focus_eval['IsEstimate'] else ''}",
-                    _delta_txt,
-                    delta_color="off",
-                )
-                _m2.metric("Effective Rate", f"${_eff:.2f}/ft²", f"Tier: {focus_eval['Tier']}", delta_color="off")
+                with _m1:
+                    st.metric(
+                        f"{fe_bf_sqft:,} ft² {struct_short}",
+                        f"{_fmt_dollars(_fv)}{' (Est.)' if focus_eval['IsEstimate'] else ''}",
+                    )
+                    if ont_med_bf and ont_med_bf > 0:
+                        _pct = round((_fv - ont_med_bf) / ont_med_bf * 100)
+                        _rel = f"{abs(_pct)}% {'above' if _pct > 0 else 'below'} Ontario median (\\${round(ont_med_bf):,})" if _pct != 0 else f"Matches Ontario median (\\${round(ont_med_bf):,})"
+                        st.caption(_rel)
+                with _m2:
+                    st.metric("Effective Rate", f"${_eff:.2f}/ft²")
+                    st.caption(f"Tier: {_md_safe(focus_eval['Tier'])}")
                 if focus_eval["IsEstimate"]:
                     st.caption(f"⚠️ *Estimated from valuation rate using your assumed \\${round(fe_bf_assumed):,}/ft² construction value.*")
             else:
@@ -302,7 +422,10 @@ if active_view == VIEW_OPTIONS[0]:
 
     with card_r:
         with st.container(border=True):
-            st.markdown("#### 🧾 Ancillary Farm Structures & Refundable Deposits")
+            st.markdown(
+                '<div class="ofa-card-hdr">Ancillary Farm Structures &amp; Refundable Deposits</div>',
+                unsafe_allow_html=True,
+            )
             st.caption("Separated from permit fees so refundable deposits and special structure rates stay transparent.")
             st.markdown(
                 f"- **Silo / Grain Bin:** {_md_safe(focus_raw.get('silo_grain_bin_fee'))}  \n"
@@ -310,9 +433,8 @@ if active_view == VIEW_OPTIONS[0]:
                 f"- **Greenhouse / Tarp:** {_md_safe(focus_raw.get('greenhouse_tarp_fee'))}  \n"
                 f"- **2024 OBC Group G Split:** {_md_safe(focus_raw.get('has_obc_group_g_split'))}"
             )
-            _dep = _clean_str(focus_raw.get("refundable_deposit"), "")
-            if _dep:
-                st.warning(f"**💰 Refundable Deposit / Surcharges (Separate from Permit Fee):** {_md_safe(_dep)}")
+            if _dep_raw:
+                st.warning(f"**Refundable Deposit / Surcharges (Separate from Permit Fee):** {_md_safe(_dep_raw)}")
             else:
                 st.caption("No separate refundable building permit deposit noted in published fee schedule.")
 
@@ -355,7 +477,7 @@ if active_view == VIEW_OPTIONS[0]:
         _claim_title = f"{fe_bf_sqft:,} ft² {struct_short} Permit Fees — {scope_label}"
 
     _sub = (
-        f"Comparing {len(chart_ready)} priced municipalities ({scope_label}) · Highlighted in OFA Crimson"
+        f"Comparing {len(chart_ready)} priced municipalities ({scope_label}) · OFA Crimson = Selected"
         + (f" · Valuation rows estimated at ${round(fe_bf_assumed):,}/ft²" if fe_bf_assumed else " · Area / stepped / prescribed schedules only")
     )
 
@@ -395,11 +517,13 @@ if active_view == VIEW_OPTIONS[0]:
 # VIEW 2: SITE ALTERATION & EXCESS SOIL FEES (SITE_ALT)
 # ═══════════════════════════════════════════════════════════════════════════
 elif active_view == VIEW_OPTIONS[1]:
+    if "fe_sa_active_only" not in st.session_state:
+        st.session_state["fe_sa_active_only"] = True
+
     sa_s1, sa_s2, sa_s3 = st.columns([1.2, 1.5, 1.3])
     with sa_s1:
         fe_sa_active_only = st.checkbox(
             "Active Site Alteration Bylaws only (132)",
-            value=True,
             key="fe_sa_active_only",
             help="Focuses the municipality picker on the 132 municipalities that regulate site alteration / fill. Uncheck to browse all 414 local/single-tier municipalities.",
         )
@@ -411,15 +535,19 @@ elif active_view == VIEW_OPTIONS[1]:
         ]
 
     sa_areas = ["All Counties / Districts"] + sorted(sa_pool["geographic_area"].dropna().astype(str).unique().tolist())
+    if "fe_sa_area" not in st.session_state or st.session_state["fe_sa_area"] not in sa_areas:
+        st.session_state["fe_sa_area"] = sa_areas[0]
     with sa_s2:
-        fe_sa_area = st.selectbox("Filter by County / District", sa_areas, index=0, key="fe_sa_area")
+        fe_sa_area = st.selectbox("Filter by County / District", sa_areas, key="fe_sa_area")
     if fe_sa_area != "All Counties / Districts":
         sa_pool = sa_pool[sa_pool["geographic_area"] == fe_sa_area]
 
     sa_muni_names = sorted(sa_pool["name"].dropna().astype(str).unique().tolist())
+    if "fe_sa_muni" not in st.session_state or st.session_state["fe_sa_muni"] not in sa_muni_names:
+        st.session_state["fe_sa_muni"] = "Clarington" if "Clarington" in sa_muni_names else (sa_muni_names[0] if sa_muni_names else "")
+
     with sa_s3:
-        sa_def_idx = sa_muni_names.index("Clarington") if "Clarington" in sa_muni_names else 0
-        fe_sa_muni = st.selectbox("Select Municipality", sa_muni_names, index=sa_def_idx, key="fe_sa_muni")
+        fe_sa_muni = st.selectbox("Select Municipality", sa_muni_names, key="fe_sa_muni")
 
     sv_c1, sv_c2 = st.columns([2.2, 1.2])
     with sv_c1:
@@ -476,34 +604,56 @@ elif active_view == VIEW_OPTIONS[1]:
         })
     sa_eval_df = pd.DataFrame(_sa_eval_rows)
 
-    _sa_paid_all = sa_eval_df[sa_eval_df["Fee"].notna() & (sa_eval_df["Fee"] > 0)]["Fee"]
-    ont_med_sa_paid = float(_sa_paid_all.median()) if len(_sa_paid_all) else None
+    ont_med_sa_paid, ont_med_sa_vol = _compute_sa_medians(int(fe_sa_vol))
 
     sa_focus_raw = sa_local[sa_local["name"] == fe_sa_muni].iloc[0]
     sa_focus_ev = sa_eval_df[sa_eval_df["Municipality"] == fe_sa_muni].iloc[0]
     sa_focus_county = sa_focus_ev["County"]
 
-    st.divider()
+    # Bottom Line takeaway strip
+    _ban_flag = str(sa_focus_ev["OutBan"]).strip().lower() in ("yes", "restricted")
+    _ban_phrase = f" <b>Restricts/bans out-of-municipality fill ({html.escape(sa_focus_ev['OutBan'])})</b>." if _ban_flag else ""
+    if pd.notna(sa_focus_ev["Fee"]):
+        _sv = float(sa_focus_ev["Fee"])
+        if _sv <= 0:
+            _render_bottom_line(
+                f"<b>{html.escape(fe_sa_muni)}</b> ({html.escape(sa_focus_county)}) charges <b>$0</b> ({html.escape(sa_focus_ev['AgFeeStatus'])}) "
+                f"for {fe_sa_vol:,} m³ (~{fe_sa_vol // 10:,} loads) of clean farm topsoil import (Exemption: <b>{html.escape(sa_focus_ev['Exemption'])}</b>).{_ban_phrase}"
+            )
+        else:
+            _render_bottom_line(
+                f"<b>{html.escape(fe_sa_muni)}</b> ({html.escape(sa_focus_county)}) has a <b>{html.escape(sa_focus_ev['Exemption'])}</b> farm exemption "
+                f"and charges an estimated <b>{_fmt_dollars(_sv)}</b> (${_sv / fe_sa_vol:.2f}/m³) non-refundable permit fee at {fe_sa_vol:,} m³ "
+                f"(~{fe_sa_vol // 10:,} loads) — separate from refundable securities &amp; peer-review retainers.{_ban_phrase}"
+            )
+    else:
+        _render_bottom_line(
+            f"<b>{html.escape(fe_sa_muni)}</b> ({html.escape(sa_focus_county)}) uses <b>{html.escape(sa_focus_ev['Tier'])}</b> "
+            f"({html.escape(sa_focus_ev['Model'])}; Exemption: <b>{html.escape(sa_focus_ev['Exemption'])}</b>).{_ban_phrase}"
+        )
 
-    # ── Dual-Dimension Policy Rule Strip (wider column 2 so full status never truncates) ──
+    # ── Dual-Dimension Policy Rule Strip (clean captions, zero misleading up-arrows) ──
     _ag_short_map = {
         "Standard Commercial Rate": "Commercial Rate",
         "Exempt up to Volume Cap": "Volume-Capped",
         "Waiver Available ($0 App Fee)": "$0 App Waiver",
     }
     _ag_display = _ag_short_map.get(sa_focus_ev["AgFeeStatus"], sa_focus_ev["AgFeeStatus"])
-    b1, b2, b3, b4 = st.columns([1.0, 1.35, 1.0, 1.0])
-    b1.metric("Farm Exemption", sa_focus_ev["Exemption"], sa_focus_ev["NFPScope"], delta_color="off")
-    b2.metric("Ag Import Fee Tier", _ag_display, f"Fee Year: {sa_focus_ev['Year']}", delta_color="off")
-    b3.metric(
-        "Ag Exempt Cap",
-        f"{round(float(sa_focus_ev['CapM3'])):,} m³" if pd.notna(sa_focus_ev["CapM3"]) else "None / N/A",
-        f"≈ {round(float(sa_focus_ev['CapM3'])) // 10:,} loads" if pd.notna(sa_focus_ev["CapM3"]) else "Check wording",
-        delta_color="off",
-    )
-    b4.metric("Out-of-Muni Fill Ban", sa_focus_ev["OutBan"], f"O. Reg. 406/19: {_clean_str(sa_focus_raw.get('excess_soil_reg_406_19'))}", delta_color="off")
+    b1, b2, b3, b4 = st.columns([1.15, 1.25, 1.0, 1.0])
+    with b1:
+        st.metric("Farm Exemption", sa_focus_ev["Exemption"])
+        st.caption(_md_safe(sa_focus_ev["NFPScope"]))
+    with b2:
+        st.metric("Ag Import Fee Tier", _ag_display)
+        st.caption(f"Fee Year: {sa_focus_ev['Year']}")
+    with b3:
+        st.metric("Ag Exempt Cap", f"{round(float(sa_focus_ev['CapM3'])):,} m³" if pd.notna(sa_focus_ev["CapM3"]) else "None / N/A")
+        st.caption(f"≈ {round(float(sa_focus_ev['CapM3'])) // 10:,} loads" if pd.notna(sa_focus_ev["CapM3"]) else "See by-law wording")
+    with b4:
+        st.metric("Out-of-Muni Fill Ban", sa_focus_ev["OutBan"])
+        st.caption(f"O. Reg. 406/19: {_md_safe(sa_focus_raw.get('excess_soil_reg_406_19'))}")
 
-    if str(sa_focus_ev["OutBan"]).strip().lower() in ("yes", "restricted"):
+    if _ban_flag:
         st.error(
             f"🚫 **Out-of-Municipality Fill Restriction ({sa_focus_ev['OutBan']}):** "
             f"{fe_sa_muni}'s Site Alteration by-law restricts or prohibits importing excess soil originating outside municipal boundaries."
@@ -513,7 +663,10 @@ elif active_view == VIEW_OPTIONS[1]:
     sc_l, sc_r = st.columns([1.2, 1.0])
     with sc_l:
         with st.container(border=True):
-            st.markdown(f"#### 💰 Stack A — Non-Refundable Permit Fee ({fe_sa_vol:,} m³ / ~{fe_sa_vol // 10:,} loads)")
+            st.markdown(
+                f'<div class="ofa-card-hdr">Stack A — Non-Refundable Permit Fee ({fe_sa_vol:,} m³ / ~{fe_sa_vol // 10:,} loads)</div>',
+                unsafe_allow_html=True,
+            )
             if pd.notna(sa_focus_ev["Fee"]):
                 _sv = float(sa_focus_ev["Fee"])
                 if _sv <= 0:
@@ -521,8 +674,12 @@ elif active_view == VIEW_OPTIONS[1]:
                 else:
                     _eff_m3 = _sv / float(fe_sa_vol)
                     _sm1, _sm2 = st.columns(2)
-                    _sm1.metric(f"Est. Permit Fee ({fe_sa_vol:,} m³)", _fmt_dollars(_sv), sa_focus_ev["Tier"], delta_color="off")
-                    _sm2.metric("Effective Volumetric Rate", f"${_eff_m3:.2f}/m³", sa_focus_ev["Model"], delta_color="off")
+                    with _sm1:
+                        st.metric(f"Est. Permit Fee ({fe_sa_vol:,} m³)", _fmt_dollars(_sv))
+                        st.caption(_md_safe(sa_focus_ev["Tier"]))
+                    with _sm2:
+                        st.metric("Effective Volumetric Rate", f"${_eff_m3:.2f}/m³")
+                        st.caption(_md_safe(sa_focus_ev["Model"]))
             else:
                 st.warning(
                     f"**{_md_safe(sa_focus_ev['Tier'])}** — {fe_sa_muni} uses **{_md_safe(sa_focus_ev['Model'])}** "
@@ -539,7 +696,10 @@ elif active_view == VIEW_OPTIONS[1]:
 
     with sc_r:
         with st.container(border=True):
-            st.markdown("#### 🛡️ Stack B — Refundable Securities, Road Deposits & Peer Review")
+            st.markdown(
+                '<div class="ofa-card-hdr">Stack B — Refundable Securities, Road Deposits &amp; Peer Review</div>',
+                unsafe_allow_html=True,
+            )
             st.caption(
                 "Often larger than the permit fee itself — tracked separately so refundable securities "
                 "and third-party engineering retainers are never hidden or blended into permit fees."
@@ -551,7 +711,7 @@ elif active_view == VIEW_OPTIONS[1]:
                 f"- **Fill Definition Captures Ag Materials:** {_md_safe(sa_focus_raw.get('fill_captures_ag_materials'))}"
             )
 
-    # ── Site Alteration Peer Chart ──
+    # ── Site Alteration Peer Chart (apples-to-apples Volumetric Median when volumetric schedules are shown) ──
     st.markdown("")
     _sa_active_all = sa_eval_df[sa_eval_df["Tier"] != "No Site Alt. By-law"].copy()
     if fe_sa_scope == "Same County / District":
@@ -572,6 +732,13 @@ elif active_view == VIEW_OPTIONS[1]:
     sa_chart_df["Detail"] = sa_chart_df["AgFeeStatus"] + " · " + sa_chart_df["Model"]
     sa_non_vol = sa_peer_slice[sa_peer_slice["Fee"].isna()].copy()
 
+    # Choose apples-to-apples benchmark line: if chart contains volumetric per-m³ schedules, use ON Volumetric Median
+    _has_volumetric = bool((sa_chart_df["PerM3"].notna() & (sa_chart_df["PerM3"] > 0)).any())
+    if _has_volumetric and ont_med_sa_vol is not None:
+        _sa_ref_val, _sa_ref_lbl = ont_med_sa_vol, "Ontario Volumetric Median"
+    else:
+        _sa_ref_val, _sa_ref_lbl = ont_med_sa_paid, "Ontario Paid Median"
+
     if pd.notna(sa_focus_ev["Fee"]):
         _sa_title = f"{fe_sa_muni} estimates {'$0 (Exempt)' if float(sa_focus_ev['Fee']) <= 0 else _fmt_dollars(sa_focus_ev['Fee'])} for {fe_sa_vol:,} m³ clean topsoil import"
     else:
@@ -583,8 +750,8 @@ elif active_view == VIEW_OPTIONS[1]:
             focus_muni=fe_sa_muni,
             title=_sa_title,
             subtitle=f"Non-refundable permit fee only across {len(sa_chart_df)} comparable peers ({sa_scope_lbl}) · Green = $0 Farm Exempt",
-            median_val=ont_med_sa_paid,
-            median_label="Ontario Paid Median",
+            median_val=_sa_ref_val,
+            median_label=_sa_ref_lbl,
             exempt_zero_highlight=True,
         ),
         use_container_width=True,
@@ -612,17 +779,21 @@ elif active_view == VIEW_OPTIONS[1]:
 # VIEW 3: SIDE-BY-SIDE PEER COMPARATOR & 1-PAGE COUNCIL DELEGATION BRIEF
 # ═══════════════════════════════════════════════════════════════════════════
 else:
-    st.markdown("#### ⚖️ Build a Custom Peer Comparison & Council Delegation Brief")
+    st.markdown(
+        '<div class="ofa-card-hdr" style="font-size:1.15rem;">Build a Custom Peer Comparison &amp; Council Delegation Brief</div>',
+        unsafe_allow_html=True,
+    )
     st.caption(
         "Pin your home municipality plus up to 8 neighbouring peers to compare Building Permit Fees, "
         "Excess Soil Fees, or both side-by-side — then export an OFA-branded Word handout (.docx)."
     )
 
     all_local_names = sorted(bf_local["name"].dropna().astype(str).unique().tolist())
+    if "fe_cmp_home" not in st.session_state or st.session_state["fe_cmp_home"] not in all_local_names:
+        st.session_state["fe_cmp_home"] = "Perth East" if "Perth East" in all_local_names else all_local_names[0]
     cmp_c1, cmp_c2 = st.columns([1.2, 1.8])
     with cmp_c1:
-        _def_home = all_local_names.index("Perth East") if "Perth East" in all_local_names else 0
-        cmp_home = st.selectbox("Home Municipality (Spotlighted in OFA Crimson)", all_local_names, index=_def_home, key="fe_cmp_home")
+        cmp_home = st.selectbox("Home Municipality (Spotlighted in OFA Crimson)", all_local_names, key="fe_cmp_home")
         _home_county = _clean_str(bf_local.loc[bf_local["name"] == cmp_home, "geographic_area"].iloc[0], "")
         _county_peers = sorted(
             bf_local.loc[(bf_local["geographic_area"] == _home_county) & (bf_local["name"] != cmp_home), "name"].astype(str).tolist()
@@ -640,15 +811,15 @@ else:
     with cmp_t1:
         cmp_topic_lbl = st.radio(
             "Comparison Topic",
-            ["🏚️ Building Permit Fees", "🚧 Site Alteration Soil Fees", "🔀 Combined (Both)"],
+            ["Building Permit Fees", "Site Alteration Soil Fees", "Combined (Both)"],
             index=0,
             horizontal=True,
             key="fe_cmp_topic",
         )
         cmp_topic = {
-            "🏚️ Building Permit Fees": "bldg_fees",
-            "🚧 Site Alteration Soil Fees": "site_alt",
-            "🔀 Combined (Both)": "combined",
+            "Building Permit Fees": "bldg_fees",
+            "Site Alteration Soil Fees": "site_alt",
+            "Combined (Both)": "combined",
         }[cmp_topic_lbl]
     with cmp_t2:
         cmp_sqft = st.select_slider(
@@ -725,19 +896,23 @@ else:
             df_cmp_b[["Municipality", "County", "Fee Display", "Eff. $/ft²", "Year", "Pricing Model", "Refundable Deposit", "Bylaw Link"]],
             use_container_width=True,
             hide_index=True,
-            column_config={"Bylaw Link": st.column_config.LinkColumn("Source PDF")},
+            column_config={"Bylaw Link": st.column_config.LinkColumn("Source PDF", display_text="Open PDF ↗")},
         )
         export_frames.append(df_cmp_b.drop(columns=["Fee", "IsEstimate", "Detail"]))
 
     if cmp_topic in ("site_alt", "combined"):
-        ont_med_sa_cmp = _compute_ont_med_sa_paid(int(cmp_vol))
+        ont_med_sa_paid_c, ont_med_sa_vol_c = _compute_sa_medians(int(cmp_vol))
         _rows_s = []
+        _any_vol = False
         for nm in selected_set:
             _sub = sa_local[sa_local["name"] == nm]
             if _sub.empty:
                 continue
             r = _sub.iloc[0]
             _v = evaluate_site_alt_fee(r, float(cmp_vol))
+            _pm3 = pd.to_numeric(r.get("per_m3_rate"), errors="coerce")
+            if pd.notna(_pm3) and float(_pm3) > 0:
+                _any_vol = True
             _fvs = _clean_str(r.get("fee_verification_status"))
             _pm = _clean_str(r.get("fee_pricing_model"))
             _disp = (
@@ -758,14 +933,16 @@ else:
                 "Detail": f"{_clean_str(r.get('ag_import_fee_status'))} · {_pm}",
             })
         df_cmp_s = pd.DataFrame(_rows_s)
+        _ref_v = ont_med_sa_vol_c if (_any_vol and ont_med_sa_vol_c is not None) else ont_med_sa_paid_c
+        _ref_l = "Ontario Volumetric Median" if (_any_vol and ont_med_sa_vol_c is not None) else "Ontario Paid Median"
         st.altair_chart(
             build_peer_bar_chart(
                 df_cmp_s[df_cmp_s["Fee"].notna()],
                 focus_muni=cmp_home,
                 title=f"Excess Soil Permit Fee Comparison — {cmp_vol:,} m³ (~{cmp_vol // 10:,} Loads)",
                 subtitle="Non-refundable permit fee only across comparable municipalities · Green = $0 Farm Exempt",
-                median_val=ont_med_sa_cmp,
-                median_label="Ontario Paid Median",
+                median_val=_ref_v,
+                median_label=_ref_l,
                 exempt_zero_highlight=True,
             ),
             use_container_width=True,
@@ -774,7 +951,7 @@ else:
             df_cmp_s[["Municipality", "County", "Exemption", "Ag Import Fee Status", f"Est. ({cmp_vol:,} m³)", "Out-of-Muni Ban", "Refundable Security", "Bylaw Link"]],
             use_container_width=True,
             hide_index=True,
-            column_config={"Bylaw Link": st.column_config.LinkColumn("Source PDF")},
+            column_config={"Bylaw Link": st.column_config.LinkColumn("Source PDF", display_text="Open PDF ↗")},
         )
         export_frames.append(df_cmp_s.drop(columns=["Fee", "Detail"]))
 

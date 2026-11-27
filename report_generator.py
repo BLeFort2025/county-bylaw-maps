@@ -1836,13 +1836,6 @@ def generate_fee_comparison_brief(
                     align=(WD_ALIGN_PARAGRAPH.RIGHT if ci in (1, 2, 3) else None),
                 )
 
-        _add_callout(
-            "Statutory Context (Building Code Act, 1992, s. 7)",
-            "Section 7(2) caps total building permit fees at reasonable municipal cost recovery (fees cannot fund general revenue). "
-            "Section 7(4)–(8) requires annual public Building Reserve Fund reporting and advance public notice + cost justification before fee increases.",
-            border_hex=HEADER_BG,
-        )
-
     # ── SECTION B: SITE ALTERATION & EXCESS SOIL FEES ──
     if topic in ("site_alt", "combined") and not sa_all.empty:
         h_sa = doc.add_paragraph()

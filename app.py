@@ -109,14 +109,14 @@ def load_executive_summary():
 
         scorecard_rows.append(
             {
-                "Bylaw Category": cat_label,
-                "Key Provision Tracked": desc,
-                "Active Bylaws": active_count,
-                "✅ Full Exempt / Permitted (YES)": yes_count,
-                "⚠️ Partial / Statutory Only": partial_count,
-                "❌ No Exemption / Prohibited (NO)": no_count,
-                "⏳ Expiring ≤ 18 Mos / Expired": expiring_count,
-                "Exemption Rate (%)": rate,
+                "Category": cat_label,
+                "Key Provision": desc,
+                "Active": active_count,
+                "Full (YES)": yes_count,
+                "Partial": partial_count,
+                "No Exemp.": no_count,
+                "Expiring": expiring_count,
+                "Exemption Rate": rate,
             }
         )
 
@@ -199,12 +199,24 @@ if summary is not None:
     st.markdown("### 📊 Province-Wide Executive Overview")
     k1, k2, k3, k4, k5, k6 = st.columns(6)
     overall_pct = round(summary["total_yes"] / summary["total_active"] * 100, 1) if summary["total_active"] else 0.0
-    k1.metric("Municipalities Tracked", f"{summary['total_munis']:,}", "414 Lower/Single · 30 Upper")
-    k2.metric("Active Bylaws Mapped", f"{summary['total_active']:,}", f"{summary['total_records']:,} total category records")
-    k3.metric("✅ Full Exemptions (YES)", f"{summary['total_yes']:,}", f"{overall_pct}% of active bylaws")
-    k4.metric("⚠️ Partial Exemptions", f"{summary['total_partial']:,}", "Statutory minimum only")
-    k5.metric("❌ Missing Exemptions (NO)", f"{summary['total_no']:,}", "Advocacy letter targets", delta_color="inverse")
-    k6.metric("⏳ Expiring ≤ 18 Mos", f"{summary['total_expiring']:,}", f"{summary['signal_count']} active scanner signals")
+    with k1:
+        st.metric("Municipalities", f"{summary['total_munis']:,}")
+        st.caption("414 Lower/Single · 30 Upper")
+    with k2:
+        st.metric("Active Bylaws", f"{summary['total_active']:,}")
+        st.caption(f"{summary['total_records']:,} category records")
+    with k3:
+        st.metric("Full Exempt (YES)", f"{summary['total_yes']:,}")
+        st.caption(f"{overall_pct}% of active bylaws")
+    with k4:
+        st.metric("Partial Exempt", f"{summary['total_partial']:,}")
+        st.caption("Statutory minimum only")
+    with k5:
+        st.metric("No Exemption (NO)", f"{summary['total_no']:,}")
+        st.caption("Advocacy letter targets")
+    with k6:
+        st.metric("Expiring ≤ 18 Mos", f"{summary['total_expiring']:,}")
+        st.caption(f"{summary['signal_count']} scanner signals")
 
 st.divider()
 
@@ -289,12 +301,20 @@ if summary is not None:
         use_container_width=True,
         hide_index=True,
         column_config={
-            "Exemption Rate (%)": st.column_config.ProgressColumn(
-                "Exemption Rate (%)",
-                help="Percentage of active bylaws in this category that provide a farm exemption (or permit backyard chickens).",
+            "Category": st.column_config.TextColumn("Category", width="medium"),
+            "Key Provision": st.column_config.TextColumn("Key Provision", width="medium"),
+            "Active": st.column_config.NumberColumn("Active", width="small"),
+            "Full (YES)": st.column_config.NumberColumn("YES", width="small"),
+            "Partial": st.column_config.NumberColumn("Partial", width="small"),
+            "No Exemp.": st.column_config.NumberColumn("NO", width="small"),
+            "Expiring": st.column_config.NumberColumn("Expiring", width="small"),
+            "Exemption Rate": st.column_config.ProgressColumn(
+                "Exemption Rate",
+                help="Percentage of active bylaws in this category that provide a full farm exemption (or permit backyard chickens).",
                 format="%.1f%%",
                 min_value=0,
                 max_value=100,
+                width="small",
             ),
         },
     )
@@ -311,31 +331,38 @@ if summary is not None:
     fs_col1, fs_col2 = st.columns(2)
     with fs_col1:
         with st.container(border=True):
-            st.markdown("#### 🏚️ Farm Building Permit Fees")
+            st.markdown("#### Farm Building Permit Fees")
             m1, m2, m3 = st.columns(3)
-            m1.metric("Audited", f"{_bf_s['audited']}/{summary['total_munis']}", f"{round(_bf_s['audited']/summary['total_munis']*100, 1)}% of ON", delta_color="off")
-            m2.metric("Farm Tiers", f"{_bf_s['farm_tiers']}", "Area / stepped", delta_color="off")
-            m3.metric(
-                "Median 10k Barn",
-                f"${round(_bf_s['med_10k_barn']):,}" if _bf_s["med_10k_barn"] is not None else "—",
-                f"2.5k Shed: ${round(_bf_s['med_2500_shed']):,}" if _bf_s["med_2500_shed"] is not None else None,
-                delta_color="off",
-            )
-            st.page_link("pages/7_🧮_Fee_Explorer.py", label="Explore Building Permit Fees →", icon="🏚️", use_container_width=True)
+            with m1:
+                st.metric("Audited", f"{_bf_s['audited']}/{summary['total_munis']}")
+                st.caption(f"{round(_bf_s['audited']/summary['total_munis']*100, 1)}% of ON")
+            with m2:
+                st.metric("Farm Tiers", f"{_bf_s['farm_tiers']}")
+                st.caption("Area / stepped")
+            with m3:
+                st.metric("Median 10k Barn", f"${round(_bf_s['med_10k_barn']):,}" if _bf_s["med_10k_barn"] is not None else "—")
+                if _bf_s["med_2500_shed"] is not None:
+                    st.caption(f"2.5k Shed: \\${round(_bf_s['med_2500_shed']):,}")
+            if st.button("Explore Building Permit Fees →", key="home_jump_bf", use_container_width=True):
+                st.session_state["fe_jump_view"] = "Farm Building Permit Fees"
+                st.switch_page("pages/7_🧮_Fee_Explorer.py")
 
     with fs_col2:
         with st.container(border=True):
-            st.markdown("#### 🚧 Site Alteration & Excess Soil Fees")
+            st.markdown("#### Site Alteration & Excess Soil Fees")
             s1, s2, s3 = st.columns(3)
-            s1.metric("Active Bylaws", f"{_sa_s['active_bylaws']}", f"{_sa_s['verified']} verified", delta_color="off")
-            s2.metric("Exempt ($0)", f"{_sa_s['exempt_zero']}", f"{_sa_s['bans']} fill bans", delta_color="off")
-            s3.metric(
-                "Median (15k m³)",
-                f"${round(_sa_s['med_15k']):,}" if _sa_s["med_15k"] is not None else "—",
-                f"{_sa_s['per_m3_cnt']} per-m³ rates",
-                delta_color="off",
-            )
-            st.page_link("pages/7_🧮_Fee_Explorer.py", label="Explore Excess Soil Fees →", icon="🚧", use_container_width=True)
+            with s1:
+                st.metric("Active Bylaws", f"{_sa_s['active_bylaws']}")
+                st.caption(f"{_sa_s['verified']} verified")
+            with s2:
+                st.metric("Exempt ($0)", f"{_sa_s['exempt_zero']}")
+                st.caption(f"{_sa_s['bans']} fill bans")
+            with s3:
+                st.metric("Median (15k m³)", f"${round(_sa_s['med_15k']):,}" if _sa_s["med_15k"] is not None else "—")
+                st.caption(f"{_sa_s['per_m3_cnt']} per-m³ rates")
+            if st.button("Explore Excess Soil Fees →", key="home_jump_sa", use_container_width=True):
+                st.session_state["fe_jump_view"] = "Site Alteration & Excess Soil Fees"
+                st.switch_page("pages/7_🧮_Fee_Explorer.py")
 
 st.divider()
 st.caption("Built for the Ontario Federation of Agriculture · Live database & cartographic boundaries synced")

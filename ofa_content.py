@@ -365,28 +365,8 @@ discouraged by local rules.""",
         letter_path="letters/fence_bylaw_letter.docx",
     ),
 
-    "Farm Building Permit Fees": BylawContent(
-        title="OFA Position on Municipal Farm Building Permit Fees",
-        body_md="""Building permits are an essential regulatory checkpoint for modern farm infrastructure—including livestock barns, equipment drive sheds, grain bins, silos, and manure storages. Across Ontario, however, municipal building permit fee structures for identical farm structures vary dramatically between neighbouring rural townships, in some cases exceeding an 8-fold difference on smaller implement sheds and nearly a 5-fold spread on 10,000 sq. ft. barns.
-
-Statutory Safeguards Under the Building Code Act, 1992 (Section 7)
-
-Ontario municipalities do not have unlimited discretion when setting building permit fees. Section 7 of the *Building Code Act, 1992* establishes clear legal guardrails that farmers and County Federations can reference during local fee reviews:
-
-- **Cost-Recovery Cap — s. 7(2):** Total building permit fees must not exceed the anticipated reasonable costs of the municipality to administer and enforce the Act. Permit fees cannot be used as a general municipal revenue source.
-- **Mandatory Annual Reserve Fund Reporting — s. 7(4)–(5):** Every municipality must prepare and make publicly available an annual report detailing total fees collected, direct and indirect enforcement costs, and the balance of any Building Stabilization Reserve Fund.
-- **Mandatory Public Notice & Meeting — s. 7(6)–(8):** Before passing a by-law that introduces or changes building permit fees, Council must hold at least one public meeting, give formal advance notice, and publish an estimate of the costs and anticipated fee revenue justifying the change.
-
-2024 Ontario Building Code (Group G Agricultural Occupancies)
-
-Effective January 1, 2025, Ontario's updated Building Code (*O. Reg. 163/24*) introduced dedicated **Group G (G1–G4)** agricultural occupancy classifications and distinct **Small Farm Building (≤ 600 m² / 6,458 sq. ft.)** versus **Large Farm Building (> 600 m²)** thresholds. As municipalities update their Building By-laws and annual Fees & Charges schedules to align with Group G, OFA encourages councils to:
-
-1. **Maintain a dedicated, cost-reflective agricultural fee tier** rather than defaulting farm structures to commercial/industrial (ICI) rates;
-2. **Distinguish lower-complexity non-livestock storage (drive sheds, hay storage) from higher-complexity livestock housing** where cost-of-service differs;
-3. **Avoid excessive flat minimum permit fees** (e.g., \$2,500–\$4,300 floors) that disproportionately penalize modest farm sheds and additions; and
-4. **Publish clear, accessible fee schedules and annual Building Reserve Fund reports** well ahead of any proposed s. 7 fee increases.""",
-        letter_path=None,
-    ),
+    # "Farm Building Permit Fees": intentionally omitted until OFA Board reviews
+    # and approves official policy wording. Map pages render blank beneath the map.
 }
 
 

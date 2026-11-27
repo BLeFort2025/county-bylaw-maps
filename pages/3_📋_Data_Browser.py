@@ -611,8 +611,8 @@ st.dataframe(
     use_container_width=True, 
     height=500,
     column_config={
-        "Bylaw Link": st.column_config.LinkColumn("Bylaw Link"),
-        "Fees Bylaw Link": st.column_config.LinkColumn("Fees Bylaw Link"),
+        "Bylaw Link": st.column_config.LinkColumn("Bylaw Link", display_text="Open PDF ↗"),
+        "Fees Bylaw Link": st.column_config.LinkColumn("Fees Bylaw Link", display_text="Open PDF ↗"),
     }
 )
 

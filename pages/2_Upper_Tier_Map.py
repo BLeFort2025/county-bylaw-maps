@@ -279,7 +279,7 @@ META_BY_LABEL: dict[str, dict[str, str]] = {
         "bylaw_name": "Bylaw Name Building Fees",
         "bylaw_link": "Link to Building Fees Bylaw",
         "enacted": "Date Bylaw Enacted 9",
-        "expiry": "Expiry Date 9",
+        "expiry": "",
     },
 }
 
@@ -494,7 +494,12 @@ display_mode = st.sidebar.selectbox(
 search_term = st.sidebar.text_input(f"Search {name_field}", value="", placeholder="Type part of a name…").strip()
 
 # ---------- Dynamic title ----------
-st.title(f"Upper Tier Bylaw Exemptions Map – {selected_label}")
+if is_bldg_fees:
+    st.title("Upper Tier Farm Building Permit Fees Map")
+elif sa_fee_mode:
+    st.title("Upper Tier Site Alteration & Excess Soil Fees Map")
+else:
+    st.title(f"Upper Tier Bylaw Exemptions Map – {selected_label}")
 
 # ---------- Prepare data ----------
 gdf_all = gdf.copy()
@@ -745,7 +750,7 @@ def get_border_color(row):
         return [0, 0, 0, 255]         # Black
     if sig == "Expiring soon":
         return [255, 165, 0, 255]     # Orange
-    if sig == "Expiry unknown":
+    if sig == "Expiry unknown" and not (is_bldg_fees or sa_fee_mode):
         return [255, 255, 0, 255]     # Yellow
     # Category-aware scanner signal border
     if row.get("HAS_SIGNAL") == True:
@@ -757,6 +762,8 @@ def get_border_color(row):
                     return [255, 69, 0, 255]   # Red-Orange (matches current layer)
             else:
                 return [255, 69, 0, 255]       # Red-Orange (no category filter)
+    if is_bldg_fees or sa_fee_mode:
+        return [100, 116, 139, 145]
     return [100, 100, 100, 100]       # Grey
 
 gdf_view["__BORDER_COLOR__"] = gdf_view.apply(get_border_color, axis=1)

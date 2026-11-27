@@ -91,7 +91,7 @@ def build_peer_bar_chart(
     x_upper = max(max_fee * 1.24, 500.0)
 
     muni_order = plot_df["Municipality"].tolist()
-    chart_h = height if height is not None else max(200, min(680, len(plot_df) * 30 + 64))
+    chart_h = height if height is not None else max(230, min(720, len(plot_df) * 36 + 76))
 
     color_scale = alt.Scale(
         domain=["Selected", "Exempt", "Peer"],
@@ -100,7 +100,7 @@ def build_peer_bar_chart(
 
     bars = (
         alt.Chart(plot_df)
-        .mark_bar(cornerRadiusEnd=3, size=20)
+        .mark_bar(cornerRadiusEnd=3, size=22)
         .encode(
             y=alt.Y(
                 "Municipality:N",
@@ -110,10 +110,11 @@ def build_peer_bar_chart(
                     labelFont="Arial",
                     labelFontSize=12,
                     labelColor=TEXT_DARK,
-                    labelLimit=210,
+                    labelLimit=220,
+                    labelOverlap=False,
                     ticks=False,
                     domain=False,
-                    labelPadding=8,
+                    labelPadding=10,
                 ),
             ),
             x=alt.X(
@@ -181,14 +182,16 @@ def build_peer_bar_chart(
         med_df = pd.DataFrame([{"med": float(median_val), "txt": f"{median_label}: {_fmt_dollars(median_val)}"}])
         rule = (
             alt.Chart(med_df)
-            .mark_rule(color=OFA_BLUEWOOD, strokeDash=[5, 4], strokeWidth=1.6, opacity=0.75)
+            .mark_rule(color=OFA_BLUEWOOD, strokeDash=[5, 4], strokeWidth=1.5, opacity=0.65)
             .encode(x="med:Q")
         )
+        _med_align = "right" if float(median_val) > x_upper * 0.72 else "left"
+        _med_dx = -5 if _med_align == "right" else 5
         rule_txt = (
             alt.Chart(med_df)
             .mark_text(
-                align="left",
-                dx=5,
+                align=_med_align,
+                dx=_med_dx,
                 dy=-6,
                 font="Arial",
                 fontSize=11,
@@ -494,7 +497,7 @@ def build_site_alt_scaling_chart(
         .properties(
             title=alt.TitleParams(
                 text=f"How {muni_name} Excess Soil Permit Fees Scale by Volume",
-                subtitle="Non-refundable permit fee only — refundable securities and peer-review retainers are separated below",
+                subtitle="Non-refundable permit fee only — refundable securities and peer-review retainers are shown separately in Stack B above",
                 anchor="start",
                 font="Arial",
                 fontSize=14,
