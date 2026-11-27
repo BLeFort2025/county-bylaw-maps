@@ -182,6 +182,29 @@ def _eval_spec(
         est_val = float(sqft) * float(assumed_cost_per_sqft)
         return round(max(mn, base + (est_val / 1000.0) * val_rate), 2)
 
+    if stype == "tiered_valuation":
+        # Size-tiered valuation schedule (e.g., Marathon Part 9 <600 m² vs. Part 3 >=600 m²)
+        if assumed_cost_per_sqft is None or assumed_cost_per_sqft <= 0:
+            return None
+        branch = spec.get("livestock" if is_livestock else "other_farm") or spec
+        brackets = branch.get("brackets") or []
+        est_val = float(sqft) * float(assumed_cost_per_sqft)
+        for b in brackets:
+            cap = _to_float(b.get("up_to_sqft"))
+            excl = bool(b.get("exclusive_upper", False))
+            if cap is None or (float(sqft) < cap if excl else float(sqft) <= cap):
+                val_rate = _to_float(b.get("value_rate_per_1000"))
+                if val_rate is None:
+                    return None
+                base = _to_float(b.get("base")) or 0.0
+                mn = _to_float(b.get("min_fee")) or 0.0
+                mx = _to_float(b.get("max_fee"))
+                val = max(mn, base + (est_val / 1000.0) * val_rate)
+                if mx is not None:
+                    val = min(mx, val)
+                return round(val, 2)
+        return None
+
     return None
 
 
