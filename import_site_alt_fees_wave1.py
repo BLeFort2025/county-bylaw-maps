@@ -192,6 +192,8 @@ def export_qa_workbook(
 
     audited = [r for r in rows if (r.get("fee_verification_status") or "") not in ("Pending", "N/A (No Bylaw)")]
     pending_yes = [r for r in rows if (r.get("fee_verification_status") or "") == "Pending"]
+    no_bylaw_cnt = sum(1 for r in rows if (r.get("fee_verification_status") or "") == "N/A (No Bylaw)")
+    active_sa_cnt = len(rows) - no_bylaw_cnt
 
     # OFA Brand Guide 2025-26 Palette
     OFA_RED = "D7182A"
@@ -243,7 +245,7 @@ def export_qa_workbook(
     ws.merge_cells("A2:J2")
     ws["A2"] = (
         f"Province-Wide Audit of Ontario Site Alteration & Excess Soil By-laws | "
-        f"{len(audited)} of {len(rows)} Site Alteration Municipalities Audited | Primary Enacted Sources Only | Generated {today_str}"
+        f"{len(audited)} of {active_sa_cnt} Active Site Alteration Municipalities Audited ({len(rows)} Total Ontario Municipalities) | Primary Enacted Sources Only | Generated {today_str}"
     )
     ws["A2"].font = f_sub
     ws["A2"].fill = fill_slate
@@ -261,21 +263,29 @@ def export_qa_workbook(
 
     verified_cnt = sum(v for k, v in fvs_counts.items() if k.startswith("Verified"))
     not_pub_cnt = fvs_counts.get("Not Published Online", 0)
-    vol_15k = [r["est_fee_15000_m3"] for r in audited if r.get("est_fee_15000_m3") is not None]
+    vol_15k = sorted(r["est_fee_15000_m3"] for r in audited if r.get("est_fee_15000_m3") is not None)
     nonzero_15k = [v for v in vol_15k if v > 0]
-    med_15k = sorted(vol_15k)[len(vol_15k) // 2] if vol_15k else 0.0
+    if vol_15k:
+        mid = len(vol_15k) // 2
+        med_15k = vol_15k[mid] if len(vol_15k) % 2 == 1 else (vol_15k[mid - 1] + vol_15k[mid]) / 2.0
+    else:
+        med_15k = 0.0
+
+    strict_ban_names = sorted(r["municipality"] for r in audited if r.get("out_of_muni_fill_ban") == "Yes")
+    restricted_names = sorted(r["municipality"] for r in audited if r.get("out_of_muni_fill_ban") == "Restricted")
+    fe_counts = Counter((r.get("farm_exemption") or "Unknown") for r in audited)
 
     kpis = [
-        ("Total Ontario Municipalities in Database", 444, "135 with Site Alteration By-laws; 309 N/A (No By-law)"),
-        ("Audited in Pilot + Wave 1 (100% of Partial/No/Not Known + 100% of Durham)", len(audited), f"{verified_cnt} Primary-Source Verified ({verified_cnt/len(audited)*100:.1f}%); {not_pub_cnt} Not Published Online"),
-        ("Remaining Wave 2 Queue (Existing Farm Exempt = Yes)", len(pending_yes), "Already classified Farm Exempt = Yes in DB; queued for Wave 2 verification"),
+        ("Total Ontario Municipalities in Database", len(rows), f"{active_sa_cnt} with Active Site Alteration By-laws; {no_bylaw_cnt} N/A (No By-law)"),
+        ("Province-Wide Fee Audit Coverage (Active Site Alteration By-laws)", f"{len(audited)} / {active_sa_cnt}", f"{verified_cnt} Primary-Source Verified ({verified_cnt/len(audited)*100:.1f}%); {not_pub_cnt} Not Published Online; {len(pending_yes)} Pending"),
+        ("Reconciled DB Farm Exemption Breakdown (Active Site Alt By-laws)", f"{fe_counts['Yes']} Yes / {fe_counts['Partial']} Partial", f"Yes (Full NFP): {fe_counts['Yes']} | Partial (Statutory/Capped): {fe_counts['Partial']} | No: {fe_counts['No']} | NOT KNOWN: {fe_counts['NOT KNOWN']}"),
         ("Ag Clean-Topsoil Import: Exempt ($0) or $0 App Waiver", ags_counts["Exempt ($0)"] + ags_counts["Waiver Available ($0 App Fee)"], f"{ags_counts['Exempt ($0)']} Exempt ($0), {ags_counts['Waiver Available ($0 App Fee)']} Waiver ($0 App Fee)"),
         ("Ag Clean-Topsoil Import: Exempt up to Cap / Reduced Farm Tier", ags_counts["Exempt up to Volume Cap"] + ags_counts["Reduced Farm Tier"], f"{ags_counts['Exempt up to Volume Cap']} Volume-Capped Exemption, {ags_counts['Reduced Farm Tier']} Reduced Farm Tier"),
         ("Ag Clean-Topsoil Import: Standard Commercial Rate", ags_counts["Standard Commercial Rate"], "No farm-specific fee relief (flat, area-based, or volumetric $/m³)"),
         ("Volumetric $/m³ Fee Schedules (Base/Tiered + $/m³)", pm_counts["Tiered Volume + Per m³"] + pm_counts["Base + Per m³"] + pm_counts["Per m³ Only"], "Directly escalate total cost with cubic metres of clean topsoil imported"),
         ("Flat-Fee or Reduced Farm Flat-Fee Schedules ($0/m³)", pm_counts["Flat Fee"] + pm_counts["Reduced Farm Flat Fee"], "Predictable permit fee regardless of clean topsoil volume"),
         ("Area-Based ($/ha) Schedules", pm_counts["Base + Per Hectare"], "Priced per disturbed hectare rather than cubic metres (m³ benchmarks left blank)"),
-        ("Strict Out-of-Municipality Fill Ban / Local-Source Restriction", ban_counts["Yes"] + ban_counts["Restricted"], f"Strict Ban: Clarington, Hamilton ({ban_counts['Yes']}); Local-Source Cap Restriction: Mono, Woolwich ({ban_counts['Restricted']})"),
+        ("Strict Out-of-Municipality Fill Ban / Local-Source Restriction", ban_counts["Yes"] + ban_counts["Restricted"], f"Strict Ban ({ban_counts['Yes']}): {', '.join(strict_ban_names)}; Origin Restricted ({ban_counts['Restricted']}): {', '.join(restricted_names)}"),
         ("Median Estimated Permit Fee at 15,000 m³ (Across Volumetric/Flat/Exempt Munis)", f"${med_15k:,.2f}", f"Range: $0.00 to ${max(nonzero_15k):,.2f} across {len(vol_15k)} comparable municipalities"),
     ]
 
@@ -464,9 +474,10 @@ def export_qa_workbook(
     for ci, w in enumerate(s2_widths, 1):
         ws2.column_dimensions[get_column_letter(ci)].width = w
 
-    # ── Sheet 3: Gaps, Caps & Wave 2 Queue ───────────────────────────────────
-    ws3 = wb.create_sheet(title="Gaps, Caps & Wave 2 Queue")
-    ws3["A1"] = "Audit Transparency Log — Not Published Online, Capped/Non-Volumetric Schedules & Wave 2 Queue"
+    # ── Sheet 3: Gaps, Caps & Transparency Log ───────────────────────────────
+    ws3_title = "Gaps, Caps & Clerk Queue" if not pending_yes else "Gaps, Caps & Wave 2 Queue"
+    ws3 = wb.create_sheet(title=ws3_title)
+    ws3["A1"] = "Audit Transparency Log — Not Published Online & Capped / Non-Volumetric Schedules"
     ws3.merge_cells("A1:G1")
     ws3["A1"].font = f_title
     ws3["A1"].fill = fill_slate
@@ -500,27 +511,28 @@ def export_qa_workbook(
                 c.number_format = "$#,##0.00"
             c.alignment = Alignment(vertical="top", wrap_text=(ci == 7))
 
-    w2_start = 5 + len(special) + 2
-    ws3.cell(w2_start, 1, f"2. Wave 2 Queue — Remaining {len(pending_yes)} Municipalities Already Flagged 'Farm Exempt = Yes' in DB").font = f_sec
-    w2_hdrs = ["Geographic Area", "Municipality", "Tier", "DB Farm Exemption", "Site Alteration By-law", "By-law Link", "Wave 2 Status"]
-    for ci, h in enumerate(w2_hdrs, 1):
-        c = ws3.cell(w2_start + 1, ci, h)
-        c.font = f_th
-        c.fill = fill_slate
-        c.border = border_cell
-    for idx, r in enumerate(pending_yes, start=w2_start + 2):
-        vals = [
-            r["geographic_area"], r["municipality"], r["municipal_status"],
-            r["farm_exemption"], r["sa_bylaw_name"], r["sa_bylaw_link"], "Pending Wave 2 Audit",
-        ]
-        for ci, v in enumerate(vals, 1):
-            c = ws3.cell(idx, ci, v)
-            c.font = f_td
-            c.fill = fill_zebra if idx % 2 == 0 else fill_white
+    if pending_yes:
+        w2_start = 5 + len(special) + 2
+        ws3.cell(w2_start, 1, f"2. Wave 2 Queue — Remaining {len(pending_yes)} Municipalities Already Flagged 'Farm Exempt = Yes' in DB").font = f_sec
+        w2_hdrs = ["Geographic Area", "Municipality", "Tier", "DB Farm Exemption", "Site Alteration By-law", "By-law Link", "Wave 2 Status"]
+        for ci, h in enumerate(w2_hdrs, 1):
+            c = ws3.cell(w2_start + 1, ci, h)
+            c.font = f_th
+            c.fill = fill_slate
             c.border = border_cell
-            if ci == 6 and isinstance(v, str) and v.startswith("http"):
-                c.hyperlink = v
-                c.font = f_link
+        for idx, r in enumerate(pending_yes, start=w2_start + 2):
+            vals = [
+                r["geographic_area"], r["municipality"], r["municipal_status"],
+                r["farm_exemption"], r["sa_bylaw_name"], r["sa_bylaw_link"], "Pending Wave 2 Audit",
+            ]
+            for ci, v in enumerate(vals, 1):
+                c = ws3.cell(idx, ci, v)
+                c.font = f_td
+                c.fill = fill_zebra if idx % 2 == 0 else fill_white
+                c.border = border_cell
+                if ci == 6 and isinstance(v, str) and v.startswith("http"):
+                    c.hyperlink = v
+                    c.font = f_link
 
     for ci, w in enumerate([18, 24, 22, 22, 16, 26, 68], 1):
         ws3.column_dimensions[get_column_letter(ci)].width = w
