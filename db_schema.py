@@ -93,7 +93,47 @@ CREATE TABLE IF NOT EXISTS details_dc (
     fees_bylaw_link TEXT,
     fees_enacted    TEXT,
     fees_expiry     TEXT,
-    fees_expiry_notes TEXT
+    fees_expiry_notes TEXT,
+    -- Structured Agricultural Development Charge Rate fields (4 farm building sub-types x rural/urban)
+    dc_rate_verification_status TEXT,        -- Verified (Indexed Pamphlet) | Verified (Base By-law Only — Confirm Indexing) | Verified | No DC By-law | Not Published Online | Pending
+    dc_rate_year                INTEGER,     -- Effective year of verified DC rate schedule (e.g. 2025, 2026)
+    dc_rate_effective_date      TEXT,        -- Effective date of active DC rate schedule / pamphlet
+    dc_rate_pamphlet_name       TEXT,        -- Current indexed DC Rate Pamphlet / Schedule title
+    dc_rate_pamphlet_link       TEXT,        -- Direct URL to current indexed DC Rate Pamphlet / Schedule
+    dc_rate_service_area_basis  TEXT,        -- Rural Unserviced | Municipal-Wide Uniform | Urban Only (No Rural DC) | Area-Specific | No DC By-law
+    dc_edc_applicable           TEXT,        -- Yes — Separate School Board EDC | No | Exempt for Farm | Unknown
+    -- Sub-type 1: Typical Farm Buildings (livestock barns, drive sheds, grain storage — 10,000 ft²)
+    farm_bldg_dc_status         TEXT,        -- Exempt | Discounted / Partial | Full Non-Residential | Full Industrial | Full Commercial | Flat Rate | No DC By-law | Not Published Online
+    farm_bldg_dc_rate_rural     REAL,        -- Rural unserviced rate normalized to $/ft² (NULL if flat/exempt/tiered)
+    farm_bldg_dc_rate_urban     REAL,        -- Urban serviced rate normalized to $/ft²
+    farm_bldg_dc_unit           TEXT,        -- per_sqft | per_sqm | flat | exempt | tiered | none
+    est_dc_10k_barn_rural       REAL,        -- Benchmark: Rural unserviced DC ($) for 10,000 ft² typical farm building
+    est_dc_10k_barn_urban       REAL,        -- Benchmark: Urban serviced DC ($) for 10,000 ft² typical farm building
+    -- Sub-type 2: Commercial Greenhouses (1 acre = 43,560 ft²)
+    greenhouse_dc_status        TEXT,        -- Exempt (All Greenhouses) | Exempt (Soil-Floor / Ag Only) | Dedicated Greenhouse Rate | Discounted / Partial | Full Non-Residential | Full Industrial | Full Commercial | Flat Rate | Silent — Treated as Farm | No DC By-law | Not Published Online
+    greenhouse_dc_rate_rural    REAL,        -- Rural unserviced greenhouse rate ($/ft²)
+    greenhouse_dc_rate_urban    REAL,        -- Urban serviced greenhouse rate ($/ft²)
+    est_dc_1ac_greenhouse_rural REAL,        -- Benchmark: Rural unserviced DC ($) for 1-acre (43,560 ft²) commercial greenhouse
+    est_dc_1ac_greenhouse_urban REAL,        -- Benchmark: Urban serviced DC ($) for 1-acre (43,560 ft²) commercial greenhouse
+    greenhouse_dc_notes         TEXT,        -- Soil-floor vs concrete/packing house distinctions, GFA caps, stormwater-only rules
+    -- Sub-type 3: Cannabis Production Facilities (10,000 ft²)
+    cannabis_dc_status          TEXT,        -- Explicit Carve-Out — Full Industrial | Explicit Carve-Out — Full Non-Residential | Explicit Carve-Out — Commercial | Explicit Carve-Out — Dedicated Rate | Subject to Non-Res DC (No Farm Exemption) | Exempt (Treated as Farm) | Silent — Confirm with Municipality | No DC By-law | Not Published Online
+    cannabis_dc_rate_rural      REAL,        -- Rural unserviced cannabis rate ($/ft²)
+    cannabis_dc_rate_urban      REAL,        -- Urban serviced cannabis rate ($/ft²)
+    est_dc_10k_cannabis_rural   REAL,        -- Benchmark: Rural unserviced DC ($) for 10,000 ft² cannabis production facility
+    est_dc_10k_cannabis_urban   REAL,        -- Benchmark: Urban serviced DC ($) for 10,000 ft² cannabis production facility
+    cannabis_dc_notes           TEXT,        -- Verbatim carve-out citation or Health Canada licensed facility rule
+    -- Sub-type 4: Bunkhouses / Seasonal Agricultural Worker Housing / SAWP (10 beds / 2,000 ft²)
+    bunkhouse_dc_status         TEXT,        -- Exempt (Bona Fide Farm Worker Housing) | Per-Bed / Per-Occupant Rate | Residential — Single/Semi/Apt Unit Rate | Residential — Special Care / Lodging Rate | Non-Residential Area Rate | Deferred / Grant / Waiver Eligible | Silent — Residential Dwelling Risk | No DC By-law | Not Published Online
+    bunkhouse_dc_basis          TEXT,        -- exempt | per_bed | per_unit | per_sqft | per_sqm | flat | deferred | unknown | none
+    bunkhouse_dc_rate_rural     REAL,        -- Rural unserviced bunkhouse rate (native basis: $/bed, $/unit, or $/ft²)
+    bunkhouse_dc_rate_urban     REAL,        -- Urban serviced bunkhouse rate (native basis)
+    est_dc_bunkhouse_rural      REAL,        -- Benchmark: Rural unserviced DC ($) for 10-bed / 2,000 ft² bunkhouse
+    est_dc_bunkhouse_urban      REAL,        -- Benchmark: Urban serviced DC ($) for 10-bed / 2,000 ft² bunkhouse
+    bunkhouse_dc_notes          TEXT,        -- Exact bunkhouse/SAWP rule, per-bed vs residential unit basis, deferral rules
+    -- Deterministic engine & audit notes
+    dc_calc_spec_json           TEXT,        -- Structured JSON formulas for all 4 building sub-types x rural/urban
+    dc_rate_formula_notes       TEXT         -- Primary-source section citations, indexing effective date, rural/urban water-sewer notes
 );
 
 -- Stormwater extras
