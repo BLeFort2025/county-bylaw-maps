@@ -22,7 +22,7 @@ from letter_engine import (
 )
 from db_utils import get_connection
 from bldg_fees_calc import evaluate_bldg_fee, fee_cost_tier_rgba
-from site_alt_fees_calc import evaluate_site_alt_fee
+from site_alt_fees_calc import evaluate_site_alt_fee, site_alt_fee_tier_rgba
 
 st.set_page_config(page_title="Lower Tier Bylaw Exemptions Map", layout="wide")
 
@@ -40,9 +40,20 @@ SIGNAL_PRIORITY = [
 ]
 
 
+NON_LAYER_STATUS_COLS = {
+    "Municipal Status",
+    "BF Verification Status",
+    "SA Fee Verification Status",
+    "SA Ag Import Fee Status",
+}
+
+
 def find_status_columns(df: pd.DataFrame) -> list[str]:
     """Return all columns that represent map-ready status fields."""
-    return sorted([c for c in df.columns if c.strip().endswith(" Status") and c.strip() != "Municipal Status"])
+    return sorted([
+        c for c in df.columns
+        if c.strip().endswith(" Status") and c.strip() not in NON_LAYER_STATUS_COLS
+    ])
 
 
 def pick_name_field(df: pd.DataFrame) -> str:
@@ -397,6 +408,7 @@ def load_data(path: str):
         r"(?i)\bdate bylaw enacted\b",
         r"(?i)\bmunicipality has fence bylaw\b",
         r"^BF ",
+        r"^SA ",
     ]
     for c in gdf.columns:
         if c == geom_col or c == name_field or c in status_cols:
@@ -437,6 +449,11 @@ if not status_cols:
     st.error("No '… Status' columns found. Rebuild the data and push the new Parquet file.")
     st.stop()
 
+def _md_safe(val) -> str:
+    """Escape literal $ signs so Streamlit Markdown never parses dollar amounts as LaTeX math."""
+    return str(val or "").replace("$", r"\$")
+
+
 # ---------- Sidebar ----------
 st.sidebar.header("Filters")
 
@@ -448,25 +465,71 @@ selected_col = label_to_col[selected_label]
 is_bldg_fees = (selected_label == "Farm Building Permit Fees")
 is_site_alt = (selected_label == "Farm Exemption for SA")
 
-# Site Alteration & Excess Soil: Interactive Topsoil Import Estimator controls
+# Site Alteration & Excess Soil: Opt-in Fee Tier View & Interactive Topsoil Import Estimator
+sa_map_mode = "Policy Exemption (Default)"
+sa_fee_mode = False
+sa_fee_tier_filter = "All"
 sa_volume_m3 = 15000
 if is_site_alt:
     st.sidebar.markdown("---")
     st.sidebar.subheader("🧮 Topsoil Import Fee Estimator")
-    sa_volume_m3 = st.sidebar.slider(
-        "Imported Clean Topsoil Volume (m³)",
-        min_value=500,
-        max_value=25000,
-        value=15000,
-        step=500,
-        help="Estimates municipal Site Alteration permit fees live for verified fee schedules (e.g., 14,000–15,000 m³ large farm topsoil import).",
+    sa_map_mode = st.sidebar.radio(
+        "Map Colouring Mode",
+        ["Policy Exemption (Default)", "Excess Soil Fee Tier ($)"],
+        index=0,
+        key="lt_sa_map_mode",
+        help="Default preserves standard YES / PARTIAL / NO exemption colours. Switch to 'Excess Soil Fee Tier ($)' to shade municipalities by estimated farm import permit cost.",
     )
+    sa_fee_mode = (sa_map_mode == "Excess Soil Fee Tier ($)")
+    _sa_preset = st.sidebar.radio(
+        "Volume Scenario",
+        ["500 m³ (~50 loads)", "5,000 m³ (~500 loads)", "15,000 m³ (~1,500 loads)", "Custom"],
+        index=2,
+        key="lt_sa_preset",
+        help="Tri-axle dump truckload equivalents shown at ~10 m³ per load.",
+    )
+    _sa_preset_map = {
+        "500 m³ (~50 loads)": 500,
+        "5,000 m³ (~500 loads)": 5000,
+        "15,000 m³ (~1,500 loads)": 15000,
+    }
+    if _sa_preset in _sa_preset_map:
+        sa_volume_m3 = _sa_preset_map[_sa_preset]
+    else:
+        sa_volume_m3 = st.sidebar.slider(
+            "Imported Clean Topsoil Volume (m³)",
+            min_value=500,
+            max_value=25000,
+            value=15000,
+            step=500,
+            help="Estimates municipal Site Alteration permit fees live for verified fee schedules (~10 m³ per tri-axle truckload).",
+        )
+    st.sidebar.caption(f"Scenario: **{sa_volume_m3:,} m³** (≈ {sa_volume_m3 // 10:,} tri-axle loads)")
+    if sa_fee_mode:
+        sa_fee_tier_filter = st.sidebar.selectbox(
+            "Excess Soil Fee Tier Filter",
+            [
+                "All",
+                "Farm Exempt ($0)",
+                "Waiver ($0 App Fee)",
+                "Low (< $1.00/m³)",
+                "Moderate ($1.00–$1.99/m³)",
+                "High (≥ $2.00/m³)",
+                "Area-Based ($/ha)",
+                "Capped / Non-Volumetric",
+                "Cost Recovery Only",
+                "Not Published Online",
+                "No Site Alt. By-law",
+            ],
+            index=0,
+        )
 
 # Farm Building Permit Fees: Interactive Estimator & Cost-Tier controls
 bf_bldg_type = "🐄 Livestock Barn"
 bf_sqft = 10000
 bf_tier_filter = "All"
 bf_audited_only = False
+bf_assumed_cost = None
 if is_bldg_fees:
     st.sidebar.markdown("---")
     st.sidebar.subheader("🧮 Permit Cost Estimator")
@@ -476,14 +539,43 @@ if is_bldg_fees:
         index=0,
         help="Switch between Livestock Barn and Non-Livestock Equipment / Drive Shed rates where municipalities charge separate tiers.",
     )
-    bf_sqft = st.sidebar.slider(
-        "Building Footprint (sq. ft.)",
-        min_value=1500,
-        max_value=30000,
-        value=10000,
-        step=500,
-        help="Recomputes exact municipal fees live (including base fees, high minimum floors, and 2024 OBC Group G / stepped brackets).",
+    _bf_preset = st.sidebar.radio(
+        "Size Scenario",
+        ["2,500 ft²", "10,000 ft²", "20,000 ft²", "Custom"],
+        index=1,
+        horizontal=True,
+        key="lt_bf_preset",
     )
+    _bf_preset_map = {"2,500 ft²": 2500, "10,000 ft²": 10000, "20,000 ft²": 20000}
+    if _bf_preset in _bf_preset_map:
+        bf_sqft = _bf_preset_map[_bf_preset]
+    else:
+        bf_sqft = st.sidebar.slider(
+            "Building Footprint (sq. ft.)",
+            min_value=1500,
+            max_value=30000,
+            value=10000,
+            step=500,
+            help="Recomputes exact municipal fees live (including base fees, high minimum floors, and 2024 OBC Group G / stepped brackets).",
+        )
+    _bf_val_on = st.sidebar.checkbox(
+        "Estimate Valuation-Based (per $1k CV) schedules",
+        value=False,
+        key="lt_bf_val_toggle",
+        help="Off by default so area-based and construction-value schedules are never mixed without an explicit cost assumption.",
+    )
+    if _bf_val_on:
+        bf_assumed_cost = float(
+            st.sidebar.number_input(
+                "Assumed Construction Cost ($/ft²)",
+                min_value=20,
+                max_value=400,
+                value=100 if bf_bldg_type == "🐄 Livestock Barn" else 55,
+                step=5,
+                key="lt_bf_val_cost",
+                help="Applied ONLY to valuation-only ($/$1,000 CV) municipalities (e.g., Ottawa, French River, Wawa).",
+            )
+        )
     bf_tier_filter = st.sidebar.selectbox(
         "Cost Tier Filter",
         [
@@ -500,6 +592,9 @@ if is_bldg_fees:
         index=0,
     )
     bf_audited_only = st.sidebar.checkbox("Show audited municipalities only", value=False)
+    status_filter = "All"
+    signal_filter = "All"
+elif sa_fee_mode:
     status_filter = "All"
     signal_filter = "All"
 else:
@@ -609,13 +704,15 @@ if is_bldg_fees:
             "value_rate_per_1000": _row.get("BF Value Rate Per 1000", ""),
             "calc_spec_json": _row.get("BF Calc Spec JSON", ""),
         }
-        _est = evaluate_bldg_fee(_payload, bf_sqft, is_livestock=_is_live)
+        _est = evaluate_bldg_fee(_payload, bf_sqft, is_livestock=_is_live, assumed_cost_per_sqft=bf_assumed_cost)
+        _est_base = evaluate_bldg_fee(_payload, bf_sqft, is_livestock=_is_live, assumed_cost_per_sqft=None)
+        _is_val_est = (_est is not None and _est_base is None and bf_assumed_cost is not None)
         _vs = str(_row.get("BF Verification Status", "") or "")
         _hft = str(_row.get("BF Has Farm Tier", "") or "")
         _pm = str(_row.get("BF Pricing Model", "") or "")
         _rgba, _tier = fee_cost_tier_rgba(_est, bf_sqft, _vs, _hft, _pm)
         _bf_nums.append(_est)
-        _bf_disp.append(f"${_est:,.0f}" if _est is not None else _tier)
+        _bf_disp.append((f"${_est:,.0f} (Est.)" if _is_val_est else f"${_est:,.0f}") if _est is not None else _tier)
         _bf_eff.append(f"${_est / bf_sqft:.3f}/ft²" if _est is not None else "—")
         _bf_tiers.append(_tier)
         _bf_colors.append(_rgba)
@@ -635,7 +732,7 @@ else:
     gdf_all["__COLOR__"] = gdf_all["__STATUS__"].apply(status_color)
 
 if is_site_alt:
-    _sa_est_disp, _sa_ag_status_disp = [], []
+    _sa_est_nums, _sa_est_disp, _sa_ag_status_disp, _sa_tiers, _sa_colors = [], [], [], [], []
     for _, _row in gdf_all.iterrows():
         _sa_pay = {
             "fee_verification_status": _row.get("SA Fee Verification Status", ""),
@@ -651,10 +748,16 @@ if is_site_alt:
         _sa_fvs = str(_row.get("SA Fee Verification Status", "") or "").strip()
         _sa_ags = str(_row.get("SA Ag Import Fee Status", "") or "").strip()
         _sa_pm = str(_row.get("SA Fee Pricing Model", "") or "").strip()
+        _sa_rgba, _sa_tier = site_alt_fee_tier_rgba(_sa_val, sa_volume_m3, _sa_fvs, _sa_ags, _sa_pm)
+        _sa_est_nums.append(_sa_val)
+        _sa_tiers.append(_sa_tier)
+        _sa_colors.append(_sa_rgba)
         if _sa_val is not None:
             _sa_est_disp.append(f"${_sa_val:,.0f}")
         elif "hectare" in _sa_pm.lower():
             _sa_est_disp.append("Area-Based ($/ha)")
+        elif "cost recovery" in _sa_pm.lower():
+            _sa_est_disp.append("Cost Recovery Only")
         elif "no bylaw" in _sa_fvs.lower() or "no bylaw" in _sa_ags.lower():
             _sa_est_disp.append("No Bylaw ($0)")
         elif _sa_fvs.lower().startswith("verified"):
@@ -664,8 +767,12 @@ if is_site_alt:
         else:
             _sa_est_disp.append("Pending Fee Audit")
         _sa_ag_status_disp.append(_sa_ags or "—")
+    gdf_all["__SA_FEE_NUM__"] = _sa_est_nums
     gdf_all["__SA_FEE_DISPLAY__"] = _sa_est_disp
     gdf_all["__SA_AG_FEE_STATUS__"] = _sa_ag_status_disp
+    gdf_all["__SA_FEE_TIER__"] = _sa_tiers
+    if sa_fee_mode:
+        gdf_all["__COLOR__"] = _sa_colors
 
 # Add expiry + signal columns for the current selection (outlines + tooltip/sidebar metadata)
 gdf_all = add_expiry_signal_columns(gdf_all, selected_label)
@@ -686,6 +793,9 @@ if is_bldg_fees:
         match_mask &= gdf_all["__BF_TIER__"].eq(bf_tier_filter)
     if bf_audited_only:
         match_mask &= gdf_all["__BF_TIER__"].ne("Pending Audit")
+elif sa_fee_mode:
+    if sa_fee_tier_filter != "All":
+        match_mask &= gdf_all["__SA_FEE_TIER__"].eq(sa_fee_tier_filter)
 else:
     if status_filter != "All":
         match_mask &= gdf_all["__STATUS__"].eq(status_filter)
@@ -793,14 +903,21 @@ if is_bldg_fees:
     _n_pending = int(gdf_match["__BF_TIER__"].eq("Pending Audit").sum())
     _type_short = "Livestock Barn" if bf_bldg_type == "🐄 Livestock Barn" else "Drive Shed"
     if _n_farm > 0:
-        _min_val = float(_valid_bf["__BF_EST_NUM__"].min())
+        _has_moosonee_outlier = (
+            _valid_bf[name_field].astype(str).eq("Moosonee").any()
+            and float(_valid_bf.loc[_valid_bf[name_field].astype(str).eq("Moosonee"), "__BF_EST_NUM__"].max()) > 25000
+        )
+        _ag_bf = _valid_bf[_valid_bf[name_field].astype(str) != "Moosonee"] if _has_moosonee_outlier else _valid_bf
+        if _ag_bf.empty:
+            _ag_bf = _valid_bf
+        _min_val = float(_ag_bf["__BF_EST_NUM__"].min())
         _med_val = float(_valid_bf["__BF_EST_NUM__"].median())
-        _max_val = float(_valid_bf["__BF_EST_NUM__"].max())
+        _max_val = float(_ag_bf["__BF_EST_NUM__"].max())
         _spread = f"{(_max_val / _min_val):.1f}×" if _min_val > 0 else "—"
-        _min_names = sorted(_valid_bf.loc[_valid_bf["__BF_EST_NUM__"] == _min_val, name_field].astype(str).tolist())
-        _max_names = sorted(_valid_bf.loc[_valid_bf["__BF_EST_NUM__"] == _max_val, name_field].astype(str).tolist())
+        _min_names = sorted(_ag_bf.loc[_ag_bf["__BF_EST_NUM__"] == _min_val, name_field].astype(str).tolist())
+        _max_names = sorted(_ag_bf.loc[_ag_bf["__BF_EST_NUM__"] == _max_val, name_field].astype(str).tolist())
         c1, c2, c3, c4, c5, c6 = st.columns(6)
-        c1.metric("Audited Farm Tiers", f"{_n_farm}")
+        c1.metric("Priced Farm Tiers", f"{_n_farm}")
         c2.metric(f"Lowest ({bf_sqft:,} ft²)", f"${_min_val:,.0f}", ", ".join(_min_names[:2]), delta_color="off")
         c3.metric(f"Median {_type_short}", f"${_med_val:,.0f}", f"${_med_val/bf_sqft:.2f}/ft²", delta_color="off")
         c4.metric(f"Highest ({bf_sqft:,} ft²)", f"${_max_val:,.0f}", ", ".join(_max_names[:2]), delta_color="off")
@@ -808,10 +925,38 @@ if is_bldg_fees:
         c6.metric("Urban / Pending", f"{_n_urban} / {_n_pending}")
     else:
         st.info("No audited area-based farm schedules match the current filter.")
+    _outlier_note = ""
+    if _n_farm > 0 and _has_moosonee_outlier:
+        _moo_v = float(_valid_bf.loc[_valid_bf[name_field].astype(str).eq("Moosonee"), "__BF_EST_NUM__"].iloc[0])
+        _outlier_note = f"  ·  *Note: Remote James Bay town Moosonee (\\${_moo_v:,.0f} Part 3 institutional rate >600 m²) excluded from Highest/Spread KPIs.*"
+    _val_note = f"  ·  *Valuation schedules estimated at \\${bf_assumed_cost:,.0f}/ft².*" if bf_assumed_cost is not None else ""
     st.caption(
-        f"Showing **{bf_sqft:,} sq. ft. {_type_short}** estimates ({len(gdf_match)} of {len(gdf_all)} municipalities).  "
-        "Cost tier legend: 🟩 Low (< $0.28/ft²) • 🟦 Moderate ($0.28–$0.37/ft²) • 🟨 High ($0.37–$0.48/ft²) • "
-        "🟥 Very High (≥ $0.48/ft²) • ⬛ Valuation ($/$1k) • ⬜ Urban / ICI • 🟫 Pending / Offline"
+        f"Showing **{bf_sqft:,} sq. ft. {_type_short}** estimates ({len(gdf_match)} of {len(gdf_all)} municipalities).{_val_note}{_outlier_note}  "
+        r"Cost tier legend: 🟩 Low (< \$0.28/ft²) • 🟦 Moderate (\$0.28–\$0.37/ft²) • 🟨 High (\$0.37–\$0.48/ft²) • "
+        r"🟥 Very High (≥ \$0.48/ft²) • ⬛ Valuation (\$/\$1k) • ⬜ Urban / ICI • 🟫 Pending / Offline"
+    )
+elif sa_fee_mode:
+    _sa_active = gdf_match[gdf_match["__SA_FEE_TIER__"] != "No Site Alt. By-law"]
+    _sa_exempt = int(_sa_active["__SA_FEE_TIER__"].isin(["Farm Exempt ($0)", "Waiver ($0 App Fee)"]).sum())
+    _sa_paid = _sa_active[_sa_active["__SA_FEE_NUM__"].notna() & (_sa_active["__SA_FEE_NUM__"] > 0)]
+    _sa_area = int(_sa_active["__SA_FEE_TIER__"].isin(["Area-Based ($/ha)", "Cost Recovery Only"]).sum())
+    _sa_offline = int(_sa_active["__SA_FEE_TIER__"].eq("Not Published Online").sum())
+    _sa_bans = int(
+        _sa_active.get("SA Out-of-Muni Fill Ban", pd.Series("", index=_sa_active.index))
+        .fillna("").astype(str).str.strip().str.lower().isin(["yes", "restricted"]).sum()
+    )
+    _med_paid = float(_sa_paid["__SA_FEE_NUM__"].median()) if len(_sa_paid) else None
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1.metric("Active SA Bylaws", f"{len(_sa_active)}")
+    c2.metric("Farm Exempt ($0)", f"{_sa_exempt}")
+    c3.metric(f"Paid Schedules ({sa_volume_m3:,} m³)", f"{len(_sa_paid)}")
+    c4.metric("Median Paid Fee", f"${_med_paid:,.0f}" if _med_paid is not None else "—")
+    c5.metric("Area ($/ha) / Offline", f"{_sa_area} / {_sa_offline}")
+    c6.metric("Out-of-Muni Ban/Restr.", f"{_sa_bans}")
+    st.caption(
+        f"Showing **{sa_volume_m3:,} m³ (~{sa_volume_m3 // 10:,} tri-axle loads)** Excess Soil fee tiers ({len(gdf_match)} of {len(gdf_all)} municipalities).  "
+        r"Fee tier legend: 🟩 Farm Exempt (\$0) / Waiver • 🟦 Low (< \$1/m³) • 🟨 Moderate (\$1–\$1.99/m³) • "
+        r"🟥 High (≥ \$2/m³) • ⬛ Area-Based (\$/ha) / Cost Recovery • 🟫 Not Published • ⬜ No SA By-law"
     )
 else:
     counts = gdf_match["__STATUS__"].value_counts()
@@ -930,6 +1075,7 @@ elif is_site_alt:
         "__STATUS__",
         "__SA_AG_FEE_STATUS__",
         "__SA_FEE_DISPLAY__",
+        "__SA_FEE_TIER__",
         "__COLOR__",
         "__EXPIRY__",
         "__SIGNAL__",
@@ -949,7 +1095,7 @@ layer = pdk.Layer(
     "GeoJsonLayer",
     geojson,
     pickable=True,
-    opacity=0.65 if is_bldg_fees else 0.5,
+    opacity=0.65 if (is_bldg_fees or sa_fee_mode) else 0.5,
     stroked=True,
     filled=True,
     extruded=False,
@@ -974,9 +1120,10 @@ _tooltip_text = (
     if is_bldg_fees
     else (
         f"{{{name_field}}}\n"
-        "Status: {__STATUS__}\n"
+        "Farm Exemption: {__STATUS__}\n"
         "Ag Import Fee Status: {__SA_AG_FEE_STATUS__}\n"
-        f"Est. Permit Fee ({sa_volume_m3:,} m³): {{__SA_FEE_DISPLAY__}}\n"
+        f"Est. Permit Fee ({sa_volume_m3:,} m³ / ~{sa_volume_m3 // 10:,} loads): {{__SA_FEE_DISPLAY__}}\n"
+        "Fee Tier: {__SA_FEE_TIER__}\n"
         "Expiry: {__EXPIRY__}\n"
         "Bylaw: {__BYLAW_NAME__}"
     )
@@ -1053,14 +1200,17 @@ if len(detail_row) == 1:
             "value_rate_per_1000": r.get("BF Value Rate Per 1000", ""),
             "calc_spec_json": r.get("BF Calc Spec JSON", ""),
         }
-        _est_live = evaluate_bldg_fee(_r_pay, bf_sqft, is_livestock=True)
-        _est_shed = evaluate_bldg_fee(_r_pay, bf_sqft, is_livestock=False)
+        _est_live = evaluate_bldg_fee(_r_pay, bf_sqft, is_livestock=True, assumed_cost_per_sqft=bf_assumed_cost)
+        _est_shed = evaluate_bldg_fee(_r_pay, bf_sqft, is_livestock=False, assumed_cost_per_sqft=bf_assumed_cost)
         st.sidebar.markdown(f"**Audit Status:** {str(r.get('BF Verification Status', '') or 'Pending')} ({r.get('__BF_YEAR__', '—')})")
         st.sidebar.markdown(f"**Cost Tier:** {r.get('__BF_TIER__', '—')}")
         if _est_live is not None or _est_shed is not None:
             _sc1, _sc2 = st.sidebar.columns(2)
             _sc1.metric(f"🐄 {bf_sqft:,} ft² Barn", f"${_est_live:,.0f}" if _est_live is not None else "—")
             _sc2.metric(f"🚜 {bf_sqft:,} ft² Shed", f"${_est_shed:,.0f}" if _est_shed is not None else "—")
+            if bf_assumed_cost is not None and evaluate_bldg_fee(_r_pay, bf_sqft, is_livestock=True) is None:
+                st.sidebar.caption(f"*Valuation estimate using assumed ${bf_assumed_cost:,.0f}/ft² construction cost.*")
+        st.sidebar.page_link("pages/7_🧮_Fee_Explorer.py", label="📊 Compare Peers in Fee Explorer →", use_container_width=True)
         st.sidebar.markdown(f"**Pricing Model:** {r.get('__BF_MODEL__', '—')}")
         st.sidebar.markdown(f"**Authority:** {r.get('__BF_AUTH__', 'Municipal')}")
         if str(r.get("BF Silo Grain Bin Fee", "") or "").strip():
@@ -1072,7 +1222,7 @@ if len(detail_row) == 1:
         if str(r.get("BF Refundable Deposit", "") or "").strip():
             st.sidebar.markdown(f"**Deposit / Surcharges:** {r.get('BF Refundable Deposit')}")
         if str(r.get("BF Formula Notes", "") or "").strip():
-            st.sidebar.info(str(r.get("BF Formula Notes")))
+            st.sidebar.info(str(r.get("BF Formula Notes")).replace("$", r"\$"))
     else:
         st.sidebar.markdown(f"**Status:** {str(r.get('__STATUS__', 'N/A') or 'N/A')}")
         st.sidebar.markdown(f"**Expiry signal:** {str(r.get('__SIGNAL__', '') or '').strip() or '—'}")
@@ -1112,11 +1262,12 @@ if len(detail_row) == 1:
                 if _sa_fbn:
                     st.sidebar.markdown(f"**Fees By-law:** [{_sa_fbn}]({_sa_fbl})" if _sa_fbl else f"**Fees By-law:** {_sa_fbn}")
                 if _sa_sec:
-                    st.sidebar.markdown(f"**Security / Deposit:** {_sa_sec}")
+                    st.sidebar.markdown(f"**Security / Deposit:** {_sa_sec.replace('$', chr(92) + '$')}")
                 if _sa_peer:
-                    st.sidebar.markdown(f"**Peer Review / Testing:** {_sa_peer}")
+                    st.sidebar.markdown(f"**Peer Review / Testing:** {_sa_peer.replace('$', chr(92) + '$')}")
                 if _sa_fn:
-                    st.sidebar.info(_sa_fn)
+                    st.sidebar.info(_sa_fn.replace("$", r"\$"))
+                st.sidebar.page_link("pages/7_🧮_Fee_Explorer.py", label="📊 Compare Soil Fees in Fee Explorer →", use_container_width=True)
 
     bylaw_name = str(r.get("__BYLAW_NAME__", "") or "").strip()
     enacted = str(r.get("__ENACTED__", "") or "").strip()
@@ -1450,17 +1601,41 @@ if content is not None:
 
 # ---------- Legend ----------
 with st.expander("Legend", expanded=False):
-    st.markdown(
-        "- **YES** = green  \n"
-        "- **NO** = red  \n"
-        "- **N/A** = gray  \n"
-        "- **Other/blank** = blue  \n"
-        "- **Red-Orange outline** = Mentioned in minutes/agendas (Scanner Hit) \n"
-        "- **Orange outline** = expiring soon  \n"
-        "- **Black outline** = expired  \n"
-        "- **Yellow outline** = expiry unknown (bylaw exists)  \n"
-        "- **Highlight mode** dims non-matches instead of removing them"
-    )
+    if is_bldg_fees:
+        st.markdown(
+            "- **Sage Green** = Low (< `$0.28/ft²` eff.)  \n"
+            "- **Bluewood-Teal** = Moderate (`$0.28–$0.37/ft²` eff.)  \n"
+            "- **OFA Gold** = High (`$0.37–$0.48/ft²` eff.)  \n"
+            "- **OFA Crimson** = Very High (`≥ $0.48/ft²` eff.)  \n"
+            "- **Deep Slate** = Valuation-Based (`$/$1,000` construction value)  \n"
+            "- **Steel Gray** = Urban / No Dedicated Farm Tier (ICI rates)  \n"
+            "- **Tan / Champagne** = Not Published Online / Pending Audit  \n"
+            "- **Highlight mode** dims non-matches instead of removing them"
+        )
+    elif sa_fee_mode:
+        st.markdown(
+            "- **Sage Green** = Farm Exempt (`$0`) or `$0` Waiver  \n"
+            "- **Bluewood-Teal** = Low (`< $1.00/m³` eff.)  \n"
+            "- **OFA Gold** = Moderate (`$1.00–$1.99/m³` eff.)  \n"
+            "- **OFA Crimson** = High (`≥ $2.00/m³` eff.)  \n"
+            "- **Deep Slate** = Area-Based (`$/ha`) or Cost Recovery Only  \n"
+            "- **Tan** = Not Published Online  \n"
+            "- **Warm Gray** = No Site Alteration By-law  \n"
+            "- **Highlight mode** dims non-matches instead of removing them"
+        )
+    else:
+        st.markdown(
+            "- **YES** = green  \n"
+            "- **PARTIAL** = amber (statutory minimum only, e.g. Site Alteration)  \n"
+            "- **NO** = red  \n"
+            "- **N/A** = gray  \n"
+            "- **Other/blank** = blue  \n"
+            "- **Red-Orange outline** = Mentioned in minutes/agendas (Scanner Hit) \n"
+            "- **Orange outline** = expiring soon  \n"
+            "- **Black outline** = expired  \n"
+            "- **Yellow outline** = expiry unknown (bylaw exists)  \n"
+            "- **Highlight mode** dims non-matches instead of removing them"
+        )
 
 # ---------- Results table + export ----------
 with st.expander("Results (filtered) – table + export", expanded=False):

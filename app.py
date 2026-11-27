@@ -78,13 +78,6 @@ def load_executive_summary():
             "Expiry Date 8",
             "Farm exemption for electrified/security fencing",
         ),
-        (
-            "Farm Building Permit Fees",
-            "Farm Building Permit Fees Status",
-            "Bylaw Name Building Fees",
-            "Expiry Date 9",
-            "Dedicated farm building fee tier (barns, drive sheds, silos)",
-        ),
     ]
 
     scorecard_rows = []
@@ -127,20 +120,63 @@ def load_executive_summary():
             }
         )
 
-    # Count recent scanner signals
+    # Count recent scanner signals & live fee intelligence snapshots
     signal_count = 0
+    bf_snap = {"audited": 0, "farm_tiers": 0, "med_10k_barn": None, "med_2500_shed": None}
+    sa_snap = {"active_bylaws": 0, "verified": 0, "exempt_zero": 0, "per_m3_cnt": 0, "med_15k": None, "bans": 0}
     try:
         conn = get_connection()
         sig_df = pd.read_sql_query("SELECT COUNT(*) AS cnt FROM scanner_signals", conn.conn)
-        conn.close()
         if not sig_df.empty:
             signal_count = int(sig_df.iloc[0]["cnt"])
+
+        bf_df = pd.read_sql_query(
+            """
+            SELECT d.verification_status, d.has_farm_tier, d.est_10000_barn, d.est_2500_shed
+            FROM details_bldg_fees d
+            """,
+            conn.conn,
+        )
+        if not bf_df.empty:
+            _bf_vs = bf_df["verification_status"].fillna("Pending").astype(str)
+            bf_snap["audited"] = int((_bf_vs != "Pending").sum())
+            bf_snap["farm_tiers"] = int(bf_df["has_farm_tier"].fillna("").astype(str).str.strip().str.lower().eq("yes").sum())
+            _b10 = pd.to_numeric(bf_df["est_10000_barn"], errors="coerce").dropna()
+            _s25 = pd.to_numeric(bf_df["est_2500_shed"], errors="coerce").dropna()
+            bf_snap["med_10k_barn"] = float(_b10.median()) if len(_b10) else None
+            bf_snap["med_2500_shed"] = float(_s25.median()) if len(_s25) else None
+
+        sa_df = pd.read_sql_query(
+            """
+            SELECT d.fee_verification_status, d.ag_import_fee_status, d.per_m3_rate,
+                   d.est_fee_15000_m3, d.out_of_muni_fill_ban
+            FROM details_site_alt d
+            """,
+            conn.conn,
+        )
+        if not sa_df.empty:
+            _sa_vs = sa_df["fee_verification_status"].fillna("").astype(str)
+            _sa_active = sa_df[~_sa_vs.str.contains("No Bylaw", case=False, na=False) & _sa_vs.ne("")]
+            sa_snap["active_bylaws"] = len(_sa_active)
+            sa_snap["verified"] = int(_sa_active["fee_verification_status"].fillna("").astype(str).str.startswith("Verified").sum())
+            sa_snap["exempt_zero"] = int(
+                _sa_active["ag_import_fee_status"].fillna("").astype(str).isin(["Exempt ($0)", "Waiver Available ($0 App Fee)"]).sum()
+            )
+            _m3 = pd.to_numeric(_sa_active["per_m3_rate"], errors="coerce").dropna()
+            sa_snap["per_m3_cnt"] = int((_m3 > 0).sum())
+            _e15 = pd.to_numeric(_sa_active["est_fee_15000_m3"], errors="coerce").dropna()
+            _e15_paid = _e15[_e15 > 0]
+            sa_snap["med_15k"] = float(_e15_paid.median()) if len(_e15_paid) else None
+            sa_snap["bans"] = int(
+                _sa_active["out_of_muni_fill_ban"].fillna("").astype(str).str.strip().str.lower().isin(["yes", "restricted"]).sum()
+            )
+        conn.close()
     except Exception:
         pass
 
     return {
         "total_munis": len(df),
-        "total_records": len(df) * 7,
+        "total_records": len(df) * 8,
         "total_active": total_active,
         "total_yes": total_yes,
         "total_partial": total_partial,
@@ -148,6 +184,8 @@ def load_executive_summary():
         "total_expiring": total_expiring,
         "signal_count": signal_count,
         "scorecard_df": pd.DataFrame(scorecard_rows),
+        "bf_snap": bf_snap,
+        "sa_snap": sa_snap,
     }
 
 
@@ -212,7 +250,7 @@ with nav_c3:
     with st.container(border=True):
         st.markdown("#### 📋 Data Browser")
         st.caption(
-            "Browse, search, and filter all 3,108 bylaw records across all 444 Ontario municipalities "
+            "Browse, search, and filter all 3,552 bylaw & fee records across all 444 Ontario municipalities "
             "and export custom filtered tables to CSV."
         )
         st.page_link("pages/3_📋_Data_Browser.py", label="Open Data Browser →", icon="📋", use_container_width=True)
@@ -225,13 +263,26 @@ with nav_c3:
         )
         st.page_link("pages/6_📊_Report_Generator.py", label="Open Report Generator →", icon="📊", use_container_width=True)
 
+with st.container(border=True):
+    _fc1, _fc2 = st.columns([3, 1])
+    with _fc1:
+        st.markdown("#### 🧮 Farm Permit & Soil Fee Explorer")
+        st.caption(
+            "Interactive **Farm Building Permit Fee** calculator & **Site Alteration / Excess Soil Import Fee** explorer — "
+            "compare your municipality against county neighbours, separate refundable securities from permit costs, "
+            "and export 1-page OFA council delegation briefs (.docx)."
+        )
+    with _fc2:
+        st.markdown("")
+        st.page_link("pages/7_🧮_Fee_Explorer.py", label="Open Fee Explorer →", icon="🧮", use_container_width=True)
+
 # ── Live 7-Category Province-Wide Scorecard ──
 if summary is not None:
     st.divider()
     st.markdown("### 📋 Province-Wide Bylaw Exemption Scorecard (Live Database)")
     st.caption(
-        "Counts reflect active municipal bylaws currently recorded across all 444 Ontario municipalities "
-        "(including both Lower/Single-Tier and Upper-Tier jurisdictions)."
+        "Counts reflect active municipal bylaws across the 7 binary/ternary agricultural exemption categories "
+        "(all 444 Ontario municipalities, Lower/Single-Tier and Upper-Tier)."
     )
     st.dataframe(
         summary["scorecard_df"],
@@ -247,6 +298,44 @@ if summary is not None:
             ),
         },
     )
+
+    # ── Quantitative Farm Fee Intelligence Snapshot ──
+    st.divider()
+    st.markdown("### 💰 Municipal Farm Fee Intelligence Snapshot")
+    st.caption(
+        "Quantitative cost schedules tracked separately from binary exemptions so farmers and County Federations "
+        "can benchmark real project fees without mixing incompatible metrics."
+    )
+    _bf_s = summary["bf_snap"]
+    _sa_s = summary["sa_snap"]
+    fs_col1, fs_col2 = st.columns(2)
+    with fs_col1:
+        with st.container(border=True):
+            st.markdown("#### 🏚️ Farm Building Permit Fees")
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Audited", f"{_bf_s['audited']}/{summary['total_munis']}", f"{round(_bf_s['audited']/summary['total_munis']*100, 1)}% of ON", delta_color="off")
+            m2.metric("Farm Tiers", f"{_bf_s['farm_tiers']}", "Area / stepped", delta_color="off")
+            m3.metric(
+                "Median 10k Barn",
+                f"${round(_bf_s['med_10k_barn']):,}" if _bf_s["med_10k_barn"] is not None else "—",
+                f"2.5k Shed: ${round(_bf_s['med_2500_shed']):,}" if _bf_s["med_2500_shed"] is not None else None,
+                delta_color="off",
+            )
+            st.page_link("pages/7_🧮_Fee_Explorer.py", label="Explore Building Permit Fees →", icon="🏚️", use_container_width=True)
+
+    with fs_col2:
+        with st.container(border=True):
+            st.markdown("#### 🚧 Site Alteration & Excess Soil Fees")
+            s1, s2, s3 = st.columns(3)
+            s1.metric("Active Bylaws", f"{_sa_s['active_bylaws']}", f"{_sa_s['verified']} verified", delta_color="off")
+            s2.metric("Exempt ($0)", f"{_sa_s['exempt_zero']}", f"{_sa_s['bans']} fill bans", delta_color="off")
+            s3.metric(
+                "Median (15k m³)",
+                f"${round(_sa_s['med_15k']):,}" if _sa_s["med_15k"] is not None else "—",
+                f"{_sa_s['per_m3_cnt']} per-m³ rates",
+                delta_color="off",
+            )
+            st.page_link("pages/7_🧮_Fee_Explorer.py", label="Explore Excess Soil Fees →", icon="🚧", use_container_width=True)
 
 st.divider()
 st.caption("Built for the Ontario Federation of Agriculture · Live database & cartographic boundaries synced")

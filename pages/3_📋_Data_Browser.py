@@ -350,9 +350,9 @@ elif selected_cat == "SITE_ALT" or partial_count > 0:
         if _sa_ver > 0:
             _parts = [f"💰 **Verified Fee Schedules:** {_sa_ver}"]
             if len(_sa_m3):
-                _parts.append(f"**Per-m³ Rates:** {len(_sa_m3)} (median ${_sa_m3.median():.2f}/m³)")
+                _parts.append(f"**Per-m³ Rates:** {len(_sa_m3)} (median \\${_sa_m3.median():.2f}/m³)")
             if len(_sa_15k):
-                _parts.append(f"**Median 15,000 m³ Farm Est.:** ${_sa_15k.median():,.0f}")
+                _parts.append(f"**Median 15,000 m³ Farm Est.:** \\${_sa_15k.median():,.0f}")
             st.caption("  •  ".join(_parts))
 else:
     col1, col1a, col2, col3, col4, col5 = st.columns(6)
@@ -715,7 +715,7 @@ if muni_names:
                     detail_row = detail_df.iloc[0]
                     extra_fields = []
                     for col_name in detail_df.columns:
-                        if col_name in ("id", "bylaw_id"):
+                        if col_name in ("id", "bylaw_id", "calc_spec_json", "fee_calc_spec_json"):
                             continue
                         val = detail_row[col_name]
                         if val and str(val).strip():

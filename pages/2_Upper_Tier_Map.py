@@ -22,6 +22,7 @@ from letter_engine import (
 )
 from db_utils import get_connection
 from bldg_fees_calc import evaluate_bldg_fee, fee_cost_tier_rgba
+from site_alt_fees_calc import site_alt_fee_tier_rgba
 
 st.set_page_config(page_title="Upper Tier Bylaw Exemptions Map", layout="wide")
 
@@ -156,8 +157,19 @@ def load_parquet(path):
     return gdf
 
 
+NON_LAYER_STATUS_COLS = {
+    "Municipal Status",
+    "BF Verification Status",
+    "SA Fee Verification Status",
+    "SA Ag Import Fee Status",
+}
+
+
 def find_status_columns(df: pd.DataFrame) -> list[str]:
-    return sorted([c for c in df.columns if c.strip().endswith(" Status") and c.strip() != "Municipal Status"])
+    return sorted([
+        c for c in df.columns
+        if c.strip().endswith(" Status") and c.strip() not in NON_LAYER_STATUS_COLS
+    ])
 
 
 def pick_name_field(df: pd.DataFrame) -> str:
@@ -398,6 +410,46 @@ active_status_col = f"{selected_col}__DIRECT" if (direct_only and f"{selected_co
 
 bf_bldg_type = "🐄 Livestock Barn"
 bf_tier_filter = "All"
+sa_fee_mode = False
+sa_bench_vol = 15000
+sa_fee_tier_filter = "All"
+if is_site_alt:
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🧮 Excess Soil Fee View")
+    _ut_sa_mode = st.sidebar.radio(
+        "Map Colouring Mode",
+        ["Policy Exemption (Default)", "Excess Soil Fee Tier ($)"],
+        index=0,
+        key="ut_sa_map_mode",
+        help="Default keeps standard YES/PARTIAL/NO exemption colours. Switch to view county/single-tier fee tiers.",
+    )
+    sa_fee_mode = (_ut_sa_mode == "Excess Soil Fee Tier ($)")
+    if sa_fee_mode:
+        _ut_sa_vol = st.sidebar.radio(
+            "Benchmark Volume",
+            ["500 m³ (~50 loads)", "5,000 m³ (~500 loads)", "15,000 m³ (~1,500 loads)"],
+            index=2,
+            key="ut_sa_vol",
+        )
+        sa_bench_vol = {"500 m³ (~50 loads)": 500, "5,000 m³ (~500 loads)": 5000, "15,000 m³ (~1,500 loads)": 15000}[_ut_sa_vol]
+        sa_fee_tier_filter = st.sidebar.selectbox(
+            "Excess Soil Fee Tier Filter",
+            [
+                "All",
+                "Farm Exempt ($0)",
+                "Waiver ($0 App Fee)",
+                "Low (< $1.00/m³)",
+                "Moderate ($1.00–$1.99/m³)",
+                "High (≥ $2.00/m³)",
+                "Area-Based ($/ha)",
+                "Capped / Non-Volumetric",
+                "Cost Recovery Only",
+                "Not Published Online",
+                "No Site Alt. By-law",
+            ],
+            index=0,
+        )
+
 if is_bldg_fees:
     bf_bldg_type = st.sidebar.radio(
         "Structure Type (10,000 sq. ft. Benchmark)",
@@ -419,6 +471,9 @@ if is_bldg_fees:
         ],
         index=0,
     )
+    status_filter = "All"
+    signal_filter = "All"
+elif sa_fee_mode:
     status_filter = "All"
     signal_filter = "All"
 else:
@@ -490,6 +545,33 @@ if is_bldg_fees:
     gdf_all["__BF_YEAR__"] = _bf_yrs
     gdf_all["__BF_NOTES__"] = gdf_all[_fn_col].fillna("").astype(str) if _fn_col in gdf_all.columns else ""
     gdf_all["__COLOR__"] = _bf_colors
+elif sa_fee_mode:
+    _sfx = "__DIRECT" if direct_only else ""
+    _vol_col = f"SA Est Fee {sa_bench_vol} m3{_sfx}"
+    if _vol_col not in gdf_all.columns:
+        _vol_col = f"SA Est Fee {sa_bench_vol} m3"
+    _sa_vs_col = f"SA Fee Verification Status{_sfx}" if f"SA Fee Verification Status{_sfx}" in gdf_all.columns else "SA Fee Verification Status"
+    _sa_ag_col = f"SA Ag Import Fee Status{_sfx}" if f"SA Ag Import Fee Status{_sfx}" in gdf_all.columns else "SA Ag Import Fee Status"
+    _sa_pm_col = f"SA Fee Pricing Model{_sfx}" if f"SA Fee Pricing Model{_sfx}" in gdf_all.columns else "SA Fee Pricing Model"
+    _sa_nums, _sa_disp, _sa_tiers, _sa_colors = [], [], [], []
+    for _, _row in gdf_all.iterrows():
+        _raw_v = _row.get(_vol_col, "")
+        try:
+            _v = float(_raw_v) if str(_raw_v).strip() not in ("", "nan", "None") else None
+        except Exception:
+            _v = None
+        _fvs = str(_row.get(_sa_vs_col, "") or "")
+        _ags = str(_row.get(_sa_ag_col, "") or "")
+        _pm = str(_row.get(_sa_pm_col, "") or "")
+        _rgba, _tier = site_alt_fee_tier_rgba(_v, float(sa_bench_vol), _fvs, _ags, _pm)
+        _sa_nums.append(_v)
+        _sa_disp.append(f"${_v:,.0f}" if _v is not None else _tier)
+        _sa_tiers.append(_tier)
+        _sa_colors.append(_rgba)
+    gdf_all["__SA_FEE_NUM__"] = _sa_nums
+    gdf_all["__SA_FEE_DISPLAY__"] = _sa_disp
+    gdf_all["__SA_FEE_TIER__"] = _sa_tiers
+    gdf_all["__COLOR__"] = _sa_colors
 else:
     gdf_all["__COLOR__"] = gdf_all["__STATUS__"].apply(status_color)
 gdf_all = add_expiry_signal_columns(gdf_all, selected_label, direct_only=direct_only)
@@ -500,6 +582,9 @@ match_mask = pd.Series(True, index=gdf_all.index)
 if is_bldg_fees:
     if bf_tier_filter != "All":
         match_mask &= gdf_all["__BF_TIER__"].eq(bf_tier_filter)
+elif sa_fee_mode:
+    if sa_fee_tier_filter != "All":
+        match_mask &= gdf_all["__SA_FEE_TIER__"].eq(sa_fee_tier_filter)
 else:
     if status_filter != "All":
         match_mask &= gdf_all["__STATUS__"].eq(status_filter)
@@ -592,8 +677,22 @@ if is_bldg_fees:
     c5.metric("Local / Urban / Pending", f"{_n_local} / {_n_urban} / {_n_pend}")
     st.caption(
         f"Showing **{bf_bldg_type.split(' ', 1)[1]} (10,000 ft²)** — {_mode_lbl}.  "
-        "Legend: 🟩 Low (< $0.28/ft²) • 🟦 Moderate ($0.28–$0.37/ft²) • 🟨 High ($0.37–$0.48/ft²) • "
-        "🟥 Very High (≥ $0.48/ft²) • ⬜ Local Jurisdiction / Urban ICI • 🟫 Pending"
+        r"Legend: 🟩 Low (< \$0.28/ft²) • 🟦 Moderate (\$0.28–\$0.37/ft²) • 🟨 High (\$0.37–\$0.48/ft²) • "
+        r"🟥 Very High (≥ \$0.48/ft²) • ⬜ Local Jurisdiction / Urban ICI • 🟫 Pending"
+    )
+elif sa_fee_mode:
+    _sa_active = gdf_match[gdf_match["__SA_FEE_TIER__"] != "No Site Alt. By-law"]
+    _sa_paid = _sa_active[_sa_active["__SA_FEE_NUM__"].notna() & (_sa_active["__SA_FEE_NUM__"] > 0)]
+    _sa_ex = int(_sa_active["__SA_FEE_TIER__"].isin(["Farm Exempt ($0)", "Waiver ($0 App Fee)"]).sum())
+    _mode_lbl = "Direct Upper/Single Tier" if direct_only else "County Lower-Tier Median"
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric(f"Active ({_mode_lbl})", f"{len(_sa_active)}")
+    c2.metric("Farm Exempt ($0)", f"{_sa_ex}")
+    c3.metric(f"Paid ({sa_bench_vol:,} m³)", f"{len(_sa_paid)}")
+    c4.metric("Median Paid Fee", f"${_sa_paid['__SA_FEE_NUM__'].median():,.0f}" if len(_sa_paid) else "—")
+    st.caption(
+        f"Showing **{sa_bench_vol:,} m³ (~{sa_bench_vol // 10:,} loads)** Excess Soil fee tiers — {_mode_lbl}.  "
+        r"Legend: 🟩 Farm Exempt (\$0) • 🟦 Low (< \$1/m³) • 🟨 Moderate (\$1–\$1.99/m³) • 🟥 High (≥ \$2/m³) • ⬛ Area (\$/ha) • ⬜ No Bylaw"
     )
 else:
     counts = gdf_match["__STATUS__"].value_counts()
@@ -665,6 +764,8 @@ gdf_view["__BORDER_COLOR__"] = gdf_view.apply(get_border_color, axis=1)
 geom_col = gdf_view.geometry.name
 if is_bldg_fees:
     props_df = gdf_view[[name_field, "__BF_EST_DISPLAY__", "__BF_TIER__", "__BF_AUTH__", "__BF_YEAR__", "__COLOR__", "__BYLAW_NAME__", "__BYLAW_LINK__", "__BORDER_COLOR__", "__LINE_WIDTH__", geom_col]].copy()
+elif sa_fee_mode:
+    props_df = gdf_view[[name_field, "__STATUS__", "__SA_FEE_DISPLAY__", "__SA_FEE_TIER__", "__COLOR__", "__BYLAW_NAME__", "__BYLAW_LINK__", "__BORDER_COLOR__", "__LINE_WIDTH__", geom_col]].copy()
 else:
     props_df = gdf_view[[name_field, "__STATUS__", "__COLOR__", "__EXPIRY__", "__SIGNAL__", "__BYLAW_NAME__", "__BYLAW_LINK__", "__BORDER_COLOR__", "__LINE_WIDTH__", geom_col]].copy()
 geojson = json.loads(props_df.to_json())
@@ -673,7 +774,7 @@ layer = pdk.Layer(
     "GeoJsonLayer",
     geojson,
     pickable=True,
-    opacity=0.65 if is_bldg_fees else 0.5,
+    opacity=0.65 if (is_bldg_fees or sa_fee_mode) else 0.5,
     stroked=True,
     filled=True,
     extruded=False,
@@ -695,6 +796,14 @@ _upper_tip = (
         "By-law: {__BYLAW_NAME__}"
     )
     if is_bldg_fees
+    else (
+        f"{{{name_field}}}\n"
+        "Farm Exemption: {__STATUS__}\n"
+        f"{'Direct' if direct_only else 'Median'} {sa_bench_vol:,} m³ Fee: {{__SA_FEE_DISPLAY__}}\n"
+        "Fee Tier: {__SA_FEE_TIER__}\n"
+        "By-law: {__BYLAW_NAME__}"
+    )
+    if sa_fee_mode
     else (
         f"{{{name_field}}}\n"
         "Status: {__STATUS__}\n"
@@ -752,7 +861,7 @@ if len(detail_row) == 1:
         st.sidebar.markdown(f"**Authority:** {r.get('__BF_AUTH__', '—')}")
         st.sidebar.markdown(f"**Fee Year:** {r.get('__BF_YEAR__', '—')}")
         if str(r.get("__BF_NOTES__", "") or "").strip():
-            st.sidebar.info(str(r.get("__BF_NOTES__")))
+            st.sidebar.info(str(r.get("__BF_NOTES__")).replace("$", r"\$"))
     else:
         st.sidebar.markdown(f"**Status:** {str(r.get('__STATUS__', 'N/A') or 'N/A')}")
         st.sidebar.markdown(f"**Expiry signal:** {str(r.get('__SIGNAL__', '') or '').strip() or '—'}")
@@ -1132,17 +1241,39 @@ if st.sidebar.button("Generate CSV Report", key="upper_csv_btn"):
 
 # ---------- Legend ----------
 with st.expander("Legend", expanded=False):
-    st.markdown(
-        "- **YES** = green  \n"
-        "- **NO** = red  \n"
-        "- **N/A** = gray  \n"
-        "- **Other/blank** = blue  \n"
-        "- **Orange outline** = expiring soon  \n"
-        "- **Black outline** = expired  \n"
-        "- **Yellow outline** = expiry unknown (bylaw exists)  \n"
-        "- **Red-orange outline** = mentioned in recent council minutes/agendas  \n"
-        "- **Highlight mode** dims non-matches instead of removing them"
-    )
+    if is_bldg_fees:
+        st.markdown(
+            "- **Sage Green** = Low (< `$0.28/ft²` eff.)  \n"
+            "- **Bluewood-Teal** = Moderate (`$0.28–$0.37/ft²` eff.)  \n"
+            "- **OFA Gold** = High (`$0.37–$0.48/ft²` eff.)  \n"
+            "- **OFA Crimson** = Very High (`≥ $0.48/ft²` eff.)  \n"
+            "- **Deep Slate** = Valuation-Based (`$/$1,000` CV)  \n"
+            "- **Warm/Steel Gray** = Local Jurisdiction (Lower Tier) / Urban ICI  \n"
+            "- **Highlight mode** dims non-matches instead of removing them"
+        )
+    elif sa_fee_mode:
+        st.markdown(
+            "- **Sage Green** = Farm Exempt (`$0`) or `$0` Waiver  \n"
+            "- **Bluewood-Teal** = Low (`< $1.00/m³` eff.)  \n"
+            "- **OFA Gold** = Moderate (`$1.00–$1.99/m³` eff.)  \n"
+            "- **OFA Crimson** = High (`≥ $2.00/m³` eff.)  \n"
+            "- **Deep Slate** = Area-Based (`$/ha`) or Cost Recovery Only  \n"
+            "- **Warm Gray** = No Site Alteration By-law  \n"
+            "- **Highlight mode** dims non-matches instead of removing them"
+        )
+    else:
+        st.markdown(
+            "- **YES** = green  \n"
+            "- **PARTIAL** = amber (statutory minimum only, e.g. Site Alteration)  \n"
+            "- **NO** = red  \n"
+            "- **N/A** = gray  \n"
+            "- **Other/blank** = blue  \n"
+            "- **Orange outline** = expiring soon  \n"
+            "- **Black outline** = expired  \n"
+            "- **Yellow outline** = expiry unknown (bylaw exists)  \n"
+            "- **Red-orange outline** = mentioned in recent council minutes/agendas  \n"
+            "- **Highlight mode** dims non-matches instead of removing them"
+        )
 
 # ---------- Results table + export ----------
 with st.expander("Results (filtered) – table + export", expanded=False):

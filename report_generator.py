@@ -1614,3 +1614,346 @@ def generate_report(scope="provincial", scope_value=None, include_full_wordings=
     doc.save(buffer)
     buffer.seek(0)
     return buffer
+
+
+# ══════════════════════════════════════════════════════════════
+# Additive Helper: 1–2 Page OFA Council Fee Comparison Brief
+# (Used exclusively by pages/7_🧮_Fee_Explorer.py; leaves generate_report untouched)
+# ══════════════════════════════════════════════════════════════
+
+def generate_fee_comparison_brief(
+    focus_muni: str,
+    peer_munis: list[str],
+    topic: str = "bldg_fees",
+    bldg_sqft: int = 10000,
+    is_livestock: bool = True,
+    assumed_cost_per_sqft: float | None = None,
+    sa_volume_m3: int = 15000,
+) -> io.BytesIO:
+    """Generate a concise 1–2 page OFA-branded Council Delegation Fee Comparison Brief (.docx).
+
+    Args:
+        focus_muni: Primary municipality being spotlighted (highlighted in OFA Crimson tint).
+        peer_munis: Ordered list of comparator municipalities (including or excluding focus_muni).
+        topic: 'bldg_fees', 'site_alt', or 'combined'.
+        bldg_sqft: Reference farm building footprint in sq. ft.
+        is_livestock: True for Livestock Barn, False for Equipment / Drive Shed.
+        assumed_cost_per_sqft: Optional $/ft² assumption applied ONLY to valuation-based BLDG_FEES rows.
+        sa_volume_m3: Reference imported clean topsoil/fill volume in m³.
+    """
+    from db_utils import get_category_summary
+    from bldg_fees_calc import evaluate_bldg_fee
+    from site_alt_fees_calc import evaluate_site_alt_fee
+
+    target_munis = [focus_muni] + [m for m in peer_munis if m != focus_muni]
+    conn = get_connection()
+    bf_all = get_category_summary(conn, "BLDG_FEES") if topic in ("bldg_fees", "combined") else pd.DataFrame()
+    sa_all = get_category_summary(conn, "SITE_ALT") if topic in ("site_alt", "combined") else pd.DataFrame()
+    conn.close()
+
+    doc = Document()
+    style = doc.styles["Normal"]
+    style.font.name = FONT_NAME
+    style.font.size = Pt(9.5)
+    style.font.color.rgb = DARK_TEXT
+    _configure_page_and_footer(doc)
+
+    # Compact OFA Header Banner (Logo + Title on page 1 — handout ready, no cover page bloat)
+    hdr_tbl = doc.add_table(rows=1, cols=2)
+    hdr_tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+    _set_table_fixed_width(hdr_tbl, [1.55, 5.45])
+    c_logo, c_title = hdr_tbl.rows[0].cells
+    _set_cell_margins(c_logo, top=40, bottom=40, left=40, right=60)
+    _set_cell_margins(c_title, top=40, bottom=40, left=80, right=40)
+    if os.path.exists(LOGO_PATH):
+        p_logo = c_logo.paragraphs[0]
+        p_logo.add_run().add_picture(LOGO_PATH, width=Inches(1.35))
+    else:
+        _set_cell(c_logo, "OFA", bold=True, size=Pt(14), color=OFA_CRIMSON)
+
+    topic_titles = {
+        "bldg_fees": "Municipal Farm Building Permit Fee Comparison Brief",
+        "site_alt": "Municipal Site Alteration & Excess Soil Fee Comparison Brief",
+        "combined": "Municipal Farm Permit & Excess Soil Fee Comparison Brief",
+    }
+    p_t = c_title.paragraphs[0]
+    p_t.paragraph_format.space_after = Pt(2)
+    rt = p_t.add_run(topic_titles.get(topic, topic_titles["bldg_fees"]))
+    rt.font.name = FONT_NAME
+    rt.font.size = Pt(14)
+    rt.bold = True
+    rt.font.color.rgb = OFA_BLUEWOOD
+
+    p_sub = c_title.add_paragraph()
+    p_sub.paragraph_format.space_before = Pt(0)
+    p_sub.paragraph_format.space_after = Pt(0)
+    rs = p_sub.add_run(
+        f"Prepared for {focus_muni} Council Delegation · {len(target_munis)} Municipalities Compared · "
+        f"Ontario Federation of Agriculture · {datetime.date.today().strftime('%B %d, %Y')}"
+    )
+    rs.font.name = FONT_NAME
+    rs.font.size = Pt(8.5)
+    rs.font.color.rgb = MUTED_TEXT
+
+    # Accent divider line
+    p_div = doc.add_paragraph()
+    p_div.paragraph_format.space_before = Pt(2)
+    p_div.paragraph_format.space_after = Pt(8)
+    _set_paragraph_shading_and_border(p_div, bottom_border_hex=VALENCIA_HEX)
+
+    def _add_callout(label_txt: str, body_txt: str, border_hex: str = HEADER_BG):
+        p = doc.add_paragraph()
+        p.paragraph_format.space_before = Pt(4)
+        p.paragraph_format.space_after = Pt(6)
+        p.paragraph_format.left_indent = Inches(0.06)
+        _set_paragraph_shading_and_border(p, fill_hex=WARM_TINT_BG, left_border_hex=border_hex, left_sz="18")
+        r1 = p.add_run(f"{label_txt}: ")
+        r1.font.name = FONT_NAME
+        r1.font.size = Pt(9)
+        r1.bold = True
+        r1.font.color.rgb = OFA_BLUEWOOD
+        r2 = p.add_run(_sanitize_xml(body_txt))
+        r2.font.name = FONT_NAME
+        r2.font.size = Pt(9)
+        r2.font.color.rgb = DARK_TEXT
+
+    def _fmt_d(val):
+        if val is None or (isinstance(val, float) and pd.isna(val)):
+            return "—"
+        return f"${round(float(val)):,}"
+
+    # ── SECTION A: FARM BUILDING PERMIT FEES ──
+    if topic in ("bldg_fees", "combined") and not bf_all.empty:
+        struct_lbl = "Livestock Barn" if is_livestock else "Equipment / Drive Shed"
+        h_bf = doc.add_paragraph()
+        h_bf.paragraph_format.space_before = Pt(4)
+        h_bf.paragraph_format.space_after = Pt(3)
+        rh = h_bf.add_run(f"Farm Building Permit Fees — {bldg_sqft:,} sq. ft. {struct_lbl}")
+        rh.font.name = FONT_NAME
+        rh.font.size = Pt(11.5)
+        rh.bold = True
+        rh.font.color.rgb = OFA_CRIMSON
+
+        # Compute provincial median on area/stepped farm schedules
+        _prov_vals = []
+        for _, _pr in bf_all.iterrows():
+            _pv = evaluate_bldg_fee(_pr, float(bldg_sqft), is_livestock=is_livestock, assumed_cost_per_sqft=None)
+            if _pv is not None and str(_pr.get("name", "")) != "Moosonee":
+                _prov_vals.append(_pv)
+        prov_med = float(pd.Series(_prov_vals).median()) if _prov_vals else None
+
+        sub_bf = bf_all[bf_all["name"].isin(target_munis)].copy()
+        rows_data = []
+        focus_row = None
+        for nm in target_munis:
+            m_df = sub_bf[sub_bf["name"] == nm]
+            if m_df.empty:
+                continue
+            r = m_df.iloc[0]
+            est = evaluate_bldg_fee(r, float(bldg_sqft), is_livestock=is_livestock, assumed_cost_per_sqft=assumed_cost_per_sqft)
+            est_base = evaluate_bldg_fee(r, float(bldg_sqft), is_livestock=is_livestock, assumed_cost_per_sqft=None)
+            is_val_est = (est is not None and est_base is None and assumed_cost_per_sqft is not None)
+            item = {
+                "name": nm,
+                "area": _clean(r.get("geographic_area")),
+                "est": est,
+                "est_disp": (f"{_fmt_d(est)} (Est.)" if is_val_est else _fmt_d(est)) if est is not None else _clean(r.get("pricing_model"), max_len=28),
+                "eff_disp": f"${est / bldg_sqft:.2f}/ft²" if est is not None else "—",
+                "year": str(int(float(r["fee_year"]))) if pd.notna(r.get("fee_year")) and str(r.get("fee_year")).strip() else "—",
+                "model": _clean(r.get("pricing_model"), max_len=36, single_line=True),
+                "bylaw": _clean(r.get("bylaw_name"), max_len=48, single_line=True),
+                "url": _valid_url(r.get("bylaw_link")),
+                "deposit": _clean(r.get("refundable_deposit"), single_line=True),
+                "formula": _clean(r.get("formula_notes"), single_line=True),
+            }
+            rows_data.append(item)
+            if nm == focus_muni:
+                focus_row = item
+
+        # Sort priced rows high-to-low, then non-priced
+        rows_data.sort(key=lambda x: (x["est"] is None, -(x["est"] or 0.0), x["name"]))
+
+        if focus_row:
+            if focus_row["est"] is not None and prov_med:
+                pct_diff = round((focus_row["est"] - prov_med) / prov_med * 100)
+                rel = f"{abs(pct_diff)}% {'above' if pct_diff > 0 else 'below'} the Ontario area-based median ({_fmt_d(prov_med)})" if pct_diff != 0 else f"equal to the Ontario median ({_fmt_d(prov_med)})"
+                _add_callout(
+                    f"{focus_muni} Snapshot",
+                    f"Estimated non-refundable permit fee of {focus_row['est_disp']} ({focus_row['eff_disp']}) — {rel}. "
+                    f"Formula notes: {focus_row['formula']} | Deposits/Surcharges: {focus_row['deposit']}.",
+                    border_hex=VALENCIA_HEX,
+                )
+            else:
+                _add_callout(
+                    f"{focus_muni} Snapshot",
+                    f"Pricing model: {focus_row['model']}. {focus_row['formula']}",
+                    border_hex=VALENCIA_HEX,
+                )
+
+        if assumed_cost_per_sqft is not None:
+            p_assump = doc.add_paragraph()
+            p_assump.paragraph_format.space_after = Pt(4)
+            ra = p_assump.add_run(
+                f"Note: Rows marked '(Est.)' use a user-selected construction value assumption of ${round(assumed_cost_per_sqft):,}/ft² applied solely to valuation-based ($/$1,000 CV) schedules."
+            )
+            ra.font.name = FONT_NAME
+            ra.font.size = Pt(8)
+            ra.italic = True
+            ra.font.color.rgb = MUTED_TEXT
+
+        widths = [1.45, 0.90, 0.78, 0.45, 1.52, 1.90]
+        tbl = doc.add_table(rows=1 + len(rows_data), cols=6)
+        tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+        _set_table_fixed_width(tbl, widths)
+        _set_table_borders(tbl)
+        hdrs = ["Municipality", f"{bldg_sqft:,} ft² Fee", "Eff. Rate", "Year", "Pricing Model", "Source By-law"]
+        _set_row_header(tbl.rows[0])
+        _set_row_cant_split(tbl.rows[0])
+        for ci, htxt in enumerate(hdrs):
+            cell = tbl.rows[0].cells[ci]
+            _set_cell_shading(cell, HEADER_BG)
+            _set_cell_margins(cell, top=55, bottom=55, left=65, right=65)
+            _set_cell(cell, htxt, bold=True, size=Pt(8.5), color=WHITE)
+
+        for ri, it in enumerate(rows_data, start=1):
+            row = tbl.rows[ri]
+            _set_row_cant_split(row)
+            is_f = (it["name"] == focus_muni)
+            bg = "FDECEC" if is_f else (WARM_TINT_BG if ri % 2 == 0 else None)
+            bylaw_val = {"text": it["bylaw"], "url": it["url"]} if it["url"] else it["bylaw"]
+            vals = [it["name"], it["est_disp"], it["eff_disp"], it["year"], it["model"], bylaw_val]
+            for ci, v in enumerate(vals):
+                cell = row.cells[ci]
+                if bg:
+                    _set_cell_shading(cell, bg)
+                _set_cell_margins(cell, top=45, bottom=45, left=65, right=65)
+                _set_cell(
+                    cell,
+                    v,
+                    bold=(is_f and ci in (0, 1)),
+                    size=Pt(8.2),
+                    color=(OFA_CRIMSON if (is_f and ci in (0, 1)) else DARK_TEXT),
+                    align=(WD_ALIGN_PARAGRAPH.RIGHT if ci in (1, 2, 3) else None),
+                )
+
+        _add_callout(
+            "Statutory Context (Building Code Act, 1992, s. 7)",
+            "Section 7(2) caps total building permit fees at reasonable municipal cost recovery (fees cannot fund general revenue). "
+            "Section 7(4)–(8) requires annual public Building Reserve Fund reporting and advance public notice + cost justification before fee increases.",
+            border_hex=HEADER_BG,
+        )
+
+    # ── SECTION B: SITE ALTERATION & EXCESS SOIL FEES ──
+    if topic in ("site_alt", "combined") and not sa_all.empty:
+        h_sa = doc.add_paragraph()
+        h_sa.paragraph_format.space_before = Pt(8 if topic == "combined" else 4)
+        h_sa.paragraph_format.space_after = Pt(3)
+        rh = h_sa.add_run(f"Site Alteration & Excess Soil Fees — {sa_volume_m3:,} m³ (~{sa_volume_m3 // 10:,} Tri-Axle Loads)")
+        rh.font.name = FONT_NAME
+        rh.font.size = Pt(11.5)
+        rh.bold = True
+        rh.font.color.rgb = OFA_CRIMSON
+
+        sub_sa = sa_all[sa_all["name"].isin(target_munis)].copy()
+        sa_rows = []
+        sa_focus = None
+        for nm in target_munis:
+            m_df = sub_sa[sub_sa["name"] == nm]
+            if m_df.empty:
+                continue
+            r = m_df.iloc[0]
+            est = evaluate_site_alt_fee(r, float(sa_volume_m3))
+            pm = _clean(r.get("fee_pricing_model"), single_line=True)
+            fvs = _clean(r.get("fee_verification_status"), single_line=True)
+            if est is not None:
+                est_disp = "$0 (Exempt)" if est <= 0 else _fmt_d(est)
+            elif "hectare" in pm.lower():
+                est_disp = "Per Hectare"
+            elif "no bylaw" in fvs.lower():
+                est_disp = "No Bylaw ($0)"
+            else:
+                est_disp = fvs if fvs != "—" else "—"
+            item = {
+                "name": nm,
+                "exempt": _resolve(r.get("exemption_status")),
+                "ag_fee": _clean(r.get("ag_import_fee_status"), max_len=24, single_line=True),
+                "est": est,
+                "est_disp": est_disp,
+                "ban": _clean(r.get("out_of_muni_fill_ban"), single_line=True),
+                "security": _clean(r.get("security_deposit_terms"), max_len=46, single_line=True),
+                "peer_rev": _clean(r.get("peer_review_recovery"), single_line=True),
+                "bylaw": _clean(r.get("fees_bylaw_name") or r.get("bylaw_name"), max_len=44, single_line=True),
+                "url": _valid_url(r.get("fees_bylaw_link")) or _valid_url(r.get("bylaw_link")),
+                "formula": _clean(r.get("fee_formula_notes"), single_line=True),
+            }
+            sa_rows.append(item)
+            if nm == focus_muni:
+                sa_focus = item
+
+        sa_rows.sort(key=lambda x: (x["est"] is None, -(x["est"] or -1.0), x["name"]))
+
+        if sa_focus:
+            _add_callout(
+                f"{focus_muni} Excess Soil Snapshot",
+                f"Farm Exemption: {sa_focus['exempt']} · Ag Import Fee Status: {sa_focus['ag_fee']} · "
+                f"Est. Permit Fee ({sa_volume_m3:,} m³): {sa_focus['est_disp']} · Out-of-Muni Fill Ban: {sa_focus['ban']}. "
+                f"Refundable Securities: {sa_focus['security']} | Peer Review Recovery: {sa_focus['peer_rev']}.",
+                border_hex=VALENCIA_HEX,
+            )
+
+        widths = [1.30, 0.62, 1.15, 0.88, 1.45, 1.60]
+        tbl = doc.add_table(rows=1 + len(sa_rows), cols=6)
+        tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+        _set_table_fixed_width(tbl, widths)
+        _set_table_borders(tbl)
+        hdrs = ["Municipality", "Exemp.", "Ag Import Fee", f"{sa_volume_m3:,} m³ Fee", "Refundable Security", "Source By-law"]
+        _set_row_header(tbl.rows[0])
+        _set_row_cant_split(tbl.rows[0])
+        for ci, htxt in enumerate(hdrs):
+            cell = tbl.rows[0].cells[ci]
+            _set_cell_shading(cell, HEADER_BG)
+            _set_cell_margins(cell, top=55, bottom=55, left=55, right=55)
+            _set_cell(cell, htxt, bold=True, size=Pt(8.2), color=WHITE)
+
+        for ri, it in enumerate(sa_rows, start=1):
+            row = tbl.rows[ri]
+            _set_row_cant_split(row)
+            is_f = (it["name"] == focus_muni)
+            bg = "FDECEC" if is_f else (WARM_TINT_BG if ri % 2 == 0 else None)
+            bylaw_val = {"text": it["bylaw"], "url": it["url"]} if it["url"] else it["bylaw"]
+            vals = [it["name"], it["exempt"], it["ag_fee"], it["est_disp"], it["security"], bylaw_val]
+            for ci, v in enumerate(vals):
+                cell = row.cells[ci]
+                if bg:
+                    _set_cell_shading(cell, bg)
+                _set_cell_margins(cell, top=45, bottom=45, left=55, right=55)
+                _set_cell(
+                    cell,
+                    v,
+                    bold=(is_f and ci in (0, 3)),
+                    size=Pt(8.0),
+                    color=(OFA_CRIMSON if (is_f and ci in (0, 3)) else DARK_TEXT),
+                    align=(WD_ALIGN_PARAGRAPH.RIGHT if ci == 3 else None),
+                )
+
+        _add_callout(
+            "Policy Context (Normal Farm Practice & O. Reg. 406/19)",
+            "OFA advocates for clear agricultural exemptions for normal farm practices under the FFPPA and provincial excess soil rules "
+            "(O. Reg. 406/19) that place soil-quality testing responsibility on the generator rather than imposing punitive volumetric fees or retainers on receiving farms.",
+            border_hex=HEADER_BG,
+        )
+
+    p_src = doc.add_paragraph()
+    p_src.paragraph_format.space_before = Pt(6)
+    r_s = p_src.add_run(
+        "Source: Ontario Federation of Agriculture Municipal Bylaw Database (primary-source audited municipal by-laws & user fee schedules). "
+        "Non-refundable permit fees are reported separately from refundable securities, deposits, and peer-review retainers. Always verify current schedules with the municipal clerk."
+    )
+    r_s.font.name = FONT_NAME
+    r_s.font.size = Pt(7.8)
+    r_s.font.color.rgb = MUTED_TEXT
+
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
