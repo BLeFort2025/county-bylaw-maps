@@ -101,19 +101,24 @@ def _eval_spec(
 
     if stype == "excess_over":
         # e.g. Norwich / Plympton-Wyoming: base + rate * max(0, sqft - threshold)
-        # Optional `step_sqft` rounds excess up to whole increments ("or part thereof", e.g. Calvin per 10 m²)
+        # Optional `step_sqft` rounds excess up to whole increments ("or part thereof", e.g. Calvin per 10 m², Emo per 200 ft²)
+        # Optional `max_fee` caps the total fee (e.g. Emo $2,000 maximum building permit fee)
         branch = spec.get("livestock" if is_livestock else "other_farm") or spec
         base = _to_float(branch.get("base")) or 0.0
         thresh = _to_float(branch.get("threshold_sqft")) or 0.0
         rate = _to_float(branch.get("rate")) or 0.0
         step = _to_float(branch.get("step_sqft"))
         mn = _to_float(branch.get("min_fee")) or 0.0
+        mx = _to_float(branch.get("max_fee"))
         excess = max(0.0, float(sqft) - thresh)
         if step is not None and step > 0:
-            val = base + math.ceil(excess / step) * rate
+            val = base + math.ceil(round(excess / step, 9)) * rate
         else:
             val = base + excess * rate
-        return round(max(mn, val), 2)
+        val = max(mn, val)
+        if mx is not None:
+            val = min(mx, val)
+        return round(val, 2)
 
     if stype == "tiered_marginal":
         # e.g. West Perth / West Grey / Adelaide-Metcalfe: base + marginal brackets [(up_to_sqft, rate), ...]
