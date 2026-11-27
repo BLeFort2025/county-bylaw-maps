@@ -856,8 +856,8 @@ if len(detail_row) == 1:
 
     st.sidebar.markdown(f"**Selected bylaw topic:** {selected_label}")
     if is_bldg_fees:
-        st.sidebar.markdown(f"**Cost Tier:** {r.get('__BF_TIER__', '—')}")
-        st.sidebar.markdown(f"**{'Direct' if direct_only else 'Median'} 10,000 ft² {'Barn' if bf_bldg_type == '🐄 Livestock Barn' else 'Shed'}:** {r.get('__BF_EST_DISPLAY__', '—')}")
+        st.sidebar.markdown(f"**Cost Tier:** {str(r.get('__BF_TIER__', '—')).replace('$', chr(92) + '$')}")
+        st.sidebar.markdown(f"**{'Direct' if direct_only else 'Median'} 10,000 ft² {'Barn' if bf_bldg_type == '🐄 Livestock Barn' else 'Shed'}:** {str(r.get('__BF_EST_DISPLAY__', '—')).replace('$', chr(92) + '$')}")
         st.sidebar.markdown(f"**Authority:** {r.get('__BF_AUTH__', '—')}")
         st.sidebar.markdown(f"**Fee Year:** {r.get('__BF_YEAR__', '—')}")
         if str(r.get("__BF_NOTES__", "") or "").strip():

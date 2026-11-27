@@ -949,10 +949,10 @@ elif sa_fee_mode:
     c1, c2, c3, c4, c5, c6 = st.columns(6)
     c1.metric("Active SA Bylaws", f"{len(_sa_active)}")
     c2.metric("Farm Exempt ($0)", f"{_sa_exempt}")
-    c3.metric(f"Paid Schedules ({sa_volume_m3:,} m³)", f"{len(_sa_paid)}")
+    c3.metric("Paid Schedules", f"{len(_sa_paid)}", f"at {sa_volume_m3:,} m³", delta_color="off")
     c4.metric("Median Paid Fee", f"${_med_paid:,.0f}" if _med_paid is not None else "—")
     c5.metric("Area ($/ha) / Offline", f"{_sa_area} / {_sa_offline}")
-    c6.metric("Out-of-Muni Ban/Restr.", f"{_sa_bans}")
+    c6.metric("Out-of-Muni Bans", f"{_sa_bans}")
     st.caption(
         f"Showing **{sa_volume_m3:,} m³ (~{sa_volume_m3 // 10:,} tri-axle loads)** Excess Soil fee tiers ({len(gdf_match)} of {len(gdf_all)} municipalities).  "
         r"Fee tier legend: 🟩 Farm Exempt (\$0) / Waiver • 🟦 Low (< \$1/m³) • 🟨 Moderate (\$1–\$1.99/m³) • "
@@ -1202,27 +1202,27 @@ if len(detail_row) == 1:
         }
         _est_live = evaluate_bldg_fee(_r_pay, bf_sqft, is_livestock=True, assumed_cost_per_sqft=bf_assumed_cost)
         _est_shed = evaluate_bldg_fee(_r_pay, bf_sqft, is_livestock=False, assumed_cost_per_sqft=bf_assumed_cost)
-        st.sidebar.markdown(f"**Audit Status:** {str(r.get('BF Verification Status', '') or 'Pending')} ({r.get('__BF_YEAR__', '—')})")
-        st.sidebar.markdown(f"**Cost Tier:** {r.get('__BF_TIER__', '—')}")
+        st.sidebar.markdown(f"**Audit Status:** {_md_safe(str(r.get('BF Verification Status', '') or 'Pending'))} ({r.get('__BF_YEAR__', '—')})")
+        st.sidebar.markdown(f"**Cost Tier:** {_md_safe(r.get('__BF_TIER__', '—'))}")
         if _est_live is not None or _est_shed is not None:
             _sc1, _sc2 = st.sidebar.columns(2)
             _sc1.metric(f"🐄 {bf_sqft:,} ft² Barn", f"${_est_live:,.0f}" if _est_live is not None else "—")
             _sc2.metric(f"🚜 {bf_sqft:,} ft² Shed", f"${_est_shed:,.0f}" if _est_shed is not None else "—")
             if bf_assumed_cost is not None and evaluate_bldg_fee(_r_pay, bf_sqft, is_livestock=True) is None:
-                st.sidebar.caption(f"*Valuation estimate using assumed ${bf_assumed_cost:,.0f}/ft² construction cost.*")
+                st.sidebar.caption(f"*Valuation estimate using assumed \\${bf_assumed_cost:,.0f}/ft² construction cost.*")
         st.sidebar.page_link("pages/7_🧮_Fee_Explorer.py", label="📊 Compare Peers in Fee Explorer →", use_container_width=True)
-        st.sidebar.markdown(f"**Pricing Model:** {r.get('__BF_MODEL__', '—')}")
-        st.sidebar.markdown(f"**Authority:** {r.get('__BF_AUTH__', 'Municipal')}")
+        st.sidebar.markdown(f"**Pricing Model:** {_md_safe(r.get('__BF_MODEL__', '—'))}")
+        st.sidebar.markdown(f"**Authority:** {_md_safe(r.get('__BF_AUTH__', 'Municipal'))}")
         if str(r.get("BF Silo Grain Bin Fee", "") or "").strip():
-            st.sidebar.markdown(f"**Silo / Grain Bin:** {r.get('BF Silo Grain Bin Fee')}")
+            st.sidebar.markdown(f"**Silo / Grain Bin:** {_md_safe(r.get('BF Silo Grain Bin Fee'))}")
         if str(r.get("BF Manure Storage Fee", "") or "").strip():
-            st.sidebar.markdown(f"**Manure Storage:** {r.get('BF Manure Storage Fee')}")
+            st.sidebar.markdown(f"**Manure Storage:** {_md_safe(r.get('BF Manure Storage Fee'))}")
         if str(r.get("BF Greenhouse Tarp Fee", "") or "").strip():
-            st.sidebar.markdown(f"**Greenhouse / Tarp:** {r.get('BF Greenhouse Tarp Fee')}")
+            st.sidebar.markdown(f"**Greenhouse / Tarp:** {_md_safe(r.get('BF Greenhouse Tarp Fee'))}")
         if str(r.get("BF Refundable Deposit", "") or "").strip():
-            st.sidebar.markdown(f"**Deposit / Surcharges:** {r.get('BF Refundable Deposit')}")
+            st.sidebar.markdown(f"**Deposit / Surcharges:** {_md_safe(r.get('BF Refundable Deposit'))}")
         if str(r.get("BF Formula Notes", "") or "").strip():
-            st.sidebar.info(str(r.get("BF Formula Notes")).replace("$", r"\$"))
+            st.sidebar.info(_md_safe(r.get("BF Formula Notes")))
     else:
         st.sidebar.markdown(f"**Status:** {str(r.get('__STATUS__', 'N/A') or 'N/A')}")
         st.sidebar.markdown(f"**Expiry signal:** {str(r.get('__SIGNAL__', '') or '').strip() or '—'}")
@@ -1243,13 +1243,13 @@ if len(detail_row) == 1:
                 st.sidebar.markdown("---")
                 st.sidebar.markdown(f"**💰 Excess Soil / Fill Fees** ({_sa_fvs}{f' · {_sa_fy}' if _sa_fy and _sa_fy.lower() != 'nan' else ''})")
                 if _sa_ags:
-                    st.sidebar.markdown(f"**Ag Import Fee Status:** {_sa_ags}")
+                    st.sidebar.markdown(f"**Ag Import Fee Status:** {_md_safe(_sa_ags)}")
                 st.sidebar.metric(f"Est. Permit Fee ({sa_volume_m3:,} m³)", str(r.get("__SA_FEE_DISPLAY__", "—")))
                 if _sa_pm:
-                    st.sidebar.markdown(f"**Fee Pricing Model:** {_sa_pm}")
+                    st.sidebar.markdown(f"**Fee Pricing Model:** {_md_safe(_sa_pm)}")
                 if _sa_rate and _sa_rate.lower() != "nan":
                     try:
-                        st.sidebar.markdown(f"**Volumetric Rate:** ${float(_sa_rate):,.2f}/m³")
+                        st.sidebar.markdown(f"**Volumetric Rate:** \\${float(_sa_rate):,.2f}/m³")
                     except Exception:
                         pass
                 if _sa_cap and _sa_cap.lower() != "nan":
@@ -1258,15 +1258,15 @@ if len(detail_row) == 1:
                     except Exception:
                         pass
                 if _sa_ban and _sa_ban.lower() not in ("", "unknown"):
-                    st.sidebar.markdown(f"**Out-of-Muni Fill Ban:** {_sa_ban}")
+                    st.sidebar.markdown(f"**Out-of-Muni Fill Ban:** {_md_safe(_sa_ban)}")
                 if _sa_fbn:
-                    st.sidebar.markdown(f"**Fees By-law:** [{_sa_fbn}]({_sa_fbl})" if _sa_fbl else f"**Fees By-law:** {_sa_fbn}")
+                    st.sidebar.markdown(f"**Fees By-law:** [{_md_safe(_sa_fbn)}]({_sa_fbl})" if _sa_fbl else f"**Fees By-law:** {_md_safe(_sa_fbn)}")
                 if _sa_sec:
-                    st.sidebar.markdown(f"**Security / Deposit:** {_sa_sec.replace('$', chr(92) + '$')}")
+                    st.sidebar.markdown(f"**Security / Deposit:** {_md_safe(_sa_sec)}")
                 if _sa_peer:
-                    st.sidebar.markdown(f"**Peer Review / Testing:** {_sa_peer.replace('$', chr(92) + '$')}")
+                    st.sidebar.markdown(f"**Peer Review / Testing:** {_md_safe(_sa_peer)}")
                 if _sa_fn:
-                    st.sidebar.info(_sa_fn.replace("$", r"\$"))
+                    st.sidebar.info(_md_safe(_sa_fn))
                 st.sidebar.page_link("pages/7_🧮_Fee_Explorer.py", label="📊 Compare Soil Fees in Fee Explorer →", use_container_width=True)
 
     bylaw_name = str(r.get("__BYLAW_NAME__", "") or "").strip()

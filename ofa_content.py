@@ -383,7 +383,7 @@ Effective January 1, 2025, Ontario's updated Building Code (*O. Reg. 163/24*) in
 
 1. **Maintain a dedicated, cost-reflective agricultural fee tier** rather than defaulting farm structures to commercial/industrial (ICI) rates;
 2. **Distinguish lower-complexity non-livestock storage (drive sheds, hay storage) from higher-complexity livestock housing** where cost-of-service differs;
-3. **Avoid excessive flat minimum permit fees** (e.g., $2,500–$4,300 floors) that disproportionately penalize modest farm sheds and additions; and
+3. **Avoid excessive flat minimum permit fees** (e.g., \$2,500–\$4,300 floors) that disproportionately penalize modest farm sheds and additions; and
 4. **Publish clear, accessible fee schedules and annual Building Reserve Fund reports** well ahead of any proposed s. 7 fee increases.""",
         letter_path=None,
     ),
